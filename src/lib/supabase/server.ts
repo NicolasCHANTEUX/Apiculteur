@@ -1,5 +1,8 @@
+import "server-only";
+
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { requirePublicSupabaseConfig } from "./env";
 
 /**
  * Client Supabase pour Server Components, Server Actions et Route Handlers.
@@ -8,10 +11,11 @@ import { cookies } from "next/headers";
  */
 export async function createClient() {
   const cookieStore = await cookies();
+  const { url, anonKey } = requirePublicSupabaseConfig();
 
   return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    url,
+    anonKey,
     {
       cookies: {
         getAll() {

@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { getPublicSupabaseConfig } from "./env";
 
 /**
  * Rafraîchit la session Supabase à chaque requête et propage les cookies
@@ -8,11 +9,19 @@ import { NextResponse, type NextRequest } from "next/server";
  * Next.js 16 — voir node_modules/next/dist/docs/.../proxy.md).
  */
 export async function updateSession(request: NextRequest) {
+  const config = getPublicSupabaseConfig();
+
+  // L'application reste consultable avant la configuration du projet local.
+  // Les pages dependant de Supabase affichent alors un etat explicite.
+  if (!config) {
+    return NextResponse.next({ request });
+  }
+
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    config.url,
+    config.anonKey,
     {
       cookies: {
         getAll() {

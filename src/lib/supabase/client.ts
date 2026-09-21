@@ -1,4 +1,5 @@
 import { createBrowserClient } from "@supabase/ssr";
+import { requirePublicSupabaseConfig } from "./env";
 
 /**
  * Client Supabase pour les Client Components (navigateur).
@@ -6,8 +7,7 @@ import { createBrowserClient } from "@supabase/ssr";
  * pas au niveau module (voir doc Supabase SSR).
  */
 export function createClient() {
-  return createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-  );
+  const { url, anonKey } = requirePublicSupabaseConfig();
+
+  return createBrowserClient(url, anonKey);
 }
