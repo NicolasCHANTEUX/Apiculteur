@@ -1,21 +1,41 @@
 @import "tailwindcss";
 
 :root {
-  --background: #faf9f6;
-  --foreground: #1c1917;
+  --background: #faf6ed;
+  --foreground: #241a12;
+
+  /* Palette de marque extraite de la maquette Figma (page d'accueil).
+     Approximative : a affiner si le fichier Figma donne les codes exacts. */
+  --color-cream: #faf6ed;
+  --color-tan: #efe3cc;
+  --color-espresso: #33231a;
+  --color-espresso-light: #4a3526;
+  --color-ink: #241a12;
+  --color-ink-muted: #6b5d4f;
+  --color-accent: #dd8a3d;
+  --color-accent-dark: #b8651e;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: Arial, Helvetica, sans-serif;
+  --color-cream: var(--color-cream);
+  --color-tan: var(--color-tan);
+  --color-espresso: var(--color-espresso);
+  --color-espresso-light: var(--color-espresso-light);
+  --color-ink: var(--color-ink);
+  --color-ink-muted: var(--color-ink-muted);
+  --color-accent: var(--color-accent);
+  --color-accent-dark: var(--color-accent-dark);
+  --font-sans: var(--font-inter), Arial, Helvetica, sans-serif;
+  --font-display: var(--font-fraunces), Georgia, serif;
   --font-mono: "Courier New", monospace;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
 }
 
 button,

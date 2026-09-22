@@ -1,26 +1,44 @@
-import Link from "next/link";
+import { connection } from "next/server";
+import { CatalogUnconfigured } from "@/components/catalog/catalog-unconfigured";
+import { AboutSection } from "@/components/home/about-section";
+import { CatalogPreview } from "@/components/home/catalog-preview";
+import { ContactCta } from "@/components/home/contact-cta";
+import { Hero } from "@/components/home/hero";
+import { ProcessSteps } from "@/components/home/process-steps";
+import { TestimonialsSection } from "@/components/home/testimonials-section";
+import { getPublicCatalog } from "@/data/catalog";
+import { getPublicReviews } from "@/data/reviews";
 
-export default function Home() {
+export default async function Home() {
+  // La configuration Supabase peut etre fournie au demarrage du serveur et
+  // ne doit pas etre figee au moment du build (meme raison que la page
+  // catalogue).
+  await connection();
+  const [catalog, reviews] = await Promise.all([
+    getPublicCatalog(),
+    getPublicReviews(),
+  ]);
+
   return (
-    <main className="mx-auto flex w-full max-w-6xl flex-1 items-center px-5 py-20 sm:px-8">
-      <section className="max-w-3xl">
-        <p className="mb-4 text-sm font-semibold uppercase tracking-widest text-amber-800">
-          Vente directe et réservations
-        </p>
-        <h1 className="text-5xl font-semibold tracking-tight text-stone-950 sm:text-6xl">
-          Des produits apicoles proposés avec soin et transparence.
-        </h1>
-        <p className="mt-6 max-w-2xl text-xl leading-9 text-stone-600">
-          Cette première version pose le parcours essentiel : consulter les
-          produits, comprendre leur disponibilité et préparer sa demande.
-        </p>
-        <Link
-          href="/catalogue"
-          className="mt-8 inline-flex min-h-12 items-center rounded-xl bg-stone-900 px-6 py-3 font-medium text-white transition hover:bg-stone-700"
-        >
-          Découvrir le catalogue
-        </Link>
-      </section>
+    <main className="flex-1">
+      <Hero />
+      <AboutSection />
+
+      {catalog.kind === "unconfigured" ? (
+        <div className="mx-auto w-full max-w-6xl px-5 py-12 sm:px-8">
+          <CatalogUnconfigured />
+        </div>
+      ) : (
+        <CatalogPreview products={catalog.products} />
+      )}
+
+      <ProcessSteps />
+
+      {reviews.kind === "ready" ? (
+        <TestimonialsSection reviews={reviews.reviews} />
+      ) : null}
+
+      <ContactCta />
     </main>
   );
 }

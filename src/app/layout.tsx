@@ -1,6 +1,21 @@
 import type { Metadata } from "next";
+import { Fraunces, Inter } from "next/font/google";
+import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import "./globals.css";
+
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+  display: "swap",
+});
+
+const fraunces = Fraunces({
+  subsets: ["latin"],
+  variable: "--font-fraunces",
+  display: "swap",
+  axes: ["opsz", "SOFT", "WONK"],
+});
 
 export const metadata: Metadata = {
   title: {
@@ -12,10 +27,14 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="fr" className="h-full antialiased">
-      <body className="flex min-h-full flex-col">
+    <html
+      lang="fr"
+      className={`h-full antialiased ${inter.variable} ${fraunces.variable}`}
+    >
+      <body className="flex min-h-full flex-col bg-cream text-ink">
         <SiteHeader />
         {children}
+        <SiteFooter />
       </body>
     </html>
   );
