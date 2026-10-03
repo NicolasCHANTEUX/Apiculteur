@@ -8,7 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --test --experimental-strip-types src/lib/domain/pricing.test.ts"
+    "test": "node --test --experimental-strip-types src/lib/domain/pricing.test.ts src/lib/domain/ratings.test.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",

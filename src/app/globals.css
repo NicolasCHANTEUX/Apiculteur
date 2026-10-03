@@ -1,44 +1,50 @@
 @import "tailwindcss";
 
-:root {
-  --background: #faf6ed;
-  --foreground: #241a12;
+/* Palette relevee pixel par pixel sur la maquette Figma "Beehive Website"
+   (fichier tGsd59upCiFeGDaZb5Omj5). Les pastilles de disponibilite
+   utilisent directement la palette Tailwind (green/orange/blue), comme la
+   maquette. */
+@theme {
+  --color-cream: #faf7f0;
+  --color-sand: #f0ebe0;
+  --color-line: #e8e0d0;
+  --color-honey: #d99a2b;
+  --color-honey-dark: #c0841c;
+  --color-brown: #6b4a32;
+  --color-espresso: #3d2b1a;
+  --color-ink: #262626;
+  --color-body: #4a4a4a;
+  --color-muted: #8a8278;
+  --color-sage: #5a6e52;
+  --color-parchment: #c8a880;
+  --color-wheat: #b89870;
+  --color-bark: #7a6050;
 
-  /* Palette de marque extraite de la maquette Figma (page d'accueil).
-     Approximative : a affiner si le fichier Figma donne les codes exacts. */
-  --color-cream: #faf6ed;
-  --color-tan: #efe3cc;
-  --color-espresso: #33231a;
-  --color-espresso-light: #4a3526;
-  --color-ink: #241a12;
-  --color-ink-muted: #6b5d4f;
-  --color-accent: #dd8a3d;
-  --color-accent-dark: #b8651e;
+  --font-sans: var(--font-dm-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-playfair), Georgia, serif;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-cream: var(--color-cream);
-  --color-tan: var(--color-tan);
-  --color-espresso: var(--color-espresso);
-  --color-espresso-light: var(--color-espresso-light);
-  --color-ink: var(--color-ink);
-  --color-ink-muted: var(--color-ink-muted);
-  --color-accent: var(--color-accent);
-  --color-accent-dark: var(--color-accent-dark);
-  --font-sans: var(--font-inter), Arial, Helvetica, sans-serif;
-  --font-display: var(--font-fraunces), Georgia, serif;
-  --font-mono: "Courier New", monospace;
+:root {
+  --header-height: 4.5rem;
+}
+
+html {
+  scroll-padding-top: var(--header-height);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--color-cream);
+  color: var(--color-ink);
   font-family: var(--font-sans);
 }
 
 button,
-a {
+a,
+summary {
   outline-offset: 3px;
+}
+
+/* Accordeon FAQ : on masque le marqueur natif de <summary>. */
+summary::-webkit-details-marker {
+  display: none;
 }

@@ -14,6 +14,13 @@ export function getPublicSupabaseConfig(): PublicSupabaseConfig | null {
   return { url, anonKey };
 }
 
+// En developpement sans Supabase, le site affiche les donnees d'exemple de
+// la maquette (src/data/demo.ts) pour pouvoir travailler le visuel. Jamais
+// en production : un deploiement non configure affiche l'etat "non configure".
+export function isDemoMode(): boolean {
+  return process.env.NODE_ENV === "development" && !getPublicSupabaseConfig();
+}
+
 export function requirePublicSupabaseConfig(): PublicSupabaseConfig {
   const config = getPublicSupabaseConfig();
 

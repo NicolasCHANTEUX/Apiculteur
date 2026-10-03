@@ -1,7 +1,8 @@
 import "server-only";
 
 import { cache } from "react";
-import { getPublicSupabaseConfig } from "@/lib/supabase/env";
+import { demoReviews } from "@/data/demo";
+import { getPublicSupabaseConfig, isDemoMode } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
 
 export type PublicReview = {
@@ -35,7 +36,13 @@ type ReviewRow = {
 // Avis affiches publiquement (deja modere + consentement client), via la
 // vue public_reviews qui n'expose ni access_token ni order_id.
 // Cf. supabase/migrations/20260922100000_harden_public_reads.sql.
+// Pas de limite : la note moyenne et la repartition par etoiles sont
+// calculees sur l'ensemble des avis publies (volume modeste).
 export const getPublicReviews = cache(async (): Promise<ReviewsResult> => {
+  if (isDemoMode()) {
+    return { kind: "ready", reviews: demoReviews };
+  }
+
   if (!getPublicSupabaseConfig()) {
     return { kind: "unconfigured" };
   }
@@ -47,8 +54,7 @@ export const getPublicReviews = cache(async (): Promise<ReviewsResult> => {
       "id, product_id, customer_name, rating, comment, admin_reply, featured, submitted_at, created_at",
     )
     .order("featured", { ascending: false })
-    .order("submitted_at", { ascending: false })
-    .limit(9);
+    .order("submitted_at", { ascending: false });
 
   if (error) {
     throw new Error(`Lecture des avis impossible: ${error.message}`);

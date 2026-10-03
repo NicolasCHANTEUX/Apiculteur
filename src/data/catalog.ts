@@ -1,7 +1,8 @@
 import "server-only";
 
 import { cache } from "react";
-import { getPublicSupabaseConfig } from "@/lib/supabase/env";
+import { demoProducts } from "@/data/demo";
+import { getPublicSupabaseConfig, isDemoMode } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
 
 export type PublicCategory = {
@@ -180,6 +181,10 @@ async function hydrateProducts(rows: ProductRow[]): Promise<PublicProduct[]> {
 }
 
 export const getPublicCatalog = cache(async (): Promise<CatalogResult> => {
+  if (isDemoMode()) {
+    return { kind: "ready", products: demoProducts };
+  }
+
   if (!getPublicSupabaseConfig()) {
     return { kind: "unconfigured" };
   }
@@ -201,6 +206,13 @@ export const getPublicCatalog = cache(async (): Promise<CatalogResult> => {
 
 export const getPublicProductBySlug = cache(
   async (slug: string): Promise<ProductResult> => {
+    if (isDemoMode()) {
+      return {
+        kind: "ready",
+        product: demoProducts.find((product) => product.slug === slug) ?? null,
+      };
+    }
+
     if (!getPublicSupabaseConfig()) {
       return { kind: "unconfigured" };
     }

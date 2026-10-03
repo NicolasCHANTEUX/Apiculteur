@@ -1,3 +1,5 @@
+import { PageIntro } from "@/components/ui";
+
 export function PlaceholderPage({
   eyebrow,
   title,
@@ -8,14 +10,11 @@ export function PlaceholderPage({
   children: React.ReactNode;
 }) {
   return (
-    <main className="mx-auto w-full max-w-3xl flex-1 px-5 py-16 sm:px-8 sm:py-24">
-      <p className="text-sm font-semibold tracking-widest text-accent-dark uppercase">
-        {eyebrow}
-      </p>
-      <h1 className="mt-3 font-display text-4xl font-semibold tracking-tight text-ink sm:text-5xl">
-        {title}
-      </h1>
-      <div className="mt-6 leading-8 text-ink-muted">{children}</div>
+    <main className="mx-auto w-full max-w-[768px] flex-1 px-6 pb-24">
+      <PageIntro eyebrow={eyebrow} title={title} />
+      <div className="rounded-2xl border border-line bg-white p-6 text-[14px] leading-[1.7] text-body shadow-[0_1px_3px_rgb(61_43_26/0.06)] sm:p-8">
+        {children}
+      </div>
     </main>
   );
 }

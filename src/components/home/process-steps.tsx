@@ -1,99 +1,94 @@
+import {
+  ClipboardListIcon,
+  MapPinIcon,
+  MessageCircleIcon,
+  PackageIcon,
+} from "@/components/icons";
+import { SectionHeading, container } from "@/components/ui";
+
 const steps = [
   {
     title: "Vous choisissez votre essaim",
     description:
-      "Parcourez le catalogue et sélectionnez la race et la quantité adaptées à votre projet.",
-    icon: (
-      <path
-        d="M6 8h8l1 9a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2l1-9Z M8 8V6a2 2 0 1 1 4 0v2"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    ),
+      "Parcourez le catalogue et sélectionnez la race et la quantité adaptées à votre projet. Des questions ? Je suis disponible avant même votre commande.",
+    icon: ClipboardListIcon,
+    tone: "bg-[#f5e9d2] text-honey",
   },
   {
     title: "Je vérifie votre besoin",
     description:
       "Pour les commandes importantes ou éloignées, j'étudie personnellement les conditions de livraison avant de confirmer. Rien n'est laissé au hasard.",
-    icon: (
-      <path
-        d="M4 6h12v8H8l-4 3V6Z"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    ),
+    icon: MessageCircleIcon,
+    tone: "bg-[#eae9e0] text-sage",
   },
   {
     title: "Je prépare avec soin",
     description:
-      "Chaque essaim est contrôlé, conditionné dans les meilleures conditions pour le transport. Vous êtes informé du départ.",
-    icon: (
-      <path
-        d="M4 7l6-3 6 3-6 3-6-3Zm0 0v6l6 3m0-9v9m6-9v6l-6 3"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    ),
+      "Chaque essaim est contrôlé, conditionné dans les meilleures conditions pour le transport. Vous êtes informé avant le départ.",
+    icon: PackageIcon,
+    tone: "bg-[#ece5dd] text-brown",
   },
   {
     title: "Livraison ou retrait",
     description:
       "La livraison est organisée en concertation avec vous selon votre situation. Retrait sur exploitation également possible.",
-    icon: (
-      <path
-        d="M10 18s6-5.5 6-10a6 6 0 1 0-12 0c0 4.5 6 10 6 10Zm0-8a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    ),
+    icon: MapPinIcon,
+    tone: "bg-[#f5e9d2] text-honey",
   },
 ];
 
 export function ProcessSteps() {
   return (
-    <section className="bg-tan">
-      <div className="mx-auto w-full max-w-6xl px-5 py-20 text-center sm:px-8">
-        <p className="text-sm font-semibold tracking-widest text-accent-dark uppercase">
-          Le parcours
-        </p>
-        <h2 className="mt-3 font-display text-3xl font-semibold tracking-tight text-ink sm:text-4xl">
-          Comment ça se passe ?
-        </h2>
-        <p className="mx-auto mt-4 max-w-xl leading-7 text-ink-muted">
-          Du premier contact à la livraison, chaque étape est suivie
-          personnellement.
-        </p>
+    <section className="bg-cream py-20 sm:py-24">
+      <div className={container}>
+        <SectionHeading
+          align="center"
+          eyebrow="Le parcours"
+          title="Comment ça se passe ?"
+          subtitle={
+            <span className="mx-auto block max-w-[350px]">
+              Du premier contact à la livraison, chaque étape est suivie
+              personnellement.
+            </span>
+          }
+        />
 
-        <ol className="mt-14 grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
-          {steps.map((step, index) => (
-            <li key={step.title} className="relative">
-              <div className="relative mx-auto flex size-16 items-center justify-center rounded-full bg-cream shadow-sm">
-                <svg
-                  viewBox="0 0 20 20"
-                  fill="none"
-                  className="size-7 text-accent-dark"
-                  aria-hidden
-                >
-                  {step.icon}
-                </svg>
-                <span className="absolute -top-1 -right-1 flex size-6 items-center justify-center rounded-full bg-accent text-xs font-semibold text-white">
-                  {index + 1}
-                </span>
-              </div>
-              <h3 className="mt-5 font-semibold text-ink">{step.title}</h3>
-              <p className="mt-2 text-sm leading-6 text-ink-muted">
-                {step.description}
-              </p>
-            </li>
-          ))}
+        {/* Sur grand ecran, chaque etape (sauf la derniere) porte le trait
+            qui la relie a la suivante et s'etire pour remplir l'espace. */}
+        <ol className="mt-14 grid gap-x-8 gap-y-12 sm:grid-cols-2 lg:flex lg:items-start">
+          {steps.map((step, index) => {
+            const Icon = step.icon;
+            const isLast = index === steps.length - 1;
+            return (
+              <li
+                key={step.title}
+                className={`lg:flex lg:items-start ${isLast ? "lg:flex-none" : "lg:flex-1"}`}
+              >
+                <div className="mx-auto max-w-[220px] text-center lg:w-[146px]">
+                  <div
+                    className={`relative mx-auto flex size-[74px] items-center justify-center rounded-full border-[3px] border-white shadow-[0_6px_16px_-8px_rgb(61_43_26/0.4)] ${step.tone}`}
+                  >
+                    <Icon className="size-6" />
+                    <span className="absolute -top-1 -right-1 flex size-[18px] items-center justify-center rounded-full bg-honey text-[10px] font-semibold text-white">
+                      {index + 1}
+                    </span>
+                  </div>
+                  <h3 className="mt-6 font-display text-[13px] leading-snug font-semibold text-ink">
+                    {step.title}
+                  </h3>
+                  <p className="mt-2 text-[11.5px] leading-[1.55] text-muted">
+                    {step.description}
+                  </p>
+                </div>
+                {isLast ? null : (
+                  <span
+                    className="mx-1.5 mt-[37px] hidden h-px flex-1 bg-honey/40 lg:block"
+                    aria-hidden
+                  />
+                )}
+              </li>
+            );
+          })}
         </ol>
       </div>
     </section>

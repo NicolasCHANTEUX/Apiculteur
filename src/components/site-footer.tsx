@@ -1,49 +1,41 @@
 import Link from "next/link";
+import { MailIcon, MapPinIcon, PhoneIcon } from "@/components/icons";
+import { Logo, container } from "@/components/ui";
+import { infoNav, mainNav, site } from "@/lib/site";
 
-const navigationLinks = [
-  { href: "/", label: "Accueil" },
-  { href: "/catalogue", label: "Nos essaims" },
-  { href: "/#a-propos", label: "À propos" },
-  { href: "/#avis", label: "Avis clients" },
-  { href: "/#contact", label: "Contact" },
-];
+function FooterHeading({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="text-[12px] font-semibold tracking-[0.08em] text-white uppercase">
+      {children}
+    </p>
+  );
+}
 
-const informationLinks = [
-  { href: "/faq", label: "FAQ" },
-  { href: "/livraison", label: "Livraison" },
-  { href: "/cgv", label: "CGV" },
-  { href: "/mentions-legales", label: "Mentions légales" },
-  { href: "/confidentialite", label: "Confidentialité" },
-];
+// La FAQ figure deja dans la colonne "Informations".
+const footerNav = mainNav.filter((link) => link.href !== "/faq");
 
 export function SiteFooter() {
+  const years = new Date().getFullYear() - site.owner.since;
+
   return (
-    <footer className="bg-espresso text-cream/80">
-      <div className="mx-auto grid w-full max-w-6xl gap-10 px-5 py-14 sm:px-8 md:grid-cols-[1.3fr_1fr_1fr_1fr]">
+    <footer className="bg-espresso text-wheat">
+      <div
+        className={`${container} grid gap-10 pt-14 pb-12 sm:grid-cols-2 lg:grid-cols-4`}
+      >
         <div>
-          <Link
-            href="/"
-            className="flex items-center gap-2 font-display text-lg font-semibold text-white"
-          >
-            <span className="flex size-8 items-center justify-center rounded-full bg-accent text-sm font-semibold text-white">
-              A
-            </span>
-            Ruchers de Normandie
-          </Link>
-          <p className="mt-4 max-w-xs text-sm leading-6 text-cream/60">
-            Éleveur passionné d&apos;abeilles depuis 15 ans. Des essaims élevés
-            avec soin, pour des apiculteurs accompagnés avec sérieux.
+          <Logo tone="light" />
+          <p className="mt-5 max-w-[230px] text-[13px] leading-[1.65]">
+            Éleveur passionné d&apos;abeilles depuis {years} ans. Des essaims
+            élevés avec soin, pour des apiculteurs accompagnés avec sérieux.
           </p>
         </div>
 
         <nav aria-label="Navigation du site">
-          <p className="text-xs font-semibold tracking-widest text-cream/40 uppercase">
-            Navigation
-          </p>
-          <ul className="mt-4 space-y-2 text-sm">
-            {navigationLinks.map((link) => (
+          <FooterHeading>Navigation</FooterHeading>
+          <ul className="mt-5 space-y-2.5 text-[13px] leading-[18px]">
+            {footerNav.map((link) => (
               <li key={link.href}>
-                <Link href={link.href} className="hover:text-white">
+                <Link href={link.href} className="transition hover:text-white">
                   {link.label}
                 </Link>
               </li>
@@ -51,14 +43,12 @@ export function SiteFooter() {
           </ul>
         </nav>
 
-        <nav aria-label="Informations légales">
-          <p className="text-xs font-semibold tracking-widest text-cream/40 uppercase">
-            Informations
-          </p>
-          <ul className="mt-4 space-y-2 text-sm">
-            {informationLinks.map((link) => (
+        <nav aria-label="Informations">
+          <FooterHeading>Informations</FooterHeading>
+          <ul className="mt-5 space-y-2.5 text-[13px] leading-[18px]">
+            {infoNav.map((link) => (
               <li key={link.href}>
-                <Link href={link.href} className="hover:text-white">
+                <Link href={link.href} className="transition hover:text-white">
                   {link.label}
                 </Link>
               </li>
@@ -67,24 +57,56 @@ export function SiteFooter() {
         </nav>
 
         <div>
-          <p className="text-xs font-semibold tracking-widest text-cream/40 uppercase">
-            Contact
-          </p>
-          <ul className="mt-4 space-y-2 text-sm">
-            <li>contact@ruchers-normandie.fr</li>
-            <li>06 12 34 56 78</li>
-            <li>Normandie, France</li>
+          <FooterHeading>Contact</FooterHeading>
+          <ul className="mt-5 space-y-3 text-[13px] leading-[18px]">
+            <li>
+              <a
+                href={`mailto:${site.email}`}
+                className="flex items-center gap-2.5 transition hover:text-white"
+              >
+                <MailIcon className="size-3.5 shrink-0" />
+                {site.email}
+              </a>
+            </li>
+            <li>
+              <a
+                href={site.phoneHref}
+                className="flex items-center gap-2.5 transition hover:text-white"
+              >
+                <PhoneIcon className="size-3.5 shrink-0" />
+                {site.phone}
+              </a>
+            </li>
+            <li className="flex items-center gap-2.5">
+              <MapPinIcon className="size-3.5 shrink-0" />
+              {site.region}
+            </li>
           </ul>
+          <div className="mt-5 flex gap-3">
+            <a
+              href={site.social.instagram}
+              aria-label="Instagram"
+              className="flex size-[34px] items-center justify-center rounded-full bg-white/10 text-[10px] font-semibold text-white transition hover:bg-white/20"
+            >
+              ig
+            </a>
+            <a
+              href={site.social.facebook}
+              aria-label="Facebook"
+              className="flex size-[34px] items-center justify-center rounded-full bg-white/10 text-[10px] font-semibold text-white transition hover:bg-white/20"
+            >
+              f
+            </a>
+          </div>
         </div>
       </div>
 
-      <div className="border-t border-white/10">
-        <div className="mx-auto flex w-full max-w-6xl flex-col gap-2 px-5 py-5 text-xs text-cream/40 sm:flex-row sm:items-center sm:justify-between sm:px-8">
+      <div className={container}>
+        <div className="flex flex-col gap-2 border-t border-white/10 py-6 text-[11px] text-bark sm:flex-row sm:items-center sm:justify-between">
           <p>
-            © {new Date().getFullYear()} Ruchers de Normandie · Tous droits
-            réservés
+            © {new Date().getFullYear()} {site.name} — Tous droits réservés
           </p>
-          <p className="italic">Site conçu avec passion</p>
+          <p>Site réalisé avec passion</p>
         </div>
       </div>
     </footer>

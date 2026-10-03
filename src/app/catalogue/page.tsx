@@ -1,55 +1,54 @@
 import type { Metadata } from "next";
 import { connection } from "next/server";
+import { CatalogBrowser } from "@/components/catalog/catalog-browser";
 import { CatalogUnconfigured } from "@/components/catalog/catalog-unconfigured";
-import { ProductCard } from "@/components/catalog/product-card";
+import { CatalogHeader } from "@/components/catalog/catalog-header";
+import { container } from "@/components/ui";
 import { getPublicCatalog } from "@/data/catalog";
+import { getPublicReviews } from "@/data/reviews";
+import { averageByProduct } from "@/lib/domain/ratings";
 
 export const metadata: Metadata = {
-  title: "Catalogue",
-  description: "Découvrez les produits et disponibilités de l'apiculteur.",
+  title: "Nos essaims",
+  description:
+    "Essaims et reines élevés sur notre exploitation normande : disponibilités et tarifs.",
 };
 
 export default async function CatalogPage() {
   // La configuration Supabase peut etre fournie au demarrage du serveur et
   // ne doit pas etre figee au moment du build.
   await connection();
-  const result = await getPublicCatalog();
+  const [catalog, reviews] = await Promise.all([
+    getPublicCatalog(),
+    getPublicReviews(),
+  ]);
+  const ratings =
+    reviews.kind === "ready"
+      ? Object.fromEntries(averageByProduct(reviews.reviews))
+      : {};
 
   return (
-    <main className="mx-auto w-full max-w-6xl flex-1 px-5 py-12 sm:px-8 sm:py-16">
-      <header className="mb-10 max-w-3xl">
-        <p className="mb-3 text-sm font-semibold uppercase tracking-widest text-amber-800">
-          Catalogue
-        </p>
-        <h1 className="text-4xl font-semibold tracking-tight text-stone-950 sm:text-5xl">
-          Produits disponibles
-        </h1>
-        <p className="mt-4 text-lg leading-8 text-stone-600">
-          Les disponibilités et les tarifs présentés ici proviennent directement
-          du catalogue géré par l&apos;apiculteur.
-        </p>
-      </header>
+    <main className="flex-1">
+      <CatalogHeader />
 
-      {result.kind === "unconfigured" ? <CatalogUnconfigured /> : null}
+      <div className={`${container} pt-10 pb-24`}>
+        {catalog.kind === "unconfigured" ? <CatalogUnconfigured /> : null}
 
-      {result.kind === "ready" && result.products.length === 0 ? (
-        <section className="rounded-2xl border border-stone-200 bg-white p-8">
-          <h2 className="text-xl font-semibold text-stone-950">
-            Aucun produit publié pour le moment
-          </h2>
-          <p className="mt-2 text-stone-600">
-            Revenez prochainement pour découvrir les nouvelles disponibilités.
-          </p>
-        </section>
-      ) : null}
+        {catalog.kind === "ready" && catalog.products.length === 0 ? (
+          <section className="rounded-xl border border-line bg-white p-8">
+            <h2 className="font-display text-xl font-semibold text-ink">
+              Aucun essaim publié pour le moment
+            </h2>
+            <p className="mt-2 text-[14px] text-body">
+              Revenez prochainement pour découvrir les nouvelles disponibilités.
+            </p>
+          </section>
+        ) : null}
 
-      {result.kind === "ready" && result.products.length > 0 ? (
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {result.products.map((product) => (
-            <ProductCard key={product.id} product={product} />
-          ))}
-        </div>
-      ) : null}
+        {catalog.kind === "ready" && catalog.products.length > 0 ? (
+          <CatalogBrowser products={catalog.products} ratings={ratings} />
+        ) : null}
+      </div>
     </main>
   );
 }
