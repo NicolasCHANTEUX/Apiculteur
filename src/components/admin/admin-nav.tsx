@@ -7,7 +7,7 @@ import { usePathname } from "next/navigation";
 // affiche comme « bientôt » sans lien, pour montrer la structure à venir.
 const items = [
   { href: "/admin", label: "Tableau de bord", ready: true },
-  { href: "/admin/produits", label: "Produits", ready: false },
+  { href: "/admin/produits", label: "Produits", ready: true, also: ["/admin/categories"] },
   { href: "/admin/commandes", label: "Commandes", ready: false },
   { href: "/admin/demandes", label: "Demandes", ready: false },
   { href: "/admin/avis", label: "Avis", ready: false },
@@ -25,7 +25,9 @@ export function AdminNav() {
           const active =
             item.href === "/admin"
               ? pathname === "/admin"
-              : pathname.startsWith(item.href);
+              : [item.href, ...("also" in item ? item.also : [])].some((prefix) =>
+                  pathname.startsWith(prefix),
+                );
           return (
             <li key={item.href}>
               {item.ready ? (

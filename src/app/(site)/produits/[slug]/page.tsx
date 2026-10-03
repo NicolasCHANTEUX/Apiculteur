@@ -9,6 +9,7 @@ import { ReviewCard } from "@/components/reviews/review-card";
 import { Eyebrow, Stars, buttonStyles, container } from "@/components/ui";
 import { getPublicProductBySlug } from "@/data/catalog";
 import { getPublicReviews } from "@/data/reviews";
+import { conditionLabels, deliveryModeLabels } from "@/lib/catalog/labels";
 import { formatAverage, summarizeRatings } from "@/lib/domain/ratings";
 
 export async function generateMetadata(
@@ -59,6 +60,12 @@ export default async function ProductPage(
   const rating = summarizeRatings(reviews.map((review) => review.rating));
   const showTiers =
     product.priceVisibility === "visible" && product.pricingTiers.length > 1;
+  const facts = [
+    product.sku ? { label: "Référence", value: product.sku } : null,
+    { label: "Retrait / transport", value: deliveryModeLabels[product.deliveryMode] },
+    product.seasonLabel ? { label: "Disponibilité", value: product.seasonLabel } : null,
+    product.condition !== "new" ? { label: "État", value: conditionLabels[product.condition] } : null,
+  ].filter((fact): fact is { label: string; value: string } => fact !== null);
 
   return (
     <main className="flex-1">
@@ -93,6 +100,9 @@ export default async function ProductPage(
             <h1 className="mt-3 font-display text-[30px] leading-[1.2] font-medium text-ink sm:text-[34px]">
               {product.name}
             </h1>
+            {product.tagline ? (
+              <p className="mt-1.5 text-[14px] text-honey">{product.tagline}</p>
+            ) : null}
             {rating.count > 0 ? (
               <p className="mt-2 flex items-center gap-2 text-[13px] text-muted">
                 <Stars rating={rating.average} />
@@ -152,10 +162,47 @@ export default async function ProductPage(
               </Link>
             </div>
 
+            <dl className="mt-6 grid grid-cols-2 gap-x-6 gap-y-3 text-[13px]">
+              {facts.map((fact) => (
+                <div key={fact.label}>
+                  <dt className="text-[11px] tracking-[0.06em] text-muted uppercase">{fact.label}</dt>
+                  <dd className="mt-0.5 text-ink">{fact.value}</dd>
+                </div>
+              ))}
+            </dl>
+
+            {product.condition !== "new" && product.defectDescription ? (
+              <div className="mt-6 rounded-xl border border-orange-200 bg-orange-50 p-5">
+                <p className="text-[14px] font-semibold text-ink">
+                  {conditionLabels[product.condition]} : défauts constatés
+                </p>
+                <p className="mt-1 text-[13px] leading-[1.6] whitespace-pre-line text-body">
+                  {product.defectDescription}
+                </p>
+              </div>
+            ) : null}
+
             {product.longDescription ? (
               <div className="mt-8 text-[14px] leading-[1.7] whitespace-pre-line text-body">
                 {product.longDescription}
               </div>
+            ) : null}
+
+            {product.attributes.length > 0 ? (
+              <section className="mt-8">
+                <h2 className="font-display text-[20px] font-medium text-ink">Caractéristiques</h2>
+                <dl className="mt-3 divide-y divide-sand rounded-xl border border-line bg-white">
+                  {product.attributes.map((attribute) => (
+                    <div key={`${attribute.label}-${attribute.value}`} className="flex justify-between gap-4 px-4 py-2.5 text-[13.5px]">
+                      <dt className="text-muted">{attribute.label}</dt>
+                      <dd className="text-right text-ink">
+                        {attribute.value}
+                        {attribute.unit ? ` ${attribute.unit}` : ""}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+              </section>
             ) : null}
           </div>
         </article>

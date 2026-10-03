@@ -63,7 +63,7 @@ Règle de fin de lot : lint, types, tests et build réussis ; recette visuelle �
 
 ## Phase B — Vendre (V1 sans paiement en ligne)
 
-### Lot 2 — Catalogue géré par l’admin · **prochain**
+### Lot 2 — Catalogue géré par l’admin · **fait**
 
 - Liste des produits avec recherche, filtres et actions rapides (stock, masquer, archiver) (§17.3).
 - Formulaire produit complet (§6.1, §17.3) :
@@ -74,7 +74,7 @@ Règle de fin de lot : lint, types, tests et build réussis ; recette visuelle �
 - Catégories : création, ordre, activation (§6.3).
 - Côté public : ligne « race · particularité » et caractéristiques sur la fiche (§5).
 
-### Lot 3 — Panier
+### Lot 3 — Panier · **prochain**
 
 - Panier dans le navigateur et compteur dans l’en-tête (§7).
 - Calcul par le serveur : paliers, problèmes par ligne (§7).

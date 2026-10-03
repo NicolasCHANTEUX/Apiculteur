@@ -19,6 +19,13 @@ const productDefaults = {
   displayedStockQuantity: null,
   seoTitle: null,
   seoDescription: null,
+  sku: null,
+  condition: "new",
+  defectDescription: null,
+  compareAtPrice: null,
+  deliveryMode: "pickup_only",
+  seasonLabel: "Avril – juin",
+  publishedAt: "2026-02-01T09:00:00Z",
 } satisfies Partial<PublicProduct>;
 
 export const demoProducts: PublicProduct[] = [
@@ -28,6 +35,14 @@ export const demoProducts: PublicProduct[] = [
     category: essaims,
     name: "Essaim Buckfast sur 5 cadres",
     slug: "essaim-buckfast-5-cadres",
+    sku: "ESS-BUCK-5",
+    tagline: "Buckfast · Reine fécondée et testée",
+    saleUnit: "essaim",
+    attributes: [
+      { label: "Race", value: "Buckfast", unit: null },
+      { label: "Cadres", value: "5", unit: "cadres Dadant" },
+      { label: "Reine", value: "De l’année, fécondée et testée", unit: null },
+    ],
     shortDescription:
       "Essaim polyvalent, doux et productif. Idéal pour les apiculteurs de tous niveaux.",
     longDescription:
@@ -50,6 +65,13 @@ export const demoProducts: PublicProduct[] = [
     category: essaims,
     name: "Essaim Carnica",
     slug: "essaim-carnica",
+    sku: "ESS-CARN-5",
+    tagline: "Carnica · Hivernage économique",
+    saleUnit: "essaim",
+    attributes: [
+      { label: "Race", value: "Carnica", unit: null },
+      { label: "Cadres", value: "5", unit: "cadres Dadant" },
+    ],
     shortDescription:
       "Race alpine réputée pour son hivernage économique et sa douceur naturelle.",
     longDescription:
@@ -70,6 +92,14 @@ export const demoProducts: PublicProduct[] = [
     category: essaims,
     name: "Essaim local Normandie",
     slug: "essaim-local-normandie",
+    sku: "ESS-LOCAL-5",
+    tagline: "Locale / Hybride · Adaptation locale",
+    saleUnit: "essaim",
+    seasonLabel: "Saison 2027",
+    attributes: [
+      { label: "Race", value: "Locale / hybride", unit: null },
+      { label: "Cadres", value: "5", unit: "cadres Dadant" },
+    ],
     shortDescription:
       "Abeilles locales adaptées au climat et à la flore de Normandie.",
     longDescription:
@@ -92,6 +122,16 @@ export const demoProducts: PublicProduct[] = [
     category: reines,
     name: "Reine fécondée Buckfast",
     slug: "reine-fecondee-buckfast",
+    sku: "REINE-BUCK",
+    tagline: "Buckfast · Fécondée en plein air",
+    saleUnit: "reine",
+    deliveryMode: "deliverable",
+    seasonLabel: "Mai – août",
+    attributes: [
+      { label: "Race", value: "Buckfast", unit: null },
+      { label: "Marquage", value: "Marquée de la couleur de l’année", unit: null },
+      { label: "Conditionnement", value: "Cagette avec accompagnatrices", unit: null },
+    ],
     shortDescription:
       "Reine fécondée en plein air, testée et marquée, livrée en cagette.",
     longDescription:

@@ -39,6 +39,15 @@ export function PriceTag({ product }: { product: PublicProduct }) {
             {price.unit ? (
               <span className="text-[11px] text-muted"> /{price.unit}</span>
             ) : null}
+            {price.compareAt ? (
+              <>
+                {" "}
+                <s className="text-[11px] text-muted">{price.compareAt}</s>
+                <span className="ml-1.5 rounded-full bg-honey/15 px-1.5 py-0.5 text-[10.5px] font-semibold text-honey-dark">
+                  -{price.discountPercent} %
+                </span>
+              </>
+            ) : null}
           </>
         ) : (
           <span className="text-[14px] font-semibold">{price.text}</span>
@@ -86,9 +95,9 @@ export function ProductCard({
           <h3 className="mt-3 font-display text-[14px] leading-snug font-semibold text-ink">
             {product.name}
           </h3>
-          {product.category ? (
+          {product.tagline || product.category ? (
             <p className="mt-1 text-[11px] text-honey">
-              {product.category.name}
+              {product.tagline ?? product.category?.name}
             </p>
           ) : null}
           {product.shortDescription ? (

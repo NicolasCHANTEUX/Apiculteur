@@ -51,6 +51,13 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  experimental: {
+    serverActions: {
+      // Envoi de photos produit depuis l'admin (8 Mo par photo, réencodées
+      // ensuite en WebP). Par défaut : 1 Mo.
+      bodySizeLimit: "30mb",
+    },
+  },
   async headers() {
     return [{ source: "/(.*)", headers: securityHeaders }];
   },

@@ -16,6 +16,12 @@ export type PublicProductImage = {
   altText: string | null;
 };
 
+export type PublicProductAttribute = {
+  label: string;
+  value: string;
+  unit: string | null;
+};
+
 export type PublicPricingTier = {
   minQuantity: number;
   maxQuantity: number | null;
@@ -45,8 +51,18 @@ export type PublicProduct = {
   displayedStockQuantity: number | null;
   seoTitle: string | null;
   seoDescription: string | null;
+  sku: string | null;
+  tagline: string | null;
+  condition: "new" | "used" | "second_choice";
+  defectDescription: string | null;
+  compareAtPrice: number | null;
+  saleUnit: string;
+  deliveryMode: "pickup_only" | "deliverable" | "quote";
+  seasonLabel: string | null;
+  publishedAt: string | null;
   images: PublicProductImage[];
   pricingTiers: PublicPricingTier[];
+  attributes: PublicProductAttribute[];
 };
 
 export type CatalogResult =
@@ -75,6 +91,23 @@ type ProductRow = {
   display_order: number;
   seo_title: string | null;
   seo_description: string | null;
+  sku: string | null;
+  tagline: string | null;
+  condition: PublicProduct["condition"];
+  defect_description: string | null;
+  compare_at_price: number | string | null;
+  sale_unit: string;
+  delivery_mode: PublicProduct["deliveryMode"];
+  season_label: string | null;
+  published_at: string | null;
+};
+
+type AttributeRow = {
+  product_id: string;
+  label: string;
+  value: string;
+  unit: string | null;
+  position: number;
 };
 
 type CategoryRow = {
@@ -118,7 +151,7 @@ async function hydrateProducts(rows: ProductRow[]): Promise<PublicProduct[]> {
     ),
   ];
 
-  const [categoriesResponse, imagesResponse, tiersResponse] = await Promise.all([
+  const [categoriesResponse, imagesResponse, tiersResponse, attributesResponse] = await Promise.all([
     categoryIds.length > 0
       ? supabase
           .from("categories")
@@ -135,15 +168,22 @@ async function hydrateProducts(rows: ProductRow[]): Promise<PublicProduct[]> {
       .select("product_id, min_quantity, max_quantity, unit_price")
       .in("product_id", productIds)
       .order("min_quantity"),
+    supabase
+      .from("product_attributes")
+      .select("product_id, label, value, unit, position")
+      .in("product_id", productIds)
+      .order("position"),
   ]);
 
   throwIfError(categoriesResponse.error, "Lecture des categories impossible");
   throwIfError(imagesResponse.error, "Lecture des images impossible");
   throwIfError(tiersResponse.error, "Lecture des paliers de prix impossible");
+  throwIfError(attributesResponse.error, "Lecture des caracteristiques impossible");
 
   const categories = (categoriesResponse.data ?? []) as CategoryRow[];
   const images = (imagesResponse.data ?? []) as ImageRow[];
   const tiers = (tiersResponse.data ?? []) as TierRow[];
+  const attributes = (attributesResponse.data ?? []) as AttributeRow[];
   const categoriesById = new Map(
     categories.map((category) => [category.id, category]),
   );
@@ -167,6 +207,16 @@ async function hydrateProducts(rows: ProductRow[]): Promise<PublicProduct[]> {
     displayedStockQuantity: row.displayed_stock_quantity,
     seoTitle: row.seo_title,
     seoDescription: row.seo_description,
+    sku: row.sku,
+    tagline: row.tagline,
+    condition: row.condition,
+    defectDescription: row.defect_description,
+    compareAtPrice:
+      row.compare_at_price === null ? null : Number(row.compare_at_price),
+    saleUnit: row.sale_unit,
+    deliveryMode: row.delivery_mode,
+    seasonLabel: row.season_label,
+    publishedAt: row.published_at,
     images: images
       .filter((image) => image.product_id === row.id)
       .map((image) => ({ url: image.url, altText: image.alt_text })),
@@ -177,6 +227,9 @@ async function hydrateProducts(rows: ProductRow[]): Promise<PublicProduct[]> {
         maxQuantity: tier.max_quantity,
         unitPrice: Number(tier.unit_price),
       })),
+    attributes: attributes
+      .filter((attribute) => attribute.product_id === row.id)
+      .map(({ label, value, unit }) => ({ label, value, unit })),
   }));
 }
 

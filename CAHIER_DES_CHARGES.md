@@ -1,6 +1,6 @@
 # Cahier des charges consolidé — Application web apiculteur
 
-Dernière mise à jour : 3 octobre 2026 (lots 0 et 1).
+Dernière mise à jour : 3 octobre 2026 (lots 0 à 2).
 
 Ce document est **la liste de référence de tout ce qu’il y a à construire**. Il réunit trois sources :
 
@@ -153,7 +153,7 @@ Le plan d’attaque (lots, ordre, estimation) sera établi **à partir de ce doc
   - filtres repliables sur mobile ; toute modification revient à la page 1.
 - [ ] Accès rapides : Tout, Disponibles maintenant, Sur réservation, Matériel d’occasion. (Kayart, adapté)
 - [ ] Page ou URL par catégorie (`/catalogue?categorie=…`). (CDC 2-3)
-- [ ] Ligne « race · particularité » sous le nom, comme sur la maquette, alimentée par les caractéristiques (§6). (Maquette)
+- [x] Ligne « race · particularité » sous le nom, comme sur la maquette, alimentée par les caractéristiques (§6). (Maquette)
 
 ### 5.2 Fiche produit
 
@@ -161,12 +161,12 @@ Le plan d’attaque (lots, ordre, estimation) sera établi **à partir de ce doc
 - [ ] Fil d’Ariane Accueil / Nos essaims / Produit. (Kayart)
 - [ ] Galerie multi-photos : miniatures, précédent/suivant, flèches du clavier, plein écran, zoom (pincement, double-clic), réinitialisation du zoom. (Kayart)
 - [ ] Badges : type, disponibilité, stock affiché, remise « -X % ». (Kayart)
-- [ ] Bloc d’informations : référence, type, disponibilité, stock (selon le mode d’affichage), mode de transport. (Kayart)
-- [ ] Caractéristiques structurées (§6). (Kayart, CDC 3)
+- [ ] Bloc d’informations : référence, type, disponibilité, stock (selon le mode d’affichage), mode de transport. *(partiel : référence, transport, disponibilité, état ; pas encore le stock affiché)* (Kayart)
+- [x] Caractéristiques structurées (§6). (Kayart, CDC 3)
 - [ ] Action principale adaptée au cas : Ajouter au panier, Réserver, Demander un devis, Demander la disponibilité, Me prévenir. (Kayart)
 - [ ] « Poser une question » ouvre le contact pré-rempli avec le produit et sa référence. (Kayart)
 - [ ] Aide sous le prix : TTC ou HT selon le régime, « prix dégressifs selon la quantité », « sur devis », « prix d’une pièce unique ». (Kayart)
-- [ ] Matériel d’occasion ou de second choix : description des défauts, photos des défauts, lien vers le modèle neuf. (Kayart, Apicole)
+- [ ] Matériel d’occasion ou de second choix : description des défauts, photos des défauts, lien vers le modèle neuf. *(partiel : défauts décrits ; photos dédiées et lien vers le modèle à venir)* (Kayart, Apicole)
 - [ ] Visibilité vérifiée à chaque requête : jamais de cache d’un produit masqué ou épuisé. (Kayart)
 - [ ] Référencement : titre, description, URL canonique, image de partage. (Kayart, CDC 24)
 
@@ -180,42 +180,42 @@ Le plan d’attaque (lots, ordre, estimation) sera établi **à partir de ce doc
 - [x] Mode d’achat (standard, réservation, devis) ; statut (brouillon, publié, masqué, épuisé) ; mis en avant ; ordre d’affichage ; titre et description SEO. (CDC 3)
 - [x] Stock réel, seuil bas, mode d’affichage du stock (masqué, exact, libellé, message personnalisé). (CDC 6)
 - [x] Paliers de prix dégressifs, sans chevauchement possible (contrainte en base). (CDC 5)
-- [ ] Référence (SKU) unique. (Kayart)
-- [ ] Type de produit : essaim, reine, ruche/ruchette, matériel, prestation (liste au §26). (Kayart, adapté)
-- [ ] État : neuf, occasion, second choix, avec description des défauts. (Kayart)
-- [ ] Prix barré et remise en pourcentage, affichés « -X % ». (Kayart, CDC 5)
-- [ ] Caractéristiques structurées (libellé, valeur, unité, ordre). Exemples : race, nombre de cadres, type de ruche (Dadant, Langstroth…), année et marquage de la reine, traitements, période de disponibilité. (Kayart, Apicole)
-- [ ] Poids et dimensions pour le matériel. (Kayart)
-- [ ] Mode de transport par produit : retrait uniquement, livrable, transport sur devis. Valeur par défaut prudente : sur devis. (Kayart)
-- [ ] Indicateurs « réservable » et « personnalisable ». (Kayart)
-- [ ] Unité de vente explicite (essaim, reine, pièce, lot de N), plutôt que déduite de la catégorie comme aujourd’hui. (Apicole)
-- [ ] Saisonnalité : période de disponibilité (ex. avril–juin) et date d’ouverture des réservations. (Apicole)
+- [x] Référence (SKU) unique. (Kayart)
+- [ ] Type de produit : essaim, reine, ruche/ruchette, matériel, prestation (liste au §26). *(partiel : géré par les catégories modifiables, hypothèse H11)* (Kayart, adapté)
+- [x] État : neuf, occasion, second choix, avec description des défauts. (Kayart)
+- [x] Prix barré et remise en pourcentage, affichés « -X % », seulement à côté du prix de base. Le prix de référence d’une réduction doit être le plus bas pratiqué dans les 30 jours précédents (Code de la consommation, à respecter lors de la saisie). (Kayart, CDC 5)
+- [x] Caractéristiques structurées (libellé, valeur, unité, ordre). Exemples : race, nombre de cadres, type de ruche (Dadant, Langstroth…), année et marquage de la reine, traitements, période de disponibilité. (Kayart, Apicole)
+- [x] Poids et dimensions pour le matériel. — via les caractéristiques. (Kayart)
+- [x] Mode de transport par produit : retrait uniquement, livrable, transport sur devis. Valeur par défaut prudente : sur devis. (Kayart)
+- [ ] Indicateurs « réservable » et « personnalisable ». *(partiel : le mode d’achat couvre réservation et devis)* (Kayart)
+- [x] Unité de vente explicite (essaim, reine, pièce, lot de N), plutôt que déduite de la catégorie comme aujourd’hui. (Apicole)
+- [ ] Saisonnalité : période de disponibilité (ex. avril–juin) et date d’ouverture des réservations. *(partiel : période affichée ; date d’ouverture des réservations au lot 12)* (Apicole)
 - [ ] Quantité maximale commandable automatiquement ; au-delà, validation manuelle (§8.2). (CDC 8)
-- [ ] Date de publication, pour le tri « nouveautés ». (Kayart)
-- [ ] Archivage (masqué, historique conservé) ou suppression définitive, refusée s’il existe des commandes, réservations ou paiements en cours. (Kayart)
+- [x] Date de publication, pour le tri « nouveautés ». (Kayart)
+- [ ] Archivage (masqué, historique conservé) ou suppression définitive, refusée s’il existe des commandes, réservations ou paiements en cours. *(partiel : archivage ; suppression définitive à venir)* (Kayart)
 
 ### 6.2 Images produit
 
 - [x] Plusieurs images par produit, avec ordre et texte alternatif (en base). (CDC 3)
-- [ ] Envoi depuis l’admin : jusqu’à 6 images, glisser-déposer, choix de la couverture, ordre, rotation de 90°, retrait. (Kayart)
-- [ ] Contrôles : JPG, PNG, WebP ou GIF fixe, 4 Mo au maximum ; décodage puis réencodage en WebP côté serveur (2 400 px max) ; GIF et WebP animés refusés. (Kayart)
-- [ ] Stockage dans un bucket Supabase dédié ; reçu d’envoi signé (HMAC), lié à l’admin et valable une heure. (Kayart)
-- [ ] Purge des images orphelines et politique de conservation. (Kayart)
+- [x] Envoi depuis l’admin : jusqu’à 6 images, glisser-déposer, choix de la couverture, ordre, rotation de 90°, retrait. — sélection multiple (le champ accepte aussi le dépôt de fichiers). (Kayart)
+- [x] Contrôles : JPG, PNG, WebP ou GIF fixe, 4 Mo au maximum ; décodage puis réencodage en WebP côté serveur (2 400 px max) ; GIF et WebP animés refusés. — en place avec 8 Mo par photo, 2 000 px, sans EXIF ni GPS. (Kayart)
+- [x] Stockage dans un bucket Supabase dédié ; reçu d’envoi signé (HMAC), lié à l’admin et valable une heure. — envoi uniquement par le serveur (aucune URL d’envoi exposée au navigateur, donc pas de reçu nécessaire). (Kayart)
+- [ ] Purge des images orphelines et politique de conservation. *(partiel : fichiers supprimés avec la photo ; purge des orphelins à venir)* (Kayart)
 
 ### 6.3 Catégories
 
 - [x] Nom, slug, description, image, ordre, actif (en base). (CDC 4)
-- [ ] Gestion admin : création, modification, ordre, activation, suppression seulement si la catégorie est vide. (Kayart, CDC 4)
+- [x] Gestion admin : création, modification, ordre, activation, suppression seulement si la catégorie est vide. (Kayart, CDC 4)
 - [ ] Sous-catégories (catégorie parente), en option. (Kayart)
 - [ ] Catégories de départ : Essaims, Reines, Ruches, Matériel, puis Services et Formations si besoin. (CDC 4)
 
 ### 6.4 Stock
 
-- [ ] Ajustement rapide depuis la liste admin (+1, -1, saisie directe). (Kayart)
+- [x] Ajustement rapide depuis la liste admin (+1, -1, saisie directe). — saisie directe. (Kayart)
 - [ ] Stock limité à 1 pour une pièce unique (occasion, second choix). (Kayart)
 - [ ] Décrément atomique (mise à jour conditionnelle) à la confirmation de la commande. Réservation temporaire pendant un paiement en ligne. (Kayart)
 - [ ] Moment exact de la réservation et du décrément (demande, validation ou paiement) : voir §26. (ROADMAP)
-- [ ] Alerte de stock faible : tableau de bord et email à l’admin. (CDC 6)
+- [ ] Alerte de stock faible : tableau de bord et email à l’admin. *(partiel : tableau de bord ; email au lot 6)* (CDC 6)
 - [ ] Filtre admin par niveau de stock : rupture, faible, disponible, sur commande, prestation. (Kayart)
 
 ---
@@ -428,12 +428,12 @@ Le plan d’attaque (lots, ordre, estimation) sera établi **à partir de ce doc
 
 ### 17.3 Produits
 
-- [ ] Liste : miniature, nom, référence, catégorie, type, statut, prix, stock ; recherche par nom ou référence ; filtres catégorie, type et niveau de stock ; pagination. (Kayart)
-- [ ] Actions par ligne : modifier, ajuster le stock, masquer ou afficher, archiver, supprimer définitivement (si possible), dupliquer (option). (Kayart)
-- [ ] Formulaire en sections : identité, présentation, vente et disponibilité, prix et paliers, stock et caractéristiques, transport, images, options. Slug automatique ; saisie conservée en cas d’erreur. (Kayart, CDC 5)
-- [ ] Éditeur de paliers de prix, avec contrôle des chevauchements avant envoi. (CDC 5)
+- [ ] Liste : miniature, nom, référence, catégorie, type, statut, prix, stock ; recherche par nom ou référence ; filtres catégorie, type et niveau de stock ; pagination. *(partiel : filtre par niveau de stock à venir)* (Kayart)
+- [ ] Actions par ligne : modifier, ajuster le stock, masquer ou afficher, archiver, supprimer définitivement (si possible), dupliquer (option). *(partiel : suppression définitive et duplication à venir)* (Kayart)
+- [x] Formulaire en sections : identité, présentation, vente et disponibilité, prix et paliers, stock et caractéristiques, transport, images, options. Slug automatique ; saisie conservée en cas d’erreur. (Kayart, CDC 5)
+- [x] Éditeur de paliers de prix, avec contrôle des chevauchements avant envoi. (CDC 5)
 - [ ] Création d’un produit d’occasion ou de second choix à partir d’un modèle (défauts, photos, prix). (Kayart)
-- [ ] Gestion des catégories (§6.3). (Kayart)
+- [x] Gestion des catégories (§6.3). (Kayart)
 
 ### 17.4 Commandes
 

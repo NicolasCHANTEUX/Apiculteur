@@ -15,13 +15,17 @@ Mis à jour le 3 octobre 2026.
 | CI | Lint, tests, types, build sur GitHub Actions | — | Premier passage sur GitHub |
 | Accès administrateur | Connexion, déconnexion, mot de passe oublié, lien de confirmation, page de refus, limitation de débit, script `npm run admin` | Recette Chrome contre Supabase local (17 contrôles) : email de réinitialisation reçu et suivi, mot de passe, connexion, déconnexion, compte sans droits refusé, blocage au 9ᵉ essai, `/admin` anonyme redirigé | Recette sur le projet Supabase en ligne (envoi d’emails réel) |
 | Tableau de bord admin | Compteurs, dernières commandes, stock faible, état de la mise en service | Rendu avec une vraie session admin et les données du seed, à 390 et 1 280 px | — |
-| Catalogue admin, panier, commande, emails, factures, paiement | Absents | — | Lots 2 à 18 |
+| Catalogue géré par l’admin | Produits (formulaire complet, paliers, caractéristiques, prix barré, état, transport, unité), photos (envoi, réencodage WebP, couverture, ordre, rotation, suppression), catégories, stock et statut depuis la liste, journal d’audit | Recette Chrome contre Supabase local (24 contrôles) : création avec erreur puis correction, photos dont orientation EXIF, conflit de version, masquage → 404, archivage, fiche publique | Recette sur le projet en ligne ; photos réelles |
+| Panier, commande, emails, factures, paiement | Absents | — | Lots 3 à 18 |
 
 ## Migrations
 
 À appliquer sur le projet Supabase après sauvegarde, dans l’ordre du dossier `supabase/migrations` :
 
-- `20261003100000_security_foundations.sql` — limitation de débit et journal d’audit (lot 0). Non encore appliquée sur le projet distant.
+- `20261003100000_security_foundations.sql` — limitation de débit et journal d’audit (lot 0).
+- `20261003120000_catalog_admin.sql` — champs produit, caractéristiques, bucket `product-images`, fonction `admin_save_product` (lot 2).
+
+Aucune n’est encore appliquée sur le projet distant. Toutes passent sur une base neuve (`supabase db reset`).
 
 ## Mise en service de l’accès administrateur
 

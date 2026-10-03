@@ -58,9 +58,11 @@ export function getAvailability(
   }
 }
 
-// Badge pose sur la photo de la carte produit.
+// Badge posé sur la photo de la carte produit.
 export function getImageBadge(product: PublicProduct): string | null {
   if (product.featured) return "Populaire";
+  if (product.condition === "used") return "Occasion";
+  if (product.condition === "second_choice") return "Second choix";
   if (product.stockStatusLabel === "limited") return "Dernières unités";
   if (
     product.purchaseMode === "reservation" ||
@@ -71,13 +73,16 @@ export function getImageBadge(product: PublicProduct): string | null {
   return null;
 }
 
-const unitByCategory: Record<string, string> = {
-  essaims: "essaim",
-  reines: "reine",
-};
-
 export type PriceDisplay =
-  | { kind: "amount"; label: string; amount: string; unit: string | null }
+  | {
+      kind: "amount";
+      label: string;
+      amount: string;
+      unit: string | null;
+      // Prix barré (ancien prix) et remise en %, si renseignés.
+      compareAt: string | null;
+      discountPercent: number | null;
+    }
   | { kind: "text"; label: string; text: string };
 
 export function getPriceDisplay(product: PublicProduct): PriceDisplay {
@@ -93,9 +98,14 @@ export function getPriceDisplay(product: PublicProduct): PriceDisplay {
     ...product.pricingTiers.map((tier) => tier.unitPrice),
   ];
   const lowest = Math.min(...prices);
-  const unit = product.category
-    ? (unitByCategory[product.category.slug] ?? null)
-    : null;
+  // Le prix barré se rapporte au prix de base : on ne l'affiche pas à côté
+  // d'un « à partir de » issu d'un palier, ce qui gonflerait la remise.
+  const compareAt =
+    product.compareAtPrice !== null &&
+    product.compareAtPrice > product.basePrice &&
+    lowest === product.basePrice
+      ? product.compareAtPrice
+      : null;
 
   return {
     kind: "amount",
@@ -104,6 +114,11 @@ export function getPriceDisplay(product: PublicProduct): PriceDisplay {
         ? "À partir de"
         : "Prix",
     amount: formatPrice(lowest),
-    unit,
+    unit: product.saleUnit || null,
+    compareAt: compareAt === null ? null : formatPrice(compareAt),
+    discountPercent:
+      compareAt === null
+        ? null
+        : Math.round(((compareAt - product.basePrice) / compareAt) * 100),
   };
 }

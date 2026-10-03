@@ -12,36 +12,43 @@ insert into public.categories (name, slug, description, display_order) values
 insert into public.products (
   category_id, name, slug, short_description, long_description, base_price,
   purchase_mode, status, featured, stock_quantity, stock_display_mode,
-  stock_status_label, stock_custom_message, display_order
+  stock_status_label, stock_custom_message, display_order,
+  sku, tagline, sale_unit, delivery_mode, season_label, low_stock_threshold
 )
 select
   c.id, v.name, v.slug, v.short_description, v.long_description, v.base_price,
   v.purchase_mode::public.product_purchase_mode, 'published', v.featured,
   v.stock_quantity, v.stock_display_mode::public.stock_display_mode,
   v.stock_status_label::public.stock_status_label, v.stock_custom_message,
-  v.display_order
+  v.display_order, v.sku, v.tagline, v.sale_unit,
+  v.delivery_mode::public.product_delivery_mode, v.season_label, 3
 from (values
   ('essaims', 'Essaim Buckfast sur 5 cadres', 'essaim-buckfast-5-cadres',
    'Essaim polyvalent, doux et productif. Idéal pour les apiculteurs de tous niveaux.',
    E'Essaim sur 5 cadres avec reine Buckfast de l''année, fécondée et testée.\n\nLa Buckfast est appréciée pour sa douceur, sa faible tendance à l''essaimage et sa bonne production. Un excellent choix pour démarrer ou renforcer un rucher.',
-   160.00, 'standard', true, 25, 'status_label', 'available', null, 1),
+   160.00, 'standard', true, 25, 'status_label', 'available', null, 1,
+   'ESS-BUCK-5', 'Buckfast · Reine fécondée et testée', 'essaim', 'pickup_only', 'Avril – juin'),
   ('essaims', 'Essaim Carnica', 'essaim-carnica',
    'Race alpine réputée pour son hivernage économique et sa douceur naturelle.',
    E'Essaim sur 5 cadres avec reine Carnica.\n\nAbeille calme, économe en hiver et rapide au démarrage du printemps.',
-   165.00, 'standard', false, 4, 'status_label', 'limited', null, 2),
+   165.00, 'standard', false, 4, 'status_label', 'limited', null, 2,
+   'ESS-CARN-5', 'Carnica · Hivernage économique', 'essaim', 'pickup_only', 'Avril – juin'),
   ('essaims', 'Essaim local Normandie', 'essaim-local-normandie',
    'Abeilles locales adaptées au climat et à la flore de Normandie.',
    E'Essaim issu de souches locales, sélectionnées pour leur adaptation au climat normand.\n\nDisponible uniquement sur réservation pour la saison prochaine.',
    140.00, 'reservation', false, 0, 'custom_message', null,
-   'Réservations ouvertes — saison 2027', 3),
+   'Réservations ouvertes — saison 2027', 3,
+   'ESS-LOCAL-5', 'Locale / Hybride · Adaptation locale', 'essaim', 'pickup_only', 'Saison 2027'),
   ('reines', 'Reine fécondée Buckfast', 'reine-fecondee-buckfast',
    'Reine fécondée en plein air, testée et marquée, livrée en cagette.',
    E'Reine Buckfast fécondée en plein air, testée et marquée de l''année.\n\nLivrée en cagette avec ses accompagnatrices.',
-   38.00, 'standard', false, 30, 'custom_message', null, 'Sur demande', 4)
+   38.00, 'standard', false, 30, 'custom_message', null, 'Sur demande', 4,
+   'REINE-BUCK', 'Buckfast · Fécondée en plein air', 'reine', 'deliverable', 'Mai – août')
 ) as v (
   category_slug, name, slug, short_description, long_description, base_price,
   purchase_mode, featured, stock_quantity, stock_display_mode,
-  stock_status_label, stock_custom_message, display_order
+  stock_status_label, stock_custom_message, display_order,
+  sku, tagline, sale_unit, delivery_mode, season_label
 )
 join public.categories c on c.slug = v.category_slug;
 
@@ -58,6 +65,22 @@ from (values
   ('reine-fecondee-buckfast', '/images/essaims/reine-buckfast.jpg',
    'Rayon de cire operculé')
 ) as v (slug, url, alt_text)
+join public.products p on p.slug = v.slug;
+
+insert into public.product_attributes (product_id, label, value, unit, position)
+select p.id, v.label, v.value, v.unit, v.position
+from (values
+  ('essaim-buckfast-5-cadres', 'Race', 'Buckfast', null, 0),
+  ('essaim-buckfast-5-cadres', 'Cadres', '5', 'cadres Dadant', 1),
+  ('essaim-buckfast-5-cadres', 'Reine', 'De l''année, fécondée et testée', null, 2),
+  ('essaim-carnica', 'Race', 'Carnica', null, 0),
+  ('essaim-carnica', 'Cadres', '5', 'cadres Dadant', 1),
+  ('essaim-local-normandie', 'Race', 'Locale / hybride', null, 0),
+  ('essaim-local-normandie', 'Cadres', '5', 'cadres Dadant', 1),
+  ('reine-fecondee-buckfast', 'Race', 'Buckfast', null, 0),
+  ('reine-fecondee-buckfast', 'Marquage', 'Marquée de la couleur de l''année', null, 1),
+  ('reine-fecondee-buckfast', 'Conditionnement', 'Cagette avec accompagnatrices', null, 2)
+) as v (slug, label, value, unit, position)
 join public.products p on p.slug = v.slug;
 
 insert into public.pricing_tiers (product_id, min_quantity, max_quantity, unit_price)
