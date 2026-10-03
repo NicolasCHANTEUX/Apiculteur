@@ -1,6 +1,6 @@
 # Cahier des charges consolidé — Application web apiculteur
 
-Dernière mise à jour : 3 octobre 2026.
+Dernière mise à jour : 3 octobre 2026 (lots 0 et 1).
 
 Ce document est **la liste de référence de tout ce qu’il y a à construire**. Il réunit trois sources :
 
@@ -121,7 +121,7 @@ Le plan d’attaque (lots, ordre, estimation) sera établi **à partir de ce doc
 - [x] Accueil de la maquette : hero, bandeau de confiance, à propos, essaims disponibles, parcours en 4 étapes, témoignages, appel au contact. (Maquette, CDC 1)
 - [x] Pages Nos essaims, À propos, Avis clients, FAQ, Contact, fiche produit, 404. (Maquette, CDC 2)
 - [ ] Pages Panier, Commande, Confirmation de commande. (CDC 2, Kayart)
-- [ ] Pages Connexion, Mot de passe oublié, Nouveau mot de passe ; Inscription selon décision. (Kayart)
+- [x] Pages Connexion, Mot de passe oublié, Nouveau mot de passe, Accès refusé. Pas d’inscription publique (H6 du plan). (Kayart)
 - [ ] Mentions légales, CGV, Confidentialité réelles (§19). *(partiel : pages d’attente)* (CDC 2)
 - [ ] Pages de services, selon décision (§12) : récupération d’essaim, devis professionnel, accompagnement. (Kayart, Apicole)
 - [ ] Journal ou actualités, selon décision (§18). (Kayart, CDC 24)
@@ -133,7 +133,7 @@ Le plan d’attaque (lots, ordre, estimation) sera établi **à partir de ce doc
 - [ ] Bandeau d’information administrable (ex. « Saison 2026 ouverte »). *(partiel : texte fixé dans `src/lib/site.ts`)* (CDC 16, Maquette)
 - [ ] Carrousel des produits mis en avant sur l’accueil au-delà de 4 produits : boutons précédent/suivant, défilement automatique coupé si `prefers-reduced-motion`. (Kayart)
 - [ ] Indicateur de chargement entre pages et écran `loading` par route. (Kayart)
-- [ ] Page d’erreur globale avec bouton « Réessayer ». *(partiel : catalogue uniquement)* (Kayart)
+- [x] Page d’erreur globale avec bouton « Réessayer » (public et admin). (Kayart)
 - [ ] Remplacer tous les contenus provisoires de la maquette par les vrais (§1.1). (Maquette)
 
 ---
@@ -397,15 +397,15 @@ Le plan d’attaque (lots, ordre, estimation) sera établi **à partir de ce doc
 
 ## 16. Comptes et authentification
 
-- [ ] Connexion admin par email et mot de passe (Supabase Auth). Cookies HttpOnly, SameSite=Lax, Secure en production. Session renouvelée par le proxy avant expiration ; déconnexion avec révocation. (Kayart, CDC 15)
+- [x] Connexion admin par email et mot de passe (Supabase Auth). Cookies gérés par `@supabase/ssr`, session renouvelée par le proxy ; déconnexion. (Kayart, CDC 15)
 - [x] Table `admin_users` liée à l’identifiant Auth, et fonction `is_admin()`. (CDC 22)
-- [ ] Rôle admin déterminé **uniquement** par ce lien vérifié auprès de Supabase : jamais par l’email ni par une revendication du JWT, et aucune promotion automatique. (Kayart)
-- [ ] Garde admin dans chaque action et service serveur, pas seulement dans la mise en page `/admin`. (Kayart)
-- [ ] Page de refus explicite pour un compte connecté non admin, avec l’identité et un bouton de déconnexion. (Kayart)
-- [ ] Redirection après connexion limitée aux chemins internes. (Kayart)
-- [ ] Mot de passe oublié et nouveau mot de passe. (Kayart, CDC 18)
-- [ ] Limitation de débit : connexion (8 essais / 15 min), inscription et récupération (5 / heure). (Kayart)
-- [ ] Script de vérification en lecture seule de l’accès admin d’un compte. (Kayart)
+- [x] Rôle admin déterminé **uniquement** par ce lien vérifié auprès de Supabase : jamais par l’email ni par une revendication du JWT, et aucune promotion automatique. (Kayart)
+- [x] Garde admin dans chaque page, action et lecture serveur (`requireAdmin`), pas seulement dans la mise en page `/admin`. (Kayart)
+- [x] Page de refus explicite pour un compte connecté non admin, avec l’identité et un bouton de déconnexion. (Kayart)
+- [x] Redirection après connexion limitée aux chemins internes. (Kayart)
+- [x] Mot de passe oublié et nouveau mot de passe (lien par email, route `/auth/confirm`). (Kayart, CDC 18)
+- [x] Limitation de débit : connexion (8 essais / 15 min par IP et email, 30 par IP), récupération (5 / heure). (Kayart)
+- [x] Script d’accès admin : vérification en lecture seule, création de compte, octroi et retrait des droits (`npm run admin`). (Kayart)
 - [ ] Plusieurs rôles admin (gérant, aide), en option. (CDC 22)
 - [ ] Compte client (CDC 18), selon décision : inscription, connexion, tableau de bord, historique, factures, suivi, avis. En V1, recommandation : pas de compte, liens sécurisés envoyés par email.
 
@@ -415,16 +415,16 @@ Le plan d’attaque (lots, ordre, estimation) sera établi **à partir de ce doc
 
 ### 17.1 Socle
 
-- [ ] Espace `/admin` protégé et non indexé. Navigation : Tableau de bord, Produits, Commandes, Demandes, Avis, Clients, Livraison et réglages, Factures, Contenus, Paramètres, « Voir le site ». (Kayart, CDC 15)
+- [ ] Espace `/admin` protégé et non indexé. Navigation : Tableau de bord, Produits, Commandes, Demandes, Avis, Clients, Livraison et réglages, Factures, Contenus, Paramètres, « Voir le site ». *(partiel : espace et navigation en place, rubriques activées lot par lot)* (Kayart, CDC 15)
 - [ ] Message de succès ou d’erreur après chaque action ; boutons « en cours » désactivés pendant l’envoi. (Kayart)
 - [ ] Dialogues de confirmation pour les actions destructrices ; menus d’actions par ligne (clavier, Échap, clic extérieur). (Kayart)
 - [ ] Administration utilisable sur téléphone : navigation compacte, tableaux transformés en cartes lisibles. (Kayart, CDC 25)
 
 ### 17.2 Tableau de bord
 
-- [ ] Compteurs : produits, commandes à traiter, commandes à valider, demandes nouvelles, avis en attente, produits en stock faible. (CDC 15, Kayart)
-- [ ] Dernières commandes, derniers avis, chiffre d’affaires estimé. (CDC 15, 26)
-- [ ] État du lancement : paiement (désactivé, test, réel), pages légales (et champs manquants), facturation, indexation, emails. (Kayart)
+- [ ] Compteurs : produits, commandes à traiter, commandes à valider, demandes nouvelles, avis en attente, produits en stock faible. *(partiel : tout sauf les demandes, lot 7)* (CDC 15, Kayart)
+- [ ] Dernières commandes, derniers avis, chiffre d’affaires estimé. *(partiel : dernières commandes)* (CDC 15, 26)
+- [x] État de la mise en service : configuration présente ou à faire, fonctions à venir avec leur lot. (Kayart)
 
 ### 17.3 Produits
 
@@ -477,7 +477,7 @@ Le plan d’attaque (lots, ordre, estimation) sera établi **à partir de ce doc
 
 ### 17.12 Journal d’audit
 
-- [ ] Chaque action admin enregistrée (qui, quoi, quand, sur quel objet, ancienne et nouvelle valeur) et consultable. L’historique de commande s’affiche à partir de ce journal. (Kayart, CDC 22)
+- [ ] Chaque action admin enregistrée (qui, quoi, quand, sur quel objet, ancienne et nouvelle valeur) et consultable. L’historique de commande s’affiche à partir de ce journal. *(partiel : table `audit_logs` et `recordAudit`)* (Kayart, CDC 22)
 
 ---
 
@@ -519,18 +519,18 @@ Le plan d’attaque (lots, ordre, estimation) sera établi **à partir de ce doc
 
 - [x] RLS sur toutes les tables ; vues publiques sans stock interne ni token. (CDC 22)
 - [x] Clé `service_role` utilisée uniquement côté serveur. (CDC 22)
-- [ ] Vérification de l’origine (same-origin) sur toutes les actions serveur et routes POST. (Kayart)
+- [x] Vérification de l’origine : faite nativement par Next pour les Server Actions ; utilitaire `assertSameOriginRequest` pour les routes POST. (Kayart)
 - [ ] Validation serveur systématique : types, longueurs, formats, UUID, énumérations. (Kayart, CDC 22)
-- [ ] Limitation de débit persistante : connexion, inscription, récupération, formulaires, avis, commande. (Kayart, ROADMAP)
+- [ ] Limitation de débit persistante : connexion, inscription, récupération, formulaires, avis, commande. *(partiel : socle SQL et connexion/récupération ; formulaires, avis et commande à brancher)* (Kayart, ROADMAP)
 - [ ] Taille des requêtes bornée, et limite de taille des actions serveur. (Kayart)
-- [ ] En-têtes : (Kayart)
+- [x] En-têtes : (Kayart)
   - CSP sans `unsafe-eval` en production (viser ensuite des nonces) ;
   - HSTS, `X-Frame-Options: DENY`, `nosniff` ;
   - Referrer-Policy, Permissions-Policy, Cross-Origin-Opener-Policy.
 - [ ] Fichiers envoyés : décodés et réencodés ; type, extension et taille contrôlés ; buckets privés vérifiés avant tout envoi. (Kayart, CDC 22)
 - [ ] Accès aux factures et photos privées réservé à l’admin, via des routes contrôlées. (CDC 22, Kayart)
 - [ ] Aucun token ni donnée client dans le HTML, les logs ou les rapports. (Kayart)
-- [ ] Journal d’audit (§17.12). (CDC 22)
+- [ ] Journal d’audit (§17.12). *(partiel : table et écriture ; consultation au lot 16)* (CDC 22)
 - [ ] Sauvegardes, et restauration testée. (CDC 22, Kayart)
 - [ ] Audit régulier des dépendances (`npm audit`, épinglage des versions sensibles). (Kayart)
 
@@ -565,11 +565,11 @@ Le plan d’attaque (lots, ordre, estimation) sera établi **à partir de ce doc
 ## 23. Qualité, tests et intégration continue
 
 - [x] Tests unitaires `node:test` (prix dégressifs, notes) ; lint ESLint ; vérification des types par le build.
-- [ ] Scripts `typecheck` et `verify` (lint, tests, types, build). (Kayart)
+- [x] Scripts `typecheck` (avec `next typegen`) et `verify` (lint, tests, types, build). (Kayart)
 - [ ] Tests unitaires à ajouter : validation manuelle, zones de livraison, problèmes de panier, idempotence de commande, stock, factures (numérotation, éligibilité, PDF), avis par token, contrôle d’origine, limitation de débit, refus d’accès admin. (Kayart, CDC)
 - [ ] Recette HTTP sur un build de production isolé, avec données fictives et faux service d’authentification local. (Kayart)
 - [ ] Recette navigateur automatisée (Chrome headless) des parcours publics, panier, commande et admin, à plusieurs largeurs. (Kayart)
-- [ ] CI GitHub Actions à chaque push et pull request : installation, lint, tests, types, recette du build. (Kayart)
+- [ ] CI GitHub Actions à chaque push et pull request : installation, lint, tests, types, recette du build. *(partiel : lint, tests, types, build ; recette HTTP au lot 18)* (Kayart)
 - [ ] Preuves de recette datées, stockées hors Git. (Kayart)
 
 ---
@@ -603,11 +603,11 @@ Le plan d’attaque (lots, ordre, estimation) sera établi **à partir de ce doc
 
 ## 25. Documentation à maintenir
 
-- [ ] `docs/etat-v1.md` : pour chaque domaine, code livré, recette faite, ce qui reste à valider. (Kayart)
+- [x] `docs/etat-v1.md` : pour chaque domaine, code livré, recette faite, ce qui reste à valider. (Kayart)
 - [ ] Guides : architecture, base de données, sécurité, déploiement, paiement, facturation, emails, référencement, recette. (Kayart)
 - [ ] `.env.example` complet et commenté. (Kayart)
 - [ ] Ce cahier à jour (cases cochées, décisions reportées).
-- [ ] `ROADMAP.md` remplacé par le plan d’attaque.
+- [x] `ROADMAP.md` remplacé par le plan d’attaque.
 
 ---
 

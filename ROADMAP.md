@@ -51,7 +51,7 @@ Règle de fin de lot : lint, types, tests et build réussis ; recette visuelle �
 
 **Fini quand** : la CI passe ; les nouvelles migrations s’appliquent proprement ; les utilitaires sont testés.
 
-### Lot 1 — Accès administrateur
+### Lot 1 — Accès administrateur · **fait**
 
 - Connexion, déconnexion, mot de passe oublié, nouveau mot de passe (§16).
 - Rôle admin vérifié côté serveur via `admin_users`, dans chaque action ; page de refus ; redirection sûre ; limitation de débit (§16).
@@ -63,7 +63,7 @@ Règle de fin de lot : lint, types, tests et build réussis ; recette visuelle �
 
 ## Phase B — Vendre (V1 sans paiement en ligne)
 
-### Lot 2 — Catalogue géré par l’admin
+### Lot 2 — Catalogue géré par l’admin · **prochain**
 
 - Liste des produits avec recherche, filtres et actions rapides (stock, masquer, archiver) (§17.3).
 - Formulaire produit complet (§6.1, §17.3) :

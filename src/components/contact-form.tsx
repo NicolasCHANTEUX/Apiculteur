@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import { inputClass } from "@/components/ui";
 import { site } from "@/lib/site";
 
 const subjects = [
@@ -11,8 +12,7 @@ const subjects = [
   "Autre demande",
 ];
 
-const fieldClass =
-  "w-full rounded-lg border border-line/80 bg-white px-3.5 text-[14px] text-ink outline-none transition focus:border-honey focus:ring-2 focus:ring-honey/15";
+const fieldClass = inputClass;
 
 function Label({ htmlFor, children }: { htmlFor: string; children: string }) {
   return (

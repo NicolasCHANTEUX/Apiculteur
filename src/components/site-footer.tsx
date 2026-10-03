@@ -106,7 +106,12 @@ export function SiteFooter() {
           <p>
             © {new Date().getFullYear()} {site.name} — Tous droits réservés
           </p>
-          <p>Site réalisé avec passion</p>
+          <p className="flex gap-4">
+            <span>Site réalisé avec passion</span>
+            <Link href="/connexion" className="transition hover:text-wheat">
+              Espace apiculteur
+            </Link>
+          </p>
         </div>
       </div>
     </footer>

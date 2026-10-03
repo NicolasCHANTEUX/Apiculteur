@@ -4,6 +4,11 @@ import { site } from "@/lib/site";
 
 export const container = "mx-auto w-full max-w-[1058px] px-6";
 
+// Champs de formulaire : 16 px sur mobile pour éviter le zoom automatique
+// d'iOS, 14 px à partir de sm.
+export const inputClass =
+  "w-full rounded-lg border border-line/80 bg-white px-3.5 text-[16px] text-ink outline-none transition placeholder:text-muted focus:border-honey focus:ring-2 focus:ring-honey/15 disabled:opacity-60 sm:text-[14px]";
+
 export const buttonStyles = {
   primary:
     "inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-honey px-[22px] text-[15px] font-semibold text-white shadow-[0_6px_16px_-6px_rgb(217_154_43/0.7)] transition hover:bg-honey-dark",

@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
 import { DM_Sans, Playfair_Display } from "next/font/google";
-import { SiteFooter } from "@/components/site-footer";
-import { SiteHeader } from "@/components/site-header";
 import { site } from "@/lib/site";
 import { isDemoMode } from "@/lib/supabase/env";
 import "./globals.css";
@@ -29,6 +27,8 @@ export const metadata: Metadata = {
     "Essaims et reines élevés en Normandie, avec un suivi personnalisé à chaque étape.",
 };
 
+// En-tête et pied de page publics : app/(site)/layout.tsx.
+// Espace d'administration : app/admin/layout.tsx.
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
@@ -42,9 +42,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             données d&apos;exemple de la maquette.
           </p>
         ) : null}
-        <SiteHeader />
         {children}
-        <SiteFooter />
       </body>
     </html>
   );
