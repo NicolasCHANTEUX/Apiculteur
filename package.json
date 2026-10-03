@@ -8,7 +8,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --test --experimental-strip-types src/lib/domain/pricing.test.ts src/lib/domain/ratings.test.ts"
+    "test": "node --test --experimental-strip-types \"src/**/*.test.ts\"",
+    "typecheck": "next typegen && tsc --noEmit",
+    "verify": "npm run lint && npm test && npm run typecheck && npm run build"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",

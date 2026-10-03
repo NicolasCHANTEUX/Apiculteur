@@ -39,7 +39,7 @@ Règle de fin de lot : lint, types, tests et build réussis ; recette visuelle �
 
 ## Phase A — Fondations
 
-### Lot 0 — Socle technique · **en cours**
+### Lot 0 — Socle technique · **fait**
 
 - Scripts `typecheck` et `verify`, tests découverts automatiquement, CI GitHub Actions (§23).
 - En-têtes de sécurité et CSP (§20).
