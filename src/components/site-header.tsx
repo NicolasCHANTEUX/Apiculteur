@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { CartIcon, CloseIcon, MenuIcon } from "@/components/icons";
 import { Logo, container } from "@/components/ui";
 import { mainNav } from "@/lib/site";
+import { cartSnapshot, parseCart, subscribeCart } from "@/lib/cart/storage";
 
 function isActive(pathname: string, href: string) {
   if (href === "/") return pathname === "/";
@@ -16,6 +17,8 @@ function isActive(pathname: string, href: string) {
 }
 
 export function SiteHeader() {
+  const cart = useSyncExternalStore(subscribeCart, cartSnapshot, () => "[]");
+  const cartCount = parseCart(cart).reduce((sum, item) => sum + item.quantity, 0);
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
   // Le menu mobile se referme a chaque navigation.
@@ -58,10 +61,11 @@ export function SiteHeader() {
         <div className="flex items-center gap-2 sm:gap-4">
           <Link
             href="/panier"
-            aria-label="Panier"
-            className="flex size-10 items-center justify-center rounded-full text-ink transition hover:bg-honey/10"
+            aria-label={`Panier, ${cartCount} article${cartCount > 1 ? "s" : ""}`}
+            className="relative flex size-10 items-center justify-center rounded-full text-ink transition hover:bg-honey/10"
           >
             <CartIcon className="size-5" />
+            {cartCount > 0 ? <span className="absolute -top-1 -right-1 rounded-full bg-honey px-1.5 text-[10px] text-white">{cartCount}</span> : null}
           </Link>
           <Link
             href="/catalogue"

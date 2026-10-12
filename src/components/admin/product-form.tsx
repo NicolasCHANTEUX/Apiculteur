@@ -81,6 +81,15 @@ function Section({ title, description, children }: { title: string; description?
   );
 }
 
+function AdvancedOptions({ title, children, open = false }: { title: string; children: ReactNode; open?: boolean }) {
+  const detailsRef = useRef<HTMLDetailsElement>(null);
+  useEffect(() => { if (open && detailsRef.current) detailsRef.current.open = true; }, [open]);
+  return <details ref={detailsRef} className="sm:col-span-2 rounded-lg border border-line bg-sand/40 p-4">
+    <summary className="cursor-pointer font-medium text-ink">{title}</summary>
+    <div className="mt-4 grid gap-4 sm:grid-cols-2">{children}</div>
+  </details>;
+}
+
 function Select({
   name,
   value,
@@ -183,11 +192,11 @@ export function ProductForm({
       {productId ? <input type="hidden" name="id" value={productId} /> : null}
       {updatedAt ? <input type="hidden" name="expectedUpdatedAt" value={updatedAt} /> : null}
 
-      <Section title="Identité" description="Ce qui identifie le produit dans le catalogue et l’administration.">
+      <Section title="Informations générales" description="Les informations utiles pour reconnaître le produit.">
         <Field label="Nom *" name="name" error={errors.name}>
           <input {...input("name", { required: true, maxLength: 120 })} />
         </Field>
-        <Field label="Accroche" name="tagline" error={errors.tagline} hint="Ligne sous le nom, ex. « Buckfast · Reine fécondée et testée »">
+        <Field label="Sous-titre du produit" name="tagline" error={errors.tagline} hint="Ex. Essaim doux et productif, idéal pour démarrer.">
           <input {...input("tagline", { maxLength: 90 })} />
         </Field>
         <Field label="Catégorie" name="categoryId" error={errors.categoryId}>
@@ -200,31 +209,35 @@ export function ProductForm({
             ))}
           </select>
         </Field>
-        <Field label="Référence" name="sku" error={errors.sku} hint="Facultative, unique (ex. ESS-BUCK-5)">
-          <input {...input("sku", { maxLength: 40 })} />
-        </Field>
-        <Field label="Statut" name="status" error={errors.status} hint="Seuls les produits publiés sont visibles sur le site.">
-          <Select name="status" value={text("status")} options={productStatusLabels} />
-        </Field>
-        <Field label="Lien de la fiche" name="slug" error={errors.slug} hint="Laissé vide : déduit du nom.">
-          <input {...input("slug", { maxLength: 80, placeholder: "essaim-buckfast-5-cadres" })} />
-        </Field>
-        <Field label="Ordre d’affichage" name="displayOrder" error={errors.displayOrder} hint="Les plus petits apparaissent en premier.">
-          <input {...input("displayOrder", { inputMode: "numeric" })} />
-        </Field>
-        <div className="flex items-end">
-          <label className="flex min-h-10 items-center gap-2.5 text-[14px] text-ink">
-            <input type="checkbox" name="featured" defaultChecked={values.featured === true} className="size-4 accent-honey" />
-            Mettre en avant (badge « Populaire »)
-          </label>
-        </div>
+        {productId ? (
+          <Field label="Statut" name="status" error={errors.status} hint="Publiez après avoir ajouté les photos et vérifié la fiche.">
+            <Select name="status" value={text("status")} options={productStatusLabels} />
+          </Field>
+        ) : <input type="hidden" name="status" value="draft" />}
+        <AdvancedOptions title="Options d’affichage et informations internes" open={Boolean(errors.sku || errors.slug || errors.displayOrder)}>
+          <Field label="Référence interne" name="sku" error={errors.sku} hint="Facultative, unique (ex. ESS-BUCK-5)">
+            <input {...input("sku", { maxLength: 40 })} />
+          </Field>
+          <Field label="Lien de la fiche" name="slug" error={errors.slug} hint="Laissé vide : déduit du nom.">
+            <input {...input("slug", { maxLength: 80, placeholder: "essaim-buckfast-5-cadres" })} />
+          </Field>
+          <Field label="Ordre d’affichage" name="displayOrder" error={errors.displayOrder} hint="Les plus petits apparaissent en premier.">
+            <input {...input("displayOrder", { inputMode: "numeric" })} />
+          </Field>
+          <div className="flex items-end">
+            <label className="flex min-h-10 items-center gap-2.5 text-[14px] text-ink">
+              <input type="checkbox" name="featured" defaultChecked={values.featured === true} className="size-4 accent-honey" />
+              Mettre en avant (badge « Populaire »)
+            </label>
+          </div>
+        </AdvancedOptions>
       </Section>
 
       <Section title="Présentation">
         <Field label="Description courte" name="shortDescription" error={errors.shortDescription} hint="300 caractères, affichée sur les cartes." wide>
           <textarea {...input("shortDescription", { rows: 2, maxLength: 300, className: `${adminInput} py-2` })} />
         </Field>
-        <Field label="Description détaillée" name="longDescription" error={errors.longDescription} wide>
+        <Field label="Description détaillée" name="longDescription" error={errors.longDescription} hint="Affichée sur la fiche complète du produit." wide>
           <textarea {...input("longDescription", { rows: 7, maxLength: 5000, className: `${adminInput} py-2` })} />
         </Field>
       </Section>
@@ -232,9 +245,6 @@ export function ProductForm({
       <Section title="Prix" description="Montants TTC en euros. Les paliers remplacent le prix de base selon la quantité.">
         <Field label="Prix de vente *" name="basePrice" error={errors.basePrice}>
           <input {...input("basePrice", { inputMode: "decimal", placeholder: "160" })} />
-        </Field>
-        <Field label="Prix barré" name="compareAtPrice" error={errors.compareAtPrice} hint="Facultatif. Doit être le prix le plus bas pratiqué ces 30 derniers jours (réglementation des réductions).">
-          <input {...input("compareAtPrice", { inputMode: "decimal" })} />
         </Field>
         <Field label="Unité de vente" name="saleUnit" error={errors.saleUnit} hint="Affichée après le prix : « /essaim », « /reine »…">
           <input {...input("saleUnit", { maxLength: 30 })} />
@@ -245,6 +255,11 @@ export function ProductForm({
         <Field label="Mode d’achat" name="purchaseMode" error={errors.purchaseMode}>
           <Select name="purchaseMode" value={text("purchaseMode")} options={purchaseModeLabels} />
         </Field>
+        <AdvancedOptions title="Promotion et prix barré — facultatif" open={Boolean(errors.compareAtPrice) || Boolean(text("compareAtPrice"))}>
+          <Field label="Prix de référence" name="compareAtPrice" error={errors.compareAtPrice} hint="À utiliser seulement pour une vraie réduction ; vérifiez le prix de référence applicable.">
+            <input {...input("compareAtPrice", { inputMode: "decimal" })} />
+          </Field>
+        </AdvancedOptions>
 
         <div className="sm:col-span-2">
           <p className="text-[13px] text-ink">Paliers dégressifs</p>
@@ -274,14 +289,14 @@ export function ProductForm({
         <Field label="Stock réel" name="stockQuantity" error={errors.stockQuantity}>
           <input {...input("stockQuantity", { inputMode: "numeric" })} />
         </Field>
-        <Field label="Seuil d’alerte" name="lowStockThreshold" error={errors.lowStockThreshold} hint="Alerte au tableau de bord en dessous.">
+        <Field label="M’alerter lorsqu’il reste moins de" name="lowStockThreshold" error={errors.lowStockThreshold} hint="Alerte au tableau de bord en dessous.">
           <input {...input("lowStockThreshold", { inputMode: "numeric" })} />
         </Field>
-        <Field label="Ce que voit le public" name="stockDisplayMode" error={errors.stockDisplayMode}>
+        <Field label="Que montrer aux clients ?" name="stockDisplayMode" error={errors.stockDisplayMode}>
           <Select name="stockDisplayMode" value={stockMode} options={stockDisplayModeLabels} onChange={setStockMode} />
         </Field>
         {stockMode === "status_label" ? (
-          <Field label="Libellé" name="stockStatusLabel" error={errors.stockStatusLabel}>
+          <Field label="Statut affiché" name="stockStatusLabel" error={errors.stockStatusLabel}>
             <Select name="stockStatusLabel" value={text("stockStatusLabel") || "available"} options={stockStatusLabelLabels} />
           </Field>
         ) : null}
@@ -316,36 +331,38 @@ export function ProductForm({
         </div>
       </Section>
 
-      <Section title="Transport et état">
+      <Section title="Livraison et retrait">
         <Field label="Transport" name="deliveryMode" error={errors.deliveryMode} hint="Pour le vivant, « retrait » ou « sur devis » sont les plus sûrs.">
           <Select name="deliveryMode" value={text("deliveryMode")} options={deliveryModeLabels} />
         </Field>
-        <Field label="État" name="condition" error={errors.condition}>
-          <Select name="condition" value={condition} options={conditionLabels} onChange={setCondition} />
-        </Field>
-        {condition !== "new" ? (
-          <Field label="Défauts constatés" name="defectDescription" error={errors.defectDescription} wide>
-            <textarea {...input("defectDescription", { rows: 3, maxLength: 2000, className: `${adminInput} py-2` })} />
+        <AdvancedOptions title="État du matériel — si applicable" open={condition !== "new" || Boolean(errors.condition || errors.defectDescription)}>
+          <Field label="État" name="condition" error={errors.condition}>
+            <Select name="condition" value={condition} options={conditionLabels} onChange={setCondition} />
           </Field>
-        ) : null}
+          {condition !== "new" ? (
+            <Field label="Défauts constatés" name="defectDescription" error={errors.defectDescription} wide>
+              <textarea {...input("defectDescription", { rows: 3, maxLength: 2000, className: `${adminInput} py-2` })} />
+            </Field>
+          ) : null}
+        </AdvancedOptions>
       </Section>
 
-      <Section title="Référencement" description="Facultatif : titre et description pour les moteurs de recherche.">
+      <AdvancedOptions title="Référencement Google — facultatif" open={Boolean(errors.seoTitle || errors.seoDescription) || Boolean(text("seoTitle") || text("seoDescription"))}>
         <Field label="Titre SEO" name="seoTitle" error={errors.seoTitle} hint="70 caractères au maximum.">
           <input {...input("seoTitle", { maxLength: 70 })} />
         </Field>
         <Field label="Description SEO" name="seoDescription" error={errors.seoDescription} hint="160 caractères au maximum.">
           <input {...input("seoDescription", { maxLength: 160 })} />
         </Field>
-      </Section>
+      </AdvancedOptions>
 
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-line/70 bg-white/95 backdrop-blur">
+      <div className="sticky bottom-0 z-30 -mx-4 border-t border-line/70 bg-white/95 px-4 backdrop-blur sm:mx-0 sm:rounded-xl sm:border sm:px-0">
         <div className="mx-auto flex w-full max-w-[1200px] items-center justify-end gap-3 px-4 py-3 sm:px-6">
           <Link href="/admin/produits" className={adminButton.secondary}>
             Annuler
           </Link>
           <button type="submit" disabled={pending} className={adminButton.primary}>
-            {pending ? "Enregistrement…" : productId ? "Enregistrer" : "Créer le produit"}
+            {pending ? "Enregistrement…" : productId ? "Enregistrer les modifications" : "Créer le brouillon et ajouter les photos"}
           </button>
         </div>
       </div>

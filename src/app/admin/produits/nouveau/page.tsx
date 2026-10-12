@@ -14,7 +14,7 @@ export default async function NewProductPage() {
     <main className="space-y-6">
       <AdminHeader
         title="Nouveau produit"
-        description="Les photos s’ajoutent une fois le produit créé. Il reste en brouillon tant qu’il n’est pas publié."
+        description="Étape 1 : renseignez le produit. Il sera enregistré en brouillon. Étape 2 : ajoutez ses photos, puis publiez-le quand il est prêt."
       />
       <ProductForm
         productId={null}

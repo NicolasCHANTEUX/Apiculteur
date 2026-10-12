@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CatalogUnconfigured } from "@/components/catalog/catalog-unconfigured";
+import { AddToCart } from "@/components/cart/add-to-cart";
 import { AvailabilityPill, PriceTag } from "@/components/catalog/product-card";
 import { formatPrice, getImageBadge } from "@/components/catalog/product-display";
 import { ArrowRightIcon, MessageCircleIcon } from "@/components/icons";
@@ -146,6 +147,8 @@ export default async function ProductPage(
                 </table>
               ) : null}
             </div>
+
+            {product.stockStatusLabel !== "sold_out" && product.displayedStockQuantity !== 0 ? <AddToCart id={product.id} /> : null}
 
             <div className="mt-5 rounded-xl bg-sand p-5">
               <p className="text-[14px] font-semibold text-ink">

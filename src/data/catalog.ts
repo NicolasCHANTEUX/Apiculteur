@@ -91,15 +91,15 @@ type ProductRow = {
   display_order: number;
   seo_title: string | null;
   seo_description: string | null;
-  sku: string | null;
-  tagline: string | null;
-  condition: PublicProduct["condition"];
-  defect_description: string | null;
-  compare_at_price: number | string | null;
-  sale_unit: string;
-  delivery_mode: PublicProduct["deliveryMode"];
-  season_label: string | null;
-  published_at: string | null;
+  sku?: string | null;
+  tagline?: string | null;
+  condition?: PublicProduct["condition"];
+  defect_description?: string | null;
+  compare_at_price?: number | string | null;
+  sale_unit?: string;
+  delivery_mode?: PublicProduct["deliveryMode"];
+  season_label?: string | null;
+  published_at?: string | null;
 };
 
 type AttributeRow = {
@@ -178,7 +178,12 @@ async function hydrateProducts(rows: ProductRow[]): Promise<PublicProduct[]> {
   throwIfError(categoriesResponse.error, "Lecture des categories impossible");
   throwIfError(imagesResponse.error, "Lecture des images impossible");
   throwIfError(tiersResponse.error, "Lecture des paliers de prix impossible");
-  throwIfError(attributesResponse.error, "Lecture des caracteristiques impossible");
+  // Le projet distant peut encore avoir le schéma du catalogue initial.
+  // PGRST205 signifie que la migration des caractéristiques manque ; les
+  // autres erreurs restent visibles pour ne pas masquer une vraie panne.
+  if (attributesResponse.error?.code !== "PGRST205") {
+    throwIfError(attributesResponse.error, "Lecture des caracteristiques impossible");
+  }
 
   const categories = (categoriesResponse.data ?? []) as CategoryRow[];
   const images = (imagesResponse.data ?? []) as ImageRow[];
@@ -207,16 +212,16 @@ async function hydrateProducts(rows: ProductRow[]): Promise<PublicProduct[]> {
     displayedStockQuantity: row.displayed_stock_quantity,
     seoTitle: row.seo_title,
     seoDescription: row.seo_description,
-    sku: row.sku,
-    tagline: row.tagline,
-    condition: row.condition,
-    defectDescription: row.defect_description,
+    sku: row.sku ?? null,
+    tagline: row.tagline ?? null,
+    condition: row.condition ?? "new",
+    defectDescription: row.defect_description ?? null,
     compareAtPrice:
-      row.compare_at_price === null ? null : Number(row.compare_at_price),
-    saleUnit: row.sale_unit,
-    deliveryMode: row.delivery_mode,
-    seasonLabel: row.season_label,
-    publishedAt: row.published_at,
+      row.compare_at_price == null ? null : Number(row.compare_at_price),
+    saleUnit: row.sale_unit ?? "unité",
+    deliveryMode: row.delivery_mode ?? "quote",
+    seasonLabel: row.season_label ?? null,
+    publishedAt: row.published_at ?? null,
     images: images
       .filter((image) => image.product_id === row.id)
       .map((image) => ({ url: image.url, altText: image.alt_text })),
