@@ -18,12 +18,17 @@ export default async function CatalogPage() {
   // La configuration Supabase peut etre fournie au demarrage du serveur et
   // ne doit pas etre figee au moment du build.
   await connection();
-  const [catalog, reviews] = await Promise.all([
+  const [catalog, reviewsResult] = await Promise.all([
     getPublicCatalog(),
-    getPublicReviews(),
+    getPublicReviews().then(
+      (value) => ({ value, error: null }),
+      (error: unknown) => ({ value: null, error }),
+    ),
   ]);
+  if (reviewsResult.error) console.error("Catalogue : avis indisponibles", reviewsResult.error);
+  const reviews = reviewsResult.value;
   const ratings =
-    reviews.kind === "ready"
+    reviews?.kind === "ready"
       ? Object.fromEntries(averageByProduct(reviews.reviews))
       : {};
 

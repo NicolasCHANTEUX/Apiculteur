@@ -34,10 +34,15 @@ export default async function ProductPage(
   props: PageProps<"/produits/[slug]">,
 ) {
   const { slug } = await props.params;
-  const [result, reviewsResult] = await Promise.all([
+  const [result, reviewsResponse] = await Promise.all([
     getPublicProductBySlug(slug),
-    getPublicReviews(),
+    getPublicReviews().then(
+      (value) => ({ value, error: null }),
+      (error: unknown) => ({ value: null, error }),
+    ),
   ]);
+  if (reviewsResponse.error) console.error("Fiche produit : avis indisponibles", reviewsResponse.error);
+  const reviewsResult = reviewsResponse.value;
 
   if (result.kind === "unconfigured") {
     return (
@@ -55,7 +60,7 @@ export default async function ProductPage(
   const image = product.images[0];
   const badge = getImageBadge(product);
   const reviews =
-    reviewsResult.kind === "ready"
+    reviewsResult?.kind === "ready"
       ? reviewsResult.reviews.filter((review) => review.productId === product.id)
       : [];
   const rating = summarizeRatings(reviews.map((review) => review.rating));

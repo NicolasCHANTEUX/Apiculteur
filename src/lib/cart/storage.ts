@@ -2,7 +2,12 @@ export type CartItem = { id: string; quantity: number };
 
 const KEY = "apiculteur-cart-v1";
 export const CART_EVENT = "apiculteur-cart-change";
-export function cartSnapshot() { return window.localStorage.getItem(KEY) ?? "[]"; }
+let temporarySnapshot: string | null = null;
+export function cartSnapshot() {
+  if (temporarySnapshot !== null) return temporarySnapshot;
+  try { return window.localStorage.getItem(KEY) ?? "[]"; }
+  catch { return "[]"; }
+}
 export function subscribeCart(callback: () => void) {
   window.addEventListener(CART_EVENT, callback);
   window.addEventListener("storage", callback);
@@ -29,8 +34,12 @@ export function parseCart(snapshot: string): CartItem[] {
 }
 
 export function writeCart(items: CartItem[]) {
-  window.localStorage.setItem(KEY, JSON.stringify(items));
+  const snapshot = JSON.stringify(items);
+  let saved = true;
+  try { window.localStorage.setItem(KEY, snapshot); temporarySnapshot = null; }
+  catch { temporarySnapshot = snapshot; saved = false; }
   window.dispatchEvent(new Event(CART_EVENT));
+  return saved;
 }
 
 export function addToCart(id: string, quantity = 1) {
@@ -38,5 +47,5 @@ export function addToCart(id: string, quantity = 1) {
   const existing = items.find((item) => item.id === id);
   if (existing) existing.quantity = Math.min(999, existing.quantity + quantity);
   else items.push({ id, quantity });
-  writeCart(items);
+  return writeCart(items);
 }

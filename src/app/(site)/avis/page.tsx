@@ -62,12 +62,17 @@ function RatingOverview({ summary }: { summary: RatingSummary }) {
 
 export default async function ReviewsPage() {
   await connection();
-  const [reviews, catalog] = await Promise.all([
+  const [reviews, catalogResult] = await Promise.all([
     getPublicReviews(),
-    getPublicCatalog(),
+    getPublicCatalog().then(
+      (value) => ({ value, error: null }),
+      (error: unknown) => ({ value: null, error }),
+    ),
   ]);
+  if (catalogResult.error) console.error("Avis : noms des produits indisponibles", catalogResult.error);
+  const catalog = catalogResult.value;
   const productNames = new Map(
-    catalog.kind === "ready"
+    catalog?.kind === "ready"
       ? catalog.products.map((product) => [product.id, product.name])
       : [],
   );

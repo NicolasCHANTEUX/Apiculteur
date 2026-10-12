@@ -3,7 +3,7 @@ import "server-only";
 import { cache } from "react";
 import { demoReviews } from "@/data/demo";
 import { getPublicSupabaseConfig, isDemoMode } from "@/lib/supabase/env";
-import { createClient } from "@/lib/supabase/server";
+import { createPublicClient } from "@/lib/supabase/public";
 
 export type PublicReview = {
   id: string;
@@ -47,7 +47,7 @@ export const getPublicReviews = cache(async (): Promise<ReviewsResult> => {
     return { kind: "unconfigured" };
   }
 
-  const supabase = await createClient();
+  const supabase = createPublicClient();
   const { data, error } = await supabase
     .from("public_reviews")
     .select(

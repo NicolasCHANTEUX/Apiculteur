@@ -15,12 +15,17 @@ export default async function Home() {
   // ne doit pas etre figee au moment du build (meme raison que la page
   // catalogue).
   await connection();
-  const [catalog, reviews] = await Promise.all([
+  const [catalogResult, reviewsResult] = await Promise.allSettled([
     getPublicCatalog(),
     getPublicReviews(),
   ]);
 
-  const products = catalog.kind === "ready" ? catalog.products : [];
+  if (catalogResult.status === "rejected") console.error("Accueil : catalogue indisponible", catalogResult.reason);
+  if (reviewsResult.status === "rejected") console.error("Accueil : avis indisponibles", reviewsResult.reason);
+  const catalog = catalogResult.status === "fulfilled" ? catalogResult.value : null;
+  const reviews = reviewsResult.status === "fulfilled" ? reviewsResult.value : null;
+
+  const products = catalog?.kind === "ready" ? catalog.products : [];
   const productNames = new Map(
     products.map((product) => [product.id, product.name]),
   );
@@ -30,7 +35,16 @@ export default async function Home() {
       <Hero />
       <AboutSection />
 
-      {catalog.kind === "unconfigured" ? (
+      {catalog === null ? (
+        <div className="bg-sand py-16">
+          <div className={container}>
+            <section className="rounded-xl border border-line bg-white p-6">
+              <h2 className="font-display text-lg font-semibold text-ink">Catalogue momentanément indisponible</h2>
+              <p className="mt-2 text-sm text-body">Les produits ne peuvent pas être affichés pour le moment. Réessayez dans quelques instants.</p>
+            </section>
+          </div>
+        </div>
+      ) : catalog.kind === "unconfigured" ? (
         <div className="bg-sand py-16">
           <div className={container}>
             <CatalogUnconfigured />
@@ -42,7 +56,7 @@ export default async function Home() {
 
       <ProcessSteps />
 
-      {reviews.kind === "ready" ? (
+      {reviews?.kind === "ready" ? (
         <TestimonialsSection
           reviews={reviews.reviews}
           productNames={productNames}

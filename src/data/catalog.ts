@@ -3,7 +3,7 @@ import "server-only";
 import { cache } from "react";
 import { demoProducts } from "@/data/demo";
 import { getPublicSupabaseConfig, isDemoMode } from "@/lib/supabase/env";
-import { createClient } from "@/lib/supabase/server";
+import { createPublicClient } from "@/lib/supabase/public";
 
 export type PublicCategory = {
   id: string;
@@ -141,7 +141,7 @@ async function hydrateProducts(rows: ProductRow[]): Promise<PublicProduct[]> {
     return [];
   }
 
-  const supabase = await createClient();
+  const supabase = createPublicClient();
   const productIds = rows.map((product) => product.id);
   const categoryIds = [
     ...new Set(
@@ -247,7 +247,7 @@ export const getPublicCatalog = cache(async (): Promise<CatalogResult> => {
     return { kind: "unconfigured" };
   }
 
-  const supabase = await createClient();
+  const supabase = createPublicClient();
   const { data, error } = await supabase
     .from("public_catalog_products")
     .select("*")
@@ -275,7 +275,7 @@ export const getPublicProductBySlug = cache(
       return { kind: "unconfigured" };
     }
 
-    const supabase = await createClient();
+    const supabase = createPublicClient();
     const { data, error } = await supabase
       .from("public_catalog_products")
       .select("*")
