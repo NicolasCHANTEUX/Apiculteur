@@ -192,7 +192,7 @@ Le plan d’attaque (lots, ordre, estimation) sera établi **à partir de ce doc
 - [ ] Saisonnalité : période de disponibilité (ex. avril–juin) et date d’ouverture des réservations. *(partiel : période affichée ; date d’ouverture des réservations au lot 12)* (Apicole)
 - [ ] Quantité maximale commandable automatiquement ; au-delà, validation manuelle (§8.2). (CDC 8)
 - [x] Date de publication, pour le tri « nouveautés ». (Kayart)
-- [ ] Archivage (masqué, historique conservé) ou suppression définitive, refusée s’il existe des commandes, réservations ou paiements en cours. *(partiel : archivage ; suppression définitive à venir)* (Kayart)
+- [x] Archivage (masqué, historique conservé) ou suppression définitive, refusée s’il existe des commandes, réservations ou paiements en cours. — suppression réservée aux brouillons et produits archivés, refusée si le produit figure dans une commande (réservations et paiements : à vérifier quand leurs tables existeront). (Kayart)
 
 ### 6.2 Images produit
 
@@ -211,12 +211,12 @@ Le plan d’attaque (lots, ordre, estimation) sera établi **à partir de ce doc
 
 ### 6.4 Stock
 
-- [x] Ajustement rapide depuis la liste admin (+1, -1, saisie directe). — saisie directe. (Kayart)
+- [x] Ajustement rapide depuis la liste admin (+1, -1, saisie directe). (Kayart)
 - [ ] Stock limité à 1 pour une pièce unique (occasion, second choix). (Kayart)
 - [ ] Décrément atomique (mise à jour conditionnelle) à la confirmation de la commande. Réservation temporaire pendant un paiement en ligne. (Kayart)
 - [ ] Moment exact de la réservation et du décrément (demande, validation ou paiement) : voir §26. (ROADMAP)
 - [ ] Alerte de stock faible : tableau de bord et email à l’admin. *(partiel : tableau de bord ; email au lot 6)* (CDC 6)
-- [ ] Filtre admin par niveau de stock : rupture, faible, disponible, sur commande, prestation. (Kayart)
+- [ ] Filtre admin par niveau de stock : rupture, faible, disponible, sur commande, prestation. *(partiel : rupture, faible, disponible ; un produit sur réservation ou sur devis n’est jamais « en rupture »)* (Kayart)
 
 ---
 
@@ -416,20 +416,20 @@ Le plan d’attaque (lots, ordre, estimation) sera établi **à partir de ce doc
 ### 17.1 Socle
 
 - [ ] Espace `/admin` protégé et non indexé. Navigation : Tableau de bord, Produits, Commandes, Demandes, Avis, Clients, Livraison et réglages, Factures, Contenus, Paramètres, « Voir le site ». *(partiel : espace et navigation en place, rubriques activées lot par lot)* (Kayart, CDC 15)
-- [ ] Message de succès ou d’erreur après chaque action ; boutons « en cours » désactivés pendant l’envoi. (Kayart)
-- [ ] Dialogues de confirmation pour les actions destructrices ; menus d’actions par ligne (clavier, Échap, clic extérieur). (Kayart)
-- [ ] Administration utilisable sur téléphone : navigation compacte, tableaux transformés en cartes lisibles. (Kayart, CDC 25)
+- [x] Message de succès ou d’erreur après chaque action ; boutons « en cours » désactivés pendant l’envoi. — notifications ; une erreur prévue n’affiche plus la page d’erreur. (Kayart)
+- [x] Dialogues de confirmation pour les actions destructrices ; menus d’actions par ligne (clavier, Échap, clic extérieur). (Kayart)
+- [x] Administration utilisable sur téléphone : navigation compacte, tableaux transformés en cartes lisibles. — tiroir de navigation, liste produits en cartes, sans débordement à 320 et 390 px. (Kayart, CDC 25)
 
 ### 17.2 Tableau de bord
 
 - [ ] Compteurs : produits, commandes à traiter, commandes à valider, demandes nouvelles, avis en attente, produits en stock faible. *(partiel : tout sauf les demandes, lot 7)* (CDC 15, Kayart)
-- [ ] Dernières commandes, derniers avis, chiffre d’affaires estimé. *(partiel : dernières commandes)* (CDC 15, 26)
+- [ ] Dernières commandes, derniers avis, chiffre d’affaires estimé. *(partiel : dernières commandes, chiffre d’affaires sur 7, 30 ou 90 jours, note moyenne des avis ; derniers avis au lot 8)* (CDC 15, 26)
 - [x] État de la mise en service : configuration présente ou à faire, fonctions à venir avec leur lot. (Kayart)
 
 ### 17.3 Produits
 
-- [ ] Liste : miniature, nom, référence, catégorie, type, statut, prix, stock ; recherche par nom ou référence ; filtres catégorie, type et niveau de stock ; pagination. *(partiel : filtre par niveau de stock à venir)* (Kayart)
-- [ ] Actions par ligne : modifier, ajuster le stock, masquer ou afficher, archiver, supprimer définitivement (si possible), dupliquer (option). *(partiel : suppression définitive et duplication à venir)* (Kayart)
+- [ ] Liste : miniature, nom, référence, catégorie, type, statut, prix, stock ; recherche par nom ou référence ; filtres catégorie, type et niveau de stock ; pagination. *(partiel : pas de pagination, inutile à l’échelle du catalogue ; pas de filtre « type », géré par les catégories)* (Kayart)
+- [x] Actions par ligne : modifier, ajuster le stock, masquer ou afficher, archiver, supprimer définitivement (si possible), dupliquer (option). — la copie reprend paliers, caractéristiques et photos, en brouillon et sans référence. (Kayart)
 - [x] Formulaire en sections : identité, présentation, vente et disponibilité, prix et paliers, stock et caractéristiques, transport, images, options. Slug automatique ; saisie conservée en cas d’erreur. (Kayart, CDC 5)
 - [x] Éditeur de paliers de prix, avec contrôle des chevauchements avant envoi. (CDC 5)
 - [ ] Création d’un produit d’occasion ou de second choix à partir d’un modèle (défauts, photos, prix). (Kayart)
@@ -473,11 +473,11 @@ Le plan d’attaque (lots, ordre, estimation) sera établi **à partir de ce doc
 
 ### 17.11 Statistiques (CDC 26)
 
-- [ ] Commandes (totales, en attente, validées, refusées), chiffre d’affaires estimé, produits les plus demandés, quantités vendues, avis et note moyenne, stock faible, demandes à valider, emails envoyés, factures générées. (CDC 26)
+- [ ] Commandes (totales, en attente, validées, refusées), chiffre d’affaires estimé, produits les plus demandés, quantités vendues, avis et note moyenne, stock faible, demandes à valider, emails envoyés, factures générées. *(partiel, au tableau de bord : commandes et chiffre d’affaires par jour ou par semaine sur 7, 30 ou 90 jours avec variation, note moyenne, stock faible et valeur du stock, répartition par catégorie, complétude des fiches)* (CDC 26)
 
 ### 17.12 Journal d’audit
 
-- [ ] Chaque action admin enregistrée (qui, quoi, quand, sur quel objet, ancienne et nouvelle valeur) et consultable. L’historique de commande s’affiche à partir de ce journal. *(partiel : table `audit_logs` et `recordAudit`)* (Kayart, CDC 22)
+- [ ] Chaque action admin enregistrée (qui, quoi, quand, sur quel objet, ancienne et nouvelle valeur) et consultable. L’historique de commande s’affiche à partir de ce journal. *(partiel : table `audit_logs`, `recordAudit`, dernières actions au tableau de bord ; anciennes et nouvelles valeurs non enregistrées)* (Kayart, CDC 22)
 
 ---
 
@@ -530,7 +530,7 @@ Le plan d’attaque (lots, ordre, estimation) sera établi **à partir de ce doc
 - [ ] Fichiers envoyés : décodés et réencodés ; type, extension et taille contrôlés ; buckets privés vérifiés avant tout envoi. (Kayart, CDC 22)
 - [ ] Accès aux factures et photos privées réservé à l’admin, via des routes contrôlées. (CDC 22, Kayart)
 - [ ] Aucun token ni donnée client dans le HTML, les logs ou les rapports. (Kayart)
-- [ ] Journal d’audit (§17.12). *(partiel : table et écriture ; consultation au lot 16)* (CDC 22)
+- [ ] Journal d’audit (§17.12). *(partiel : table et écriture ; dernières actions au tableau de bord ; consultation complète au lot 16)* (CDC 22)
 - [ ] Sauvegardes, et restauration testée. (CDC 22, Kayart)
 - [ ] Audit régulier des dépendances (`npm audit`, épinglage des versions sensibles). (Kayart)
 
@@ -552,8 +552,8 @@ Le plan d’attaque (lots, ordre, estimation) sera établi **à partir de ce doc
 ## 22. Expérience, accessibilité et responsive
 
 - [x] Site public responsive, vérifié à 390 et 1 440 px ; menu mobile. (CDC 25)
-- [ ] Lien « Aller au contenu », focus placé sur le contenu principal. (Kayart)
-- [ ] Échap ferme le menu mobile et les dialogues, puis rend le focus. (Kayart)
+- [ ] Lien « Aller au contenu », focus placé sur le contenu principal. *(partiel : administration)* (Kayart)
+- [ ] Échap ferme le menu mobile et les dialogues, puis rend le focus. *(partiel : administration)* (Kayart)
 - [ ] Respect de `prefers-reduced-motion`. (Kayart)
 - [ ] Formulaires : erreur affichée sous chaque champ (`aria-invalid`, `aria-describedby`), valeurs conservées après une erreur, bouton « envoi en cours ». (Kayart)
 - [ ] Champs d’au moins 16 px sur mobile (pas de zoom automatique sur iOS) ; cibles d’au moins 44 px. (Kayart)

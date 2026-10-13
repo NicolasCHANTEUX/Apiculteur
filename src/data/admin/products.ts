@@ -1,6 +1,7 @@
 import "server-only";
 
 import { requireAdmin } from "@/data/auth";
+import { isStockFilter, stockFilters, stockLevel, type StockLevel } from "@/lib/admin/product-health";
 import { productStatuses } from "@/lib/catalog/product-form";
 import { createClient } from "@/lib/supabase/server";
 
@@ -14,18 +15,32 @@ export type AdminCategory = {
   productCount: number;
 };
 
+export type ProductStatus = (typeof productStatuses)[number];
+
 export type AdminProductRow = {
   id: string;
   name: string;
   slug: string;
   sku: string | null;
-  status: (typeof productStatuses)[number];
+  status: ProductStatus;
   categoryName: string | null;
   basePrice: number;
+  priceVisibility: "visible" | "hidden" | "on_request";
+  purchaseMode: "standard" | "reservation" | "quote";
+  saleUnit: string;
+  featured: boolean;
   stockQuantity: number;
   lowStockThreshold: number | null;
+  stockLevel: StockLevel;
   coverUrl: string | null;
+  imageCount: number;
   updatedAt: string;
+};
+
+export type AdminProductList = {
+  products: AdminProductRow[];
+  /** Par statut, selon la recherche, la catégorie et le stock choisis. « all » exclut les archivés. */
+  statusCounts: Record<ProductStatus | "all", number>;
 };
 
 export type AdminProductImage = {
@@ -45,7 +60,7 @@ export type AdminProduct = {
   images: AdminProductImage[];
 };
 
-export type AdminProductFilters = { q: string; categorie: string; statut: string };
+export type AdminProductFilters = { q: string; categorie: string; statut: string; stock: string };
 
 function fail(context: string, error: { message: string } | null) {
   if (error) throw new Error(`${context}: ${error.message}`);
@@ -72,14 +87,38 @@ export async function listAdminCategories(): Promise<AdminCategory[]> {
   }));
 }
 
-export async function listAdminProducts(filters: AdminProductFilters): Promise<AdminProductRow[]> {
+/**
+ * Produits proposés par la recherche rapide (Ctrl K). Lue par la mise en page
+ * de l'administration : une erreur donne une liste vide plutôt qu'un écran
+ * d'erreur sur toutes les pages.
+ */
+export async function listCommandProducts(): Promise<{ id: string; name: string; status: ProductStatus }[]> {
+  await requireAdmin();
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("products")
+    .select("id, name, status")
+    .neq("status", "archived")
+    .order("name")
+    .limit(300);
+  if (error) {
+    console.error("Recherche rapide", error.code, error.message);
+    return [];
+  }
+  return (data ?? []).map((row) => ({ id: row.id, name: row.name, status: row.status }));
+}
+
+// Le catalogue d'un apiculteur compte quelques dizaines de produits : la
+// recherche et la catégorie sont filtrées en base, le statut et le niveau de
+// stock en mémoire, ce qui donne les compteurs des onglets sans autre requête.
+export async function listAdminProducts(filters: AdminProductFilters): Promise<AdminProductList> {
   await requireAdmin("/admin/produits");
   const supabase = await createClient();
 
   let query = supabase
     .from("products")
     .select(
-      "id, name, slug, sku, status, base_price, stock_quantity, low_stock_threshold, updated_at, categories(name), product_images(url, display_order)",
+      "id, name, slug, sku, status, base_price, price_visibility, purchase_mode, sale_unit, featured, stock_quantity, low_stock_threshold, updated_at, categories(name), product_images(url, display_order)",
     )
     .order("display_order")
     .order("name")
@@ -91,16 +130,11 @@ export async function listAdminProducts(filters: AdminProductFilters): Promise<A
     if (term) query = query.or(`name.ilike.%${term}%,sku.ilike.%${term}%`);
   }
   if (/^[0-9a-f-]{36}$/i.test(filters.categorie)) query = query.eq("category_id", filters.categorie);
-  if ((productStatuses as readonly string[]).includes(filters.statut)) {
-    query = query.eq("status", filters.statut);
-  } else {
-    query = query.neq("status", "archived");
-  }
 
   const { data, error } = await query;
   fail("Produits", error);
 
-  return (data ?? []).map((row) => {
+  const rows: AdminProductRow[] = (data ?? []).map((row) => {
     const category = Array.isArray(row.categories) ? row.categories[0] : row.categories;
     const images = (row.product_images ?? []) as { url: string; display_order: number }[];
     const cover = [...images].sort((a, b) => a.display_order - b.display_order)[0];
@@ -112,12 +146,35 @@ export async function listAdminProducts(filters: AdminProductFilters): Promise<A
       status: row.status,
       categoryName: category?.name ?? null,
       basePrice: Number(row.base_price),
+      priceVisibility: row.price_visibility,
+      purchaseMode: row.purchase_mode,
+      saleUnit: row.sale_unit ?? "unité",
+      featured: Boolean(row.featured),
       stockQuantity: row.stock_quantity,
       lowStockThreshold: row.low_stock_threshold,
+      stockLevel: stockLevel(row.stock_quantity, row.low_stock_threshold, row.purchase_mode),
       coverUrl: cover?.url ?? null,
+      imageCount: images.length,
       updatedAt: row.updated_at,
     };
   });
+
+  const stockFilter = isStockFilter(filters.stock) ? stockFilters[filters.stock] : null;
+  const byStock = stockFilter ? rows.filter((row) => row.stockLevel === stockFilter.level) : rows;
+
+  const statusCounts = Object.fromEntries(
+    [...productStatuses, "all" as const].map((status) => [status, 0]),
+  ) as AdminProductList["statusCounts"];
+  for (const row of byStock) {
+    statusCounts[row.status] += 1;
+    if (row.status !== "archived") statusCounts.all += 1;
+  }
+
+  const status = (productStatuses as readonly string[]).includes(filters.statut) ? filters.statut : null;
+  return {
+    products: byStock.filter((row) => (status ? row.status === status : row.status !== "archived")),
+    statusCounts,
+  };
 }
 
 const formFields: Record<string, string> = {

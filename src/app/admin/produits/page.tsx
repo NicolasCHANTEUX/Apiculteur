@@ -1,12 +1,24 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { setProductStatusAction, updateStockAction } from "@/app/admin/produits/actions";
-import { AdminHeader, StatusPill, adminButton, adminInput } from "@/components/admin/admin-ui";
-import { SubmitButton } from "@/components/admin/confirm-button";
+import {
+  Badge,
+  EmptyState,
+  Notice,
+  PageHeader,
+  StatusPill,
+  adminButton,
+  panelClass,
+} from "@/components/admin/admin-ui";
+import { ProductActions } from "@/components/admin/product-actions";
+import { ProductFilters } from "@/components/admin/product-filters";
+import { StockStepper } from "@/components/admin/stock-stepper";
 import { formatPrice } from "@/components/catalog/product-display";
-import { listAdminCategories, listAdminProducts } from "@/data/admin/products";
+import { ImageIcon, PackageIcon, PencilIcon, PlusIcon, StarFilledIcon, TagIcon } from "@/components/icons";
+import { listAdminCategories, listAdminProducts, type AdminProductRow } from "@/data/admin/products";
 import { requireAdmin } from "@/data/auth";
+import { isStockFilter } from "@/lib/admin/product-health";
 import { productStatusLabels } from "@/lib/catalog/labels";
+import { productStatuses } from "@/lib/catalog/product-form";
 
 export const metadata: Metadata = { title: "Produits" };
 
@@ -14,152 +26,233 @@ function param(value: string | string[] | undefined) {
   return typeof value === "string" ? value.trim().slice(0, 80) : "";
 }
 
+const tabs = [
+  { value: "", label: "Tous", count: "all" },
+  { value: "published", label: "En ligne", count: "published" },
+  { value: "draft", label: "Brouillons", count: "draft" },
+  { value: "hidden", label: "Masqués", count: "hidden" },
+  { value: "sold_out", label: "Épuisés", count: "sold_out" },
+  { value: "archived", label: "Archivés", count: "archived" },
+] as const;
+
+function priceLabel(product: AdminProductRow) {
+  if (product.priceVisibility === "on_request") return { main: "Sur demande", unit: null };
+  if (product.priceVisibility === "hidden") return { main: "Prix masqué", unit: null };
+  return { main: formatPrice(product.basePrice), unit: product.saleUnit };
+}
+
+function Thumbnail({ product }: { product: AdminProductRow }) {
+  return (
+    <div className="relative size-14 shrink-0 overflow-hidden rounded-xl bg-sand ring-1 ring-line/60 ring-inset">
+      {product.coverUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={product.coverUrl} alt="" loading="lazy" className="size-full object-cover" />
+      ) : (
+        <span className="flex size-full items-center justify-center text-parchment">
+          <ImageIcon className="size-5" />
+        </span>
+      )}
+    </div>
+  );
+}
+
 export default async function AdminProductsPage(props: PageProps<"/admin/produits">) {
   await requireAdmin("/admin/produits");
   const params = await props.searchParams;
-  const filters = { q: param(params.q), categorie: param(params.categorie), statut: param(params.statut) };
-  const [products, categories] = await Promise.all([
+  const statut = param(params.statut);
+  const stock = param(params.stock);
+  const filters = {
+    q: param(params.q),
+    categorie: param(params.categorie),
+    statut: (productStatuses as readonly string[]).includes(statut) ? statut : "",
+    stock: isStockFilter(stock) ? stock : "",
+  };
+  const [{ products, statusCounts }, categories] = await Promise.all([
     listAdminProducts(filters),
     listAdminCategories(),
   ]);
-  const filtered = Boolean(filters.q || filters.categorie || filters.statut);
+  const filtered = Boolean(filters.q || filters.categorie || filters.stock);
+  const tabHref = (value: string) => {
+    const query = new URLSearchParams();
+    for (const [name, current] of Object.entries({ ...filters, statut: value })) {
+      if (current) query.set(name, current);
+    }
+    const search = query.toString();
+    return search ? `/admin/produits?${search}` : "/admin/produits";
+  };
 
   return (
     <main className="space-y-6">
-      <AdminHeader
+      <PageHeader
         title="Produits"
-        description={`${products.length} produit${products.length > 1 ? "s" : ""}${filtered ? " correspondant aux filtres" : ""}. Les produits archivés sont masqués par défaut.`}
+        description="Publiez vos fiches, ajustez le stock et organisez le catalogue."
         actions={
           <>
             <Link href="/admin/categories" className={adminButton.secondary}>
+              <TagIcon className="size-4" />
               Catégories
             </Link>
             <Link href="/admin/produits/nouveau" className={adminButton.primary}>
+              <PlusIcon className="size-4" />
               Nouveau produit
             </Link>
           </>
         }
       />
 
-      <form className="flex flex-wrap items-end gap-3 rounded-xl border border-line/70 bg-white p-4" role="search">
-        <label className="min-w-[220px] flex-1 text-[13px] text-ink">
-          Recherche
-          <input name="q" defaultValue={filters.q} placeholder="Nom ou référence" className={`${adminInput} mt-1.5 h-10`} />
-        </label>
-        <label className="text-[13px] text-ink">
-          Catégorie
-          <select name="categorie" defaultValue={filters.categorie} className={`${adminInput} mt-1.5 h-10 w-auto`}>
-            <option value="">Toutes</option>
-            {categories.map((category) => (
-              <option key={category.id} value={category.id}>
-                {category.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="text-[13px] text-ink">
-          Statut
-          <select name="statut" defaultValue={filters.statut} className={`${adminInput} mt-1.5 h-10 w-auto`}>
-            <option value="">Tous (hors archivés)</option>
-            {Object.entries(productStatusLabels).map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <button type="submit" className={adminButton.secondary}>
-          Filtrer
-        </button>
-        {filtered ? (
-          <Link href="/admin/produits" className="min-h-10 content-center text-[13px] text-honey">
-            Réinitialiser
-          </Link>
-        ) : null}
-      </form>
+      {params.supprime ? <Notice tone="success">Le produit a été supprimé définitivement.</Notice> : null}
 
-      {products.length === 0 ? (
-        <p className="rounded-xl border border-line/70 bg-white p-6 text-[14px] text-muted">
-          Aucun produit{filtered ? " ne correspond à ces filtres" : " pour le moment"}.
-        </p>
-      ) : (
-        <ul className="space-y-3">
-          {products.map((product) => {
-            const low =
-              product.lowStockThreshold !== null && product.stockQuantity <= product.lowStockThreshold;
-            return (
-              <li
-                key={product.id}
-                className="grid gap-4 rounded-xl border border-line/70 bg-white p-4 md:grid-cols-[64px_1fr_auto_auto] md:items-center"
+      <section className={panelClass} aria-label="Liste des produits">
+        <nav aria-label="Filtrer par statut" className="overflow-x-auto border-b border-line/60">
+          <ul className="flex min-w-max gap-1 px-3 pt-2 sm:px-4">
+            {tabs.map((tab) => {
+              const current = filters.statut === tab.value;
+              return (
+                <li key={tab.value}>
+                  <Link
+                    href={tabHref(tab.value)}
+                    scroll={false}
+                    aria-current={current ? "page" : undefined}
+                    className={`relative flex min-h-11 items-center gap-2 px-3 text-[13.5px] font-medium transition after:absolute after:inset-x-2 after:bottom-0 after:h-0.5 after:rounded-full ${
+                      current
+                        ? "text-ink after:bg-honey"
+                        : "text-muted after:bg-transparent hover:text-ink"
+                    }`}
+                  >
+                    {tab.label}
+                    <span
+                      className={`rounded-full px-1.5 py-px text-[11.5px] tabular-nums ${
+                        current ? "bg-honey/15 text-honey-dark" : "bg-sand text-muted"
+                      }`}
+                    >
+                      {statusCounts[tab.count]}
+                    </span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </nav>
+
+        <ProductFilters
+          key={`${filters.q}|${filters.categorie}|${filters.stock}`}
+          filters={filters}
+          categories={categories.map(({ id, name }) => ({ id, name }))}
+        />
+
+        {products.length === 0 ? (
+          <div className="border-t border-line/60">
+            {filtered || filters.statut ? (
+              <EmptyState icon={<PackageIcon className="size-5" />} title="Aucun produit ne correspond">
+                Modifiez la recherche ou les filtres pour élargir la liste.
+              </EmptyState>
+            ) : (
+              <EmptyState
+                icon={<PackageIcon className="size-5" />}
+                title="Votre catalogue est vide"
+                action={
+                  <Link href="/admin/produits/nouveau" className={adminButton.primary}>
+                    <PlusIcon className="size-4" />
+                    Créer un premier produit
+                  </Link>
+                }
               >
-                <div className="hidden size-16 overflow-hidden rounded-lg bg-sand md:block">
-                  {product.coverUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={product.coverUrl} alt="" className="size-full object-cover" />
-                  ) : null}
-                </div>
-                <div className="min-w-0">
-                  <Link href={`/admin/produits/${product.id}`} className="font-medium text-ink hover:text-honey">
-                    {product.name}
-                  </Link>
-                  <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12.5px] text-muted">
-                    <StatusPill status={product.status} label={productStatusLabels[product.status]} />
-                    {product.categoryName ? <span>{product.categoryName}</span> : null}
-                    {product.sku ? <span>Réf. {product.sku}</span> : null}
-                    <span className="font-medium text-ink">{formatPrice(product.basePrice)}</span>
-                  </p>
-                </div>
-                <form action={updateStockAction} className="flex items-center gap-2">
-                  <input type="hidden" name="id" value={product.id} />
-                  <label htmlFor={`stock-${product.id}`} className={`text-[12.5px] ${low ? "text-orange-700" : "text-muted"}`}>
-                    Stock{low ? " faible" : ""}
-                  </label>
-                  <input
-                    id={`stock-${product.id}`}
-                    name="stockQuantity"
-                    defaultValue={product.stockQuantity}
-                    inputMode="numeric"
-                    className={`${adminInput} h-9 w-20! text-center`}
-                  />
-                  <SubmitButton className={adminButton.small} title="Enregistrer le stock">
-                    OK
-                  </SubmitButton>
-                </form>
-                <div className="flex flex-wrap gap-1.5">
-                  <Link href={`/admin/produits/${product.id}`} className={adminButton.small}>
-                    Modifier
-                  </Link>
-                  {product.status !== "published" ? (
-                    <form action={setProductStatusAction}>
-                      <input type="hidden" name="id" value={product.id} />
-                      <input type="hidden" name="status" value="published" />
-                      <SubmitButton className={adminButton.small}>Publier</SubmitButton>
-                    </form>
-                  ) : (
-                    <form action={setProductStatusAction}>
-                      <input type="hidden" name="id" value={product.id} />
-                      <input type="hidden" name="status" value="hidden" />
-                      <SubmitButton className={adminButton.small}>Masquer</SubmitButton>
-                    </form>
-                  )}
-                  {product.status !== "archived" ? (
-                    <form action={setProductStatusAction}>
-                      <input type="hidden" name="id" value={product.id} />
-                      <input type="hidden" name="status" value="archived" />
-                      <SubmitButton
-                        className={adminButton.small}
-                        confirm={`Archiver « ${product.name} » ? Il disparaîtra du site ; ses commandes restent consultables.`}
-                      >
-                        Archiver
-                      </SubmitButton>
-                    </form>
-                  ) : null}
-                </div>
-              </li>
-            );
-          })}
-        </ul>
-      )}
+                Créez une fiche, ajoutez ses photos puis publiez-la : elle apparaîtra dans « Nos essaims ».
+              </EmptyState>
+            )}
+          </div>
+        ) : (
+          <>
+            <div
+              aria-hidden
+              className="hidden border-y border-line/60 bg-cream/60 px-5 py-2 text-[11.5px] font-medium tracking-[0.06em] text-muted uppercase md:grid md:grid-cols-[minmax(0,1fr)_7.5rem_9.5rem_7.5rem_5.5rem] md:gap-4"
+            >
+              <span>Produit</span>
+              <span>Prix</span>
+              <span>Stock</span>
+              <span>Statut</span>
+              <span className="sr-only">Actions</span>
+            </div>
+            <ul className="divide-y divide-line/60 border-t border-line/60 md:border-t-0">
+              {products.map((product) => {
+                const price = priceLabel(product);
+                return (
+                  <li
+                    key={product.id}
+                    className="px-4 py-3.5 transition has-data-pending:opacity-50 sm:px-5 md:grid md:grid-cols-[minmax(0,1fr)_7.5rem_9.5rem_7.5rem_5.5rem] md:items-center md:gap-4"
+                  >
+                    <div className="flex min-w-0 items-center gap-3.5">
+                      <Thumbnail product={product} />
+                      <div className="min-w-0">
+                        <Link
+                          href={`/admin/produits/${product.id}`}
+                          className="line-clamp-2 font-medium text-ink hover:text-honey-dark"
+                        >
+                          {product.name}
+                        </Link>
+                        <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12.5px] text-muted">
+                          <span className="md:hidden">
+                            <StatusPill status={product.status} label={productStatusLabels[product.status]} />
+                          </span>
+                          <span className="font-medium text-ink md:hidden">{price.main}</span>
+                          {product.categoryName ? <span>{product.categoryName}</span> : null}
+                          {product.sku ? <span>Réf. {product.sku}</span> : null}
+                          {product.imageCount === 0 ? (
+                            <Badge tone="warning">
+                              <ImageIcon className="size-3" />
+                              Sans photo
+                            </Badge>
+                          ) : null}
+                          {product.featured ? (
+                            <Badge tone="honey">
+                              <StarFilledIcon className="size-3" />
+                              En avant
+                            </Badge>
+                          ) : null}
+                        </p>
+                      </div>
+                    </div>
+                    <p className="hidden text-[14px] md:block">
+                      <span className="font-medium text-ink">{price.main}</span>
+                      {price.unit ? <span className="block text-[12px] text-muted">/ {price.unit}</span> : null}
+                    </p>
+                    <div className="mt-3 flex items-center justify-between gap-3 md:contents">
+                      <StockStepper
+                        id={product.id}
+                        name={product.name}
+                        stock={product.stockQuantity}
+                        threshold={product.lowStockThreshold}
+                        purchaseMode={product.purchaseMode}
+                      />
+                      <div className="hidden md:block">
+                        <StatusPill status={product.status} label={productStatusLabels[product.status]} />
+                      </div>
+                      <div className="flex items-center justify-end gap-1">
+                        <Link
+                          href={`/admin/produits/${product.id}`}
+                          className={adminButton.icon}
+                          aria-label={`Modifier ${product.name}`}
+                          title="Modifier"
+                        >
+                          <PencilIcon className="size-4" />
+                        </Link>
+                        <ProductActions
+                          product={{ id: product.id, name: product.name, slug: product.slug, status: product.status }}
+                          context="list"
+                        />
+                      </div>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+            <p className="border-t border-line/60 px-5 py-3 text-[12.5px] text-muted">
+              {products.length} produit{products.length > 1 ? "s" : ""} affiché{products.length > 1 ? "s" : ""}
+              {filters.statut === "" ? " · les produits archivés sont dans leur onglet" : ""}
+            </p>
+          </>
+        )}
+      </section>
     </main>
   );
 }

@@ -1,9 +1,10 @@
 import "server-only";
 
 import sharp, { type Metadata } from "sharp";
+import { MAX_UPLOAD_BYTES } from "@/lib/images/limits";
 
-export const MAX_IMAGES_PER_PRODUCT = 6;
-export const MAX_UPLOAD_BYTES = 8 * 1024 * 1024;
+export { MAX_IMAGES_PER_PRODUCT, MAX_UPLOAD_BYTES } from "@/lib/images/limits";
+
 const ACCEPTED_FORMATS = new Set(["jpeg", "png", "webp", "gif"]);
 
 export class ImageRejectedError extends Error {}

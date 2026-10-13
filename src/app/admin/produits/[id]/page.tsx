@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { AdminHeader, Notice, StatusPill, adminButton } from "@/components/admin/admin-ui";
+import { Notice, PageHeader, StatusPill, adminButton } from "@/components/admin/admin-ui";
+import { ProductActions } from "@/components/admin/product-actions";
 import { ProductForm } from "@/components/admin/product-form";
 import { ProductImagesManager } from "@/components/admin/product-images";
-import { getAdminProduct, listAdminCategories } from "@/data/admin/products";
+import { ExternalLinkIcon } from "@/components/icons";
+import { getAdminProduct, listAdminCategories, type ProductStatus } from "@/data/admin/products";
 import { requireAdmin } from "@/data/auth";
 import { productStatusLabels } from "@/lib/catalog/labels";
 
@@ -20,30 +22,47 @@ export default async function EditProductPage(props: PageProps<"/admin/produits/
   ]);
   if (!product) notFound();
 
-  const status = String(product.values.status) as keyof typeof productStatusLabels;
+  const status = String(product.values.status) as ProductStatus;
   const slug = String(product.values.slug);
+  const name = String(product.values.name);
+  const sku = String(product.values.sku);
 
   return (
     <main className="space-y-6">
-      <AdminHeader
-        title={String(product.values.name)}
-        description={<StatusPill status={status} label={productStatusLabels[status]} />}
+      <PageHeader
+        breadcrumb={[{ href: "/admin/produits", label: "Produits" }]}
+        title={name}
+        meta={
+          <>
+            <StatusPill status={status} label={productStatusLabels[status]} />
+            {sku ? <span className="text-[13px] text-muted">Réf. {sku}</span> : null}
+          </>
+        }
         actions={
           <>
-            <Link href="/admin/produits" className={adminButton.secondary}>
-              Tous les produits
-            </Link>
             {status === "published" ? (
-              <Link href={`/produits/${slug}`} target="_blank" className={adminButton.secondary}>
-                Voir la fiche ↗
+              <Link href={`/produits/${slug}`} target="_blank" rel="noopener" className={adminButton.secondary}>
+                <ExternalLinkIcon className="size-4" />
+                Voir sur le site
               </Link>
             ) : null}
+            <ProductActions product={{ id: product.id, name, slug, status }} context="edit" />
           </>
         }
       />
-      {query.enregistre ? <Notice tone="success">Produit enregistré.</Notice> : null}
 
-      <ProductImagesManager productId={product.id} images={product.images} />
+      {query.enregistre ? <Notice tone="success">Modifications enregistrées.</Notice> : null}
+      {query.cree ? (
+        <Notice tone="success">
+          Brouillon créé. Ajoutez maintenant ses photos, puis passez-le en « Publié » quand la fiche est prête.
+        </Notice>
+      ) : null}
+      {query.copie ? (
+        <Notice tone="info">
+          Copie créée en brouillon. Vérifiez son nom, ses photos et son stock avant de la publier.
+        </Notice>
+      ) : null}
+
       <ProductForm
         // Recrée le formulaire après chaque enregistrement (nouvelle version).
         key={product.updatedAt}
@@ -52,7 +71,10 @@ export default async function EditProductPage(props: PageProps<"/admin/produits/
         initialValues={product.values}
         initialTiers={product.tiers}
         initialAttributes={product.attributes}
-        categories={categories.map(({ id: categoryId, name }) => ({ id: categoryId, name }))}
+        categories={categories.map(({ id: categoryId, name: categoryName }) => ({ id: categoryId, name: categoryName }))}
+        photos={<ProductImagesManager productId={product.id} images={product.images} />}
+        imageCount={product.images.length}
+        coverUrl={product.images[0]?.url ?? null}
       />
     </main>
   );

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { AdminHeader, adminButton } from "@/components/admin/admin-ui";
-import { CategoryForm } from "@/components/admin/category-forms";
+import { CategoryRow, NewCategoryForm } from "@/components/admin/category-forms";
+import { EmptyState, PageHeader, Panel } from "@/components/admin/admin-ui";
+import { TagIcon } from "@/components/icons";
 import { listAdminCategories } from "@/data/admin/products";
 import { requireAdmin } from "@/data/auth";
 
@@ -13,27 +13,40 @@ export default async function AdminCategoriesPage() {
 
   return (
     <main className="space-y-6">
-      <AdminHeader
+      <PageHeader
+        breadcrumb={[{ href: "/admin/produits", label: "Produits" }]}
         title="Catégories"
-        description="Elles servent de filtre dans le catalogue. Une catégorie qui contient des produits ne peut pas être supprimée : désactivez-la."
-        actions={
-          <Link href="/admin/produits" className={adminButton.secondary}>
-            Produits
-          </Link>
-        }
+        description="Elles servent de filtre dans le catalogue, dans l’ordre choisi ici. Une catégorie qui contient des produits ne peut pas être supprimée : masquez-la."
       />
-      <section className="space-y-3">
-        <h2 className="font-display text-[17px] font-semibold text-ink">Nouvelle catégorie</h2>
-        <CategoryForm />
-      </section>
-      <section className="space-y-3">
-        <h2 className="font-display text-[17px] font-semibold text-ink">
-          Catégories existantes ({categories.length})
-        </h2>
-        {categories.map((category) => (
-          <CategoryForm key={`${category.id}-${category.name}-${category.displayOrder}-${category.isActive}`} category={category} />
-        ))}
-      </section>
+
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start">
+        <Panel
+          title="Catégories du catalogue"
+          description={`${categories.length} catégorie${categories.length > 1 ? "s" : ""}`}
+          flush
+        >
+          {categories.length === 0 ? (
+            <EmptyState icon={<TagIcon className="size-5" />} title="Aucune catégorie">
+              Créez par exemple « Essaims », « Reines » et « Ruches » pour classer vos produits.
+            </EmptyState>
+          ) : (
+            <ul className="divide-y divide-line/60">
+              {categories.map((category, index) => (
+                <CategoryRow
+                  key={`${category.id}-${category.name}-${category.description}-${category.isActive}-${category.slug}`}
+                  category={category}
+                  first={index === 0}
+                  last={index === categories.length - 1}
+                />
+              ))}
+            </ul>
+          )}
+        </Panel>
+
+        <Panel title="Nouvelle catégorie">
+          <NewCategoryForm />
+        </Panel>
+      </div>
     </main>
   );
 }
