@@ -15,7 +15,10 @@ const trustItems = [
   { icon: TruckIcon, label: "Livraison étudiée" },
 ];
 
-export function Hero() {
+/** Ligne « en direct » sous les boutons : uniquement avec de vrais produits. */
+export type HeroAvailability = { available: number; reservable: number };
+
+export function Hero({ availability }: { availability: HeroAvailability | null }) {
   const years = new Date().getFullYear() - site.owner.since;
 
   return (
@@ -62,6 +65,22 @@ export function Hero() {
               Me contacter
             </Link>
           </div>
+
+          {availability && (availability.available > 0 || availability.reservable > 0) ? (
+            <Link
+              href={availability.available > 0 ? "/catalogue?vue=disponibles" : "/catalogue?vue=reservation"}
+              className="mt-5 inline-flex items-center gap-2.5 text-[13px] text-white/85 transition hover:text-white"
+            >
+              <span className="relative flex size-2" aria-hidden>
+                <span className="absolute inset-0 rounded-full bg-green-400 motion-safe:animate-ping" />
+                <span className="relative size-2 rounded-full bg-green-400" />
+              </span>
+              {availability.available > 0
+                ? `${availability.available} produit${availability.available > 1 ? "s" : ""} disponible${availability.available > 1 ? "s" : ""} en ce moment`
+                : `Réservations ouvertes pour ${availability.reservable} produit${availability.reservable > 1 ? "s" : ""}`}
+              <ArrowRightIcon className="size-3.5" />
+            </Link>
+          ) : null}
 
           <div className="mt-7 flex items-center gap-3 border-t border-white/20 pt-5">
             <OwnerAvatar />

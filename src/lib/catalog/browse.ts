@@ -60,6 +60,7 @@ export function matchesView(product: PublicProduct, view: QuickView): boolean {
         product.purchaseMode === "standard" &&
         product.stockStatusLabel !== "sold_out" &&
         product.stockStatusLabel !== "coming_soon" &&
+        product.stockStatusLabel !== "reservation_open" &&
         product.displayedStockQuantity !== 0
       );
     case "reservation":

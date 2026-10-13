@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { PublicProduct } from "../../data/catalog.ts";
-import { criteriaQuery, filterAndSort, matchesQuery, readCriteria } from "./browse.ts";
+import { criteriaQuery, filterAndSort, matchesQuery, matchesView, readCriteria } from "./browse.ts";
 
 function product(overrides: Partial<PublicProduct>): PublicProduct {
   return {
@@ -61,6 +61,7 @@ test("recherche multi-mots sans accents, caractéristiques comprises", () => {
 });
 
 test("filtres rapides et catégorie", () => {
+  assert.equal(matchesView(product({ stockStatusLabel: "reservation_open" }), "disponibles"), false);
   assert.equal(ids(filterAndSort(products, { ...base, vue: "disponibles" })), "abd");
   assert.equal(ids(filterAndSort(products, { ...base, vue: "reservation" })), "c");
   assert.equal(ids(filterAndSort(products, { ...base, vue: "occasion" })), "d");

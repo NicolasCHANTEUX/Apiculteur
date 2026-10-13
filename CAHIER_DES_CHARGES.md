@@ -131,7 +131,7 @@ Le plan d’attaque (lots, ordre, estimation) sera établi **à partir de ce doc
 - [x] Pied de page : navigation, informations, contact, réseaux. (Maquette)
 - [ ] Liens légaux du pied de page affichés seulement quand les pages légales sont approuvées. (Kayart)
 - [ ] Bandeau d’information administrable (ex. « Saison 2026 ouverte »). *(partiel : texte fixé dans `src/lib/site.ts`)* (CDC 16, Maquette)
-- [ ] Carrousel des produits mis en avant sur l’accueil au-delà de 4 produits : boutons précédent/suivant, défilement automatique coupé si `prefers-reduced-motion`. (Kayart)
+- [x] Carrousel des produits mis en avant sur l’accueil au-delà de 4 produits : boutons précédent/suivant, défilement automatique coupé si `prefers-reduced-motion`. — sans défilement automatique ; un seul produit est mis en valeur, une rangée incomplète se termine par l’accès au catalogue. (Kayart)
 - [ ] Indicateur de chargement entre pages et écran `loading` par route. (Kayart)
 - [x] Page d’erreur globale avec bouton « Réessayer » (public et admin). (Kayart)
 - [ ] Remplacer tous les contenus provisoires de la maquette par les vrais (§1.1). (Maquette)
@@ -543,7 +543,7 @@ Le plan d’attaque (lots, ordre, estimation) sera établi **à partir de ce doc
 - [ ] `noindex` sur l’admin, la connexion, le panier, la commande et la confirmation. (Kayart)
 - [ ] Métadonnées par page et par produit (image de partage, URL canonique) ; URL du site normalisée. (Kayart, CDC 24)
 - [ ] Titres et descriptions SEO modifiables. *(partiel : champs SEO des produits en base)* (CDC 24)
-- [ ] Données structurées (Product, Offer, LocalBusiness ; AggregateRating seulement avec de vrais avis), produites à partir de données validées. (Kayart)
+- [ ] Données structurées (Product, Offer, LocalBusiness ; AggregateRating seulement avec de vrais avis), produites à partir de données validées. *(partiel : FAQPage sur la FAQ, réponses encore à valider)* (Kayart)
 - [x] Images optimisées (`next/image`, WebP) et textes alternatifs. *(partiel : photos du site uniquement)* (CDC 24)
 - [ ] Manifest PWA : nom, icône, couleurs. (Kayart)
 

@@ -3,12 +3,14 @@ import { CatalogUnconfigured } from "@/components/catalog/catalog-unconfigured";
 import { AboutSection } from "@/components/home/about-section";
 import { CatalogPreview } from "@/components/home/catalog-preview";
 import { ContactCta } from "@/components/home/contact-cta";
+import { FaqTeaser } from "@/components/home/faq-teaser";
 import { Hero } from "@/components/home/hero";
 import { ProcessSteps } from "@/components/home/process-steps";
 import { TestimonialsSection } from "@/components/home/testimonials-section";
 import { container } from "@/components/ui";
 import { getPublicCatalog } from "@/data/catalog";
 import { getPublicReviews } from "@/data/reviews";
+import { matchesView } from "@/lib/catalog/browse";
 
 export default async function Home() {
   // La configuration Supabase peut etre fournie au demarrage du serveur et
@@ -32,7 +34,16 @@ export default async function Home() {
 
   return (
     <main className="flex-1">
-      <Hero />
+      <Hero
+        availability={
+          catalog?.kind === "ready"
+            ? {
+                available: products.filter((product) => matchesView(product, "disponibles")).length,
+                reservable: products.filter((product) => matchesView(product, "reservation")).length,
+              }
+            : null
+        }
+      />
       <AboutSection />
 
       {catalog === null ? (
@@ -62,6 +73,8 @@ export default async function Home() {
           productNames={productNames}
         />
       ) : null}
+
+      <FaqTeaser tone={reviews?.kind === "ready" && reviews.reviews.length > 0 ? "cream" : "sand"} />
 
       <ContactCta />
     </main>

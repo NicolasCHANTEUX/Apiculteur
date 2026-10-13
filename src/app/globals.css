@@ -167,3 +167,30 @@ summary::-webkit-details-marker {
     transform: scale(1.45);
   }
 }
+
+/* FAQ : ouverture animée des réponses, là où le navigateur sait animer la
+   hauteur d'un <details> (sinon, ouverture instantanée). */
+@media (prefers-reduced-motion: no-preference) {
+  .faq-item {
+    interpolate-size: allow-keywords;
+  }
+
+  .faq-item::details-content {
+    block-size: 0;
+    overflow: hidden;
+    transition:
+      block-size 0.3s ease,
+      content-visibility 0.3s allow-discrete;
+  }
+
+  .faq-item[open]::details-content {
+    block-size: auto;
+  }
+}
+
+/* Impression : tout le contenu visible, sans effet d'apparition. */
+@media print {
+  .reveal {
+    animation: none !important;
+  }
+}
