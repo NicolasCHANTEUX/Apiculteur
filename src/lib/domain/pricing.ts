@@ -60,6 +60,38 @@ export function calculatePricedLine(
   };
 }
 
+export type TierIncentive = {
+  /** Unités à ajouter pour atteindre le palier. */
+  addQuantity: number;
+  targetQuantity: number;
+  unitPriceCents: number;
+  savingPerUnitCents: number;
+};
+
+/**
+ * Premier palier plus avantageux au-dessus de la quantité, pour inciter
+ * (« Plus que 2 pour passer à 165 € l'unité ») ; null s'il n'y en a pas.
+ */
+export function nextTierIncentive(
+  basePrice: number | string,
+  tiers: PriceTier[],
+  quantity: number,
+): TierIncentive | null {
+  const current = getUnitPriceCents(basePrice, tiers, quantity);
+  const next = [...tiers]
+    .filter((tier) => tier.minQuantity > quantity)
+    .sort((a, b) => a.minQuantity - b.minQuantity)
+    .find((tier) => eurosToCents(tier.unitPrice) < current);
+  if (!next) return null;
+  const unitPriceCents = eurosToCents(next.unitPrice);
+  return {
+    addQuantity: next.minQuantity - quantity,
+    targetQuantity: next.minQuantity,
+    unitPriceCents,
+    savingPerUnitCents: current - unitPriceCents,
+  };
+}
+
 export function formatEuros(cents: number): string {
   if (!Number.isInteger(cents)) {
     throw new Error("Le montant en centimes doit etre un entier.");

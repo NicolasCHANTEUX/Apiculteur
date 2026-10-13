@@ -8,7 +8,7 @@ Mis à jour le 13 octobre 2026.
 
 | Domaine | Dans le code | Vérifié | Reste à valider |
 | --- | --- | --- | --- |
-| Pages publiques (maquette) | Accueil, catalogue, fiche, à propos, avis, FAQ, contact, 404, erreur | Rendu local en mode démo, 390 et 1 440 px | Contenus réels, réponses de la FAQ |
+| Pages publiques (maquette) | Accueil, catalogue, fiche, à propos, avis, FAQ, contact, 404, erreur. 13 oct. : fiche avec fil d’Ariane, galerie (miniatures, plein écran, zoom), quantité et palier en direct, incitation, confirmation d’ajout, barre d’achat mobile, « Vous aimerez aussi » ; panier refait (récapitulatif, incitation par ligne, « Envoyer ma demande » qui pré-remplit le contact, vider avec confirmation) ; catalogue avec tri, filtres rapides et critères dans l’URL ; apparition au défilement en CSS ; lien d’évitement, Échap sur le menu mobile | Rendu local en mode démo, 390 et 1 440 px. 13 oct. : Chrome contre le projet en ligne (pages en HTTP 200) et contre un faux Supabase (parcours fiche → panier → contact pré-rempli, galerie, filtres et tri ; sans débordement à 320 et 390 px) | Contenus réels, réponses de la FAQ ; recette du parcours avec de vrais produits et photos |
 | Catalogue public | Vues publiques, prix dégressifs, modes de stock | Tests unitaires ; migrations et seed rejoués sur Postgres (PGlite) | Données réelles sur le projet Supabase |
 | Avis (lecture) | Vue publique, note moyenne, répartition | Tests unitaires ; mode démo | Premiers vrais avis |
 | Sécurité (socle) | En-têtes et CSP, garde d’origine des routes API, limitation de débit persistante, journal d’audit | Tests unitaires ; migrations appliquées par `supabase start` ; quota vérifié en conditions réelles | Application de la migration sur le projet Supabase en ligne |

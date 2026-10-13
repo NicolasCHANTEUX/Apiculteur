@@ -25,8 +25,15 @@ function Label({ htmlFor, children }: { htmlFor: string; children: string }) {
 // Pas encore d'envoi cote serveur (lot 5 de la roadmap) : le formulaire
 // prepare un email dans la messagerie du visiteur plutot que de simuler un
 // envoi.
-export function ContactForm() {
+export function ContactForm({
+  initialSubject = "",
+  initialMessage = "",
+}: {
+  initialSubject?: string;
+  initialMessage?: string;
+}) {
   const [opened, setOpened] = useState(false);
+  const subject = subjects.includes(initialSubject) ? initialSubject : "";
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -74,7 +81,7 @@ export function ContactForm() {
         </div>
         <div className="sm:col-span-2">
           <Label htmlFor="subject">Sujet</Label>
-          <select id="subject" name="subject" defaultValue="" className={`${fieldClass} h-[38px]`}>
+          <select id="subject" name="subject" defaultValue={subject} className={`${fieldClass} h-[38px]`}>
             <option value="">Choisir un sujet…</option>
             {subjects.map((subject) => (
               <option key={subject} value={subject}>
@@ -85,7 +92,17 @@ export function ContactForm() {
         </div>
         <div className="sm:col-span-2">
           <Label htmlFor="message">Message *</Label>
-          <textarea id="message" name="message" required rows={5} className={`${fieldClass} min-h-[114px] resize-y py-2.5`} />
+          <textarea
+            id="message"
+            name="message"
+            required
+            rows={initialMessage ? 12 : 5}
+            defaultValue={initialMessage}
+            className={`${fieldClass} min-h-[114px] resize-y py-2.5`}
+          />
+          {initialMessage ? (
+            <p className="mt-1.5 text-[12px] text-muted">Message préparé à partir de votre sélection : complétez-le librement.</p>
+          ) : null}
         </div>
       </div>
 

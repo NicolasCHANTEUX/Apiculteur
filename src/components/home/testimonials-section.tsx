@@ -37,7 +37,7 @@ export function TestimonialsSection({
           — {summary.count} avis vérifié{plural}
         </p>
 
-        <div className="mt-10 grid items-start gap-5 md:grid-cols-3">
+        <div className="reveal mt-10 grid items-start gap-5 md:grid-cols-3">
           {reviews.slice(0, 3).map((review) => (
             <ReviewCard
               key={review.id}

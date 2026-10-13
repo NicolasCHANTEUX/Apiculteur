@@ -38,7 +38,15 @@ function ContactItem({
   );
 }
 
-export default function ContactPage() {
+function param(value: string | string[] | undefined, max: number) {
+  return typeof value === "string" ? value.slice(0, max) : "";
+}
+
+// Le panier et les fiches produit ouvrent cette page avec un sujet et un
+// message pré-remplis (?sujet=…&message=…), que le visiteur peut modifier.
+export default async function ContactPage(props: PageProps<"/contact">) {
+  const params = await props.searchParams;
+  const prefill = { subject: param(params.sujet, 60), message: param(params.message, 3000) };
   return (
     <main className="mx-auto w-full max-w-[1008px] flex-1 px-6 pb-24">
       <PageIntro
@@ -48,7 +56,7 @@ export default function ContactPage() {
       />
 
       <div className="grid items-start gap-6 md:grid-cols-2 md:gap-[45px]">
-        <ContactForm />
+        <ContactForm key={`${prefill.subject}|${prefill.message}`} initialSubject={prefill.subject} initialMessage={prefill.message} />
 
         <div className="space-y-6">
           <section className="rounded-2xl border border-line bg-white p-6 shadow-[0_1px_3px_rgb(61_43_26/0.06)]">

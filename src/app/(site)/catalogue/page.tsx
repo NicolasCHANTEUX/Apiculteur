@@ -6,6 +6,7 @@ import { CatalogHeader } from "@/components/catalog/catalog-header";
 import { container } from "@/components/ui";
 import { getPublicCatalog } from "@/data/catalog";
 import { getPublicReviews } from "@/data/reviews";
+import { readCriteria } from "@/lib/catalog/browse";
 import { averageByProduct } from "@/lib/domain/ratings";
 
 export const metadata: Metadata = {
@@ -14,10 +15,12 @@ export const metadata: Metadata = {
     "Essaims et reines élevés sur notre exploitation normande : disponibilités et tarifs.",
 };
 
-export default async function CatalogPage() {
+export default async function CatalogPage(props: PageProps<"/catalogue">) {
   // La configuration Supabase peut etre fournie au demarrage du serveur et
   // ne doit pas etre figee au moment du build.
   await connection();
+  const params = await props.searchParams;
+  const initial = readCriteria({ get: (name) => (typeof params[name] === "string" ? (params[name] as string) : null) });
   const [catalog, reviewsResult] = await Promise.all([
     getPublicCatalog(),
     getPublicReviews().then(
@@ -51,7 +54,7 @@ export default async function CatalogPage() {
         ) : null}
 
         {catalog.kind === "ready" && catalog.products.length > 0 ? (
-          <CatalogBrowser products={catalog.products} ratings={ratings} />
+          <CatalogBrowser products={catalog.products} ratings={ratings} initial={initial} />
         ) : null}
       </div>
     </main>

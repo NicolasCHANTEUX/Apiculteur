@@ -5,6 +5,7 @@ import {
   calculatePricedLine,
   eurosToCents,
   getUnitPriceCents,
+  nextTierIncentive,
 } from "./pricing.ts";
 
 const tiers = [
@@ -56,5 +57,24 @@ test("refuse des paliers qui se chevauchent", () => {
         5,
       ),
     /plusieurs paliers/i,
+  );
+});
+
+test("incitation au palier suivant plus avantageux", () => {
+  assert.deepEqual(nextTierIncentive(200, tiers, 3), {
+    addQuantity: 2,
+    targetQuantity: 5,
+    unitPriceCents: 16_500,
+    savingPerUnitCents: 1_500,
+  });
+  assert.equal(nextTierIncentive(200, tiers, 7)?.targetQuantity, 10);
+  assert.equal(nextTierIncentive(200, tiers, 10), null);
+  assert.equal(nextTierIncentive(42, [], 1), null);
+});
+
+test("pas d'incitation vers un palier plus cher", () => {
+  assert.equal(
+    nextTierIncentive(100, [{ minQuantity: 5, maxQuantity: null, unitPrice: 120 }], 2),
+    null,
   );
 });

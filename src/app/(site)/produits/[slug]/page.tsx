@@ -1,17 +1,19 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import type { ReactNode } from "react";
 import { CatalogUnconfigured } from "@/components/catalog/catalog-unconfigured";
-import { AddToCart } from "@/components/cart/add-to-cart";
-import { AvailabilityPill, PriceTag } from "@/components/catalog/product-card";
-import { formatPrice, getImageBadge } from "@/components/catalog/product-display";
-import { ArrowRightIcon, MessageCircleIcon } from "@/components/icons";
+import { AvailabilityPill, ProductCard } from "@/components/catalog/product-card";
+import { getImageBadge } from "@/components/catalog/product-display";
+import { ProductGallery } from "@/components/catalog/product-gallery";
+import { PurchasePanel } from "@/components/catalog/purchase-panel";
+import { ArrowRightIcon, ChevronRightIcon, ClockIcon, PackageIcon, TagIcon, TruckIcon } from "@/components/icons";
 import { ReviewCard } from "@/components/reviews/review-card";
-import { Eyebrow, Stars, buttonStyles, container } from "@/components/ui";
-import { getPublicProductBySlug } from "@/data/catalog";
+import { Eyebrow, Stars, container } from "@/components/ui";
+import { getPublicCatalog, getPublicProductBySlug } from "@/data/catalog";
 import { getPublicReviews } from "@/data/reviews";
 import { conditionLabels, deliveryModeLabels } from "@/lib/catalog/labels";
-import { formatAverage, summarizeRatings } from "@/lib/domain/ratings";
+import { averageByProduct, formatAverage, summarizeRatings } from "@/lib/domain/ratings";
 
 export async function generateMetadata(
   props: PageProps<"/produits/[slug]">,
@@ -30,12 +32,28 @@ export async function generateMetadata(
   };
 }
 
+function Fact({ icon, label, children }: { icon: ReactNode; label: string; children: ReactNode }) {
+  return (
+    <div className="flex items-start gap-3 rounded-xl border border-line/80 bg-white p-3.5">
+      <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-honey/12 text-honey">{icon}</span>
+      <div className="min-w-0 text-[13px] leading-[1.45]">
+        <dt className="text-[11px] tracking-[0.06em] text-muted uppercase">{label}</dt>
+        <dd className="mt-0.5 font-medium text-ink">{children}</dd>
+      </div>
+    </div>
+  );
+}
+
 export default async function ProductPage(
   props: PageProps<"/produits/[slug]">,
 ) {
   const { slug } = await props.params;
-  const [result, reviewsResponse] = await Promise.all([
+  const [result, catalog, reviewsResponse] = await Promise.all([
     getPublicProductBySlug(slug),
+    getPublicCatalog().catch((error: unknown) => {
+      console.error("Fiche produit : catalogue indisponible", error);
+      return null;
+    }),
     getPublicReviews().then(
       (value) => ({ value, error: null }),
       (error: unknown) => ({ value: null, error }),
@@ -57,126 +75,84 @@ export default async function ProductPage(
   }
 
   const product = result.product;
-  const image = product.images[0];
-  const badge = getImageBadge(product);
-  const reviews =
-    reviewsResult?.kind === "ready"
-      ? reviewsResult.reviews.filter((review) => review.productId === product.id)
-      : [];
+  const allReviews = reviewsResult?.kind === "ready" ? reviewsResult.reviews : [];
+  const reviews = allReviews.filter((review) => review.productId === product.id);
   const rating = summarizeRatings(reviews.map((review) => review.rating));
-  const showTiers =
-    product.priceVisibility === "visible" && product.pricingTiers.length > 1;
-  const facts = [
-    product.sku ? { label: "Référence", value: product.sku } : null,
-    { label: "Retrait / transport", value: deliveryModeLabels[product.deliveryMode] },
-    product.seasonLabel ? { label: "Disponibilité", value: product.seasonLabel } : null,
-    product.condition !== "new" ? { label: "État", value: conditionLabels[product.condition] } : null,
-  ].filter((fact): fact is { label: string; value: string } => fact !== null);
+  const ratings = Object.fromEntries(averageByProduct(allReviews));
+
+  // « Vous aimerez aussi » : même catégorie d'abord, puis le reste du catalogue.
+  const others = catalog?.kind === "ready" ? catalog.products.filter((item) => item.id !== product.id) : [];
+  const related = [
+    ...others.filter((item) => item.category?.id && item.category.id === product.category?.id),
+    ...others.filter((item) => !item.category?.id || item.category.id !== product.category?.id),
+  ].slice(0, 4);
 
   return (
     <main className="flex-1">
       <div className={`${container} pt-8 pb-24`}>
-        <Link
-          href="/catalogue"
-          className="inline-flex items-center gap-1.5 text-[13px] text-muted transition hover:text-ink"
-        >
-          <ArrowRightIcon className="size-3.5 rotate-180" />
-          Retour au catalogue
-        </Link>
+        <nav aria-label="Fil d’Ariane">
+          <ol className="flex flex-wrap items-center gap-1.5 text-[13px] text-muted">
+            {[
+              { href: "/", label: "Accueil" },
+              { href: "/catalogue", label: "Nos essaims" },
+              ...(product.category
+                ? [{ href: `/catalogue?categorie=${product.category.slug}`, label: product.category.name }]
+                : []),
+            ].map((crumb) => (
+              <li key={crumb.href} className="flex items-center gap-1.5">
+                <Link href={crumb.href} className="transition hover:text-ink">{crumb.label}</Link>
+                <ChevronRightIcon className="size-3.5 text-line" aria-hidden />
+              </li>
+            ))}
+            <li aria-current="page" className="max-w-[240px] truncate text-ink">{product.name}</li>
+          </ol>
+        </nav>
 
-        <article className="mt-6 grid items-start gap-10 md:grid-cols-2 md:gap-14">
-          <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-sand shadow-[0_24px_48px_-20px_rgb(61_43_26/0.45)]">
-            {image ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={image.url}
-                alt={image.altText ?? product.name}
-                className="size-full object-cover"
-              />
-            ) : null}
-            {badge ? (
-              <span className="absolute top-4 left-4 rounded-full bg-honey px-3 py-1 text-[12px] font-semibold text-white shadow-sm">
-                {badge}
-              </span>
-            ) : null}
+        <article className="mt-6 grid items-start gap-10 md:grid-cols-2 md:gap-12">
+          <div className="md:sticky md:top-[calc(var(--header-height)+1.5rem)]">
+            <ProductGallery images={product.images} name={product.name} badge={getImageBadge(product)} />
           </div>
 
-          <div>
+          <div className="min-w-0">
             {product.category ? <Eyebrow>{product.category.name}</Eyebrow> : null}
-            <h1 className="mt-3 font-display text-[30px] leading-[1.2] font-medium text-ink sm:text-[34px]">
+            <h1 className="mt-3 font-display text-[30px] leading-[1.15] font-medium text-ink sm:text-[38px]">
               {product.name}
             </h1>
             {product.tagline ? (
-              <p className="mt-1.5 text-[14px] text-honey">{product.tagline}</p>
+              <p className="mt-2 text-[15px] text-honey">{product.tagline}</p>
             ) : null}
-            {rating.count > 0 ? (
-              <p className="mt-2 flex items-center gap-2 text-[13px] text-muted">
-                <Stars rating={rating.average} />
-                {formatAverage(rating.average)} · {rating.count} avis
-              </p>
-            ) : null}
-            <div className="mt-4">
+            <div className="mt-4 flex flex-wrap items-center gap-3">
               <AvailabilityPill product={product} />
+              {rating.count > 0 ? (
+                <a href="#avis" className="flex items-center gap-2 text-[13px] text-muted transition hover:text-ink">
+                  <Stars rating={rating.average} />
+                  {formatAverage(rating.average)} · {rating.count} avis
+                </a>
+              ) : null}
             </div>
             {product.shortDescription ? (
-              <p className="mt-5 text-[15px] leading-[1.65] text-body">
+              <p className="mt-5 text-[15.5px] leading-[1.65] text-body">
                 {product.shortDescription}
               </p>
             ) : null}
 
-            <div className="mt-6 rounded-xl border border-line bg-white p-5">
-              <PriceTag product={product} />
-              {showTiers ? (
-                <table className="mt-4 w-full text-left text-[13px]">
-                  <caption className="sr-only">Tarifs par quantité</caption>
-                  <thead className="text-[11px] tracking-[0.06em] text-muted uppercase">
-                    <tr>
-                      <th className="pb-2 font-medium">Quantité</th>
-                      <th className="pb-2 text-right font-medium">Prix unitaire</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-sand border-t border-sand">
-                    {product.pricingTiers.map((tier) => (
-                      <tr key={`${tier.minQuantity}-${tier.maxQuantity ?? "plus"}`}>
-                        <td className="py-2.5 text-body">
-                          {tier.maxQuantity === null
-                            ? `À partir de ${tier.minQuantity}`
-                            : `De ${tier.minQuantity} à ${tier.maxQuantity}`}
-                        </td>
-                        <td className="py-2.5 text-right font-semibold text-ink">
-                          {formatPrice(tier.unitPrice)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+            <div className="mt-6">
+              <PurchasePanel product={product} />
+            </div>
+
+            <dl className="mt-6 grid gap-3 sm:grid-cols-2">
+              <Fact icon={<TruckIcon className="size-[18px]" />} label="Retrait / transport">
+                {deliveryModeLabels[product.deliveryMode]}
+              </Fact>
+              {product.seasonLabel ? (
+                <Fact icon={<ClockIcon className="size-[18px]" />} label="Disponibilité">{product.seasonLabel}</Fact>
               ) : null}
-            </div>
-
-            {product.stockStatusLabel !== "sold_out" && product.displayedStockQuantity !== 0 ? <AddToCart id={product.id} /> : null}
-
-            <div className="mt-5 rounded-xl bg-sand p-5">
-              <p className="text-[14px] font-semibold text-ink">
-                Commande en ligne bientôt disponible
-              </p>
-              <p className="mt-1 text-[13px] leading-[1.6] text-body">
-                En attendant, décrivez-moi votre projet : je vous réponds
-                personnellement pour confirmer la disponibilité et organiser
-                la livraison ou le retrait.
-              </p>
-              <Link href="/contact" className={`${buttonStyles.primary} mt-4`}>
-                Poser une question
-                <MessageCircleIcon className="size-4" />
-              </Link>
-            </div>
-
-            <dl className="mt-6 grid grid-cols-2 gap-x-6 gap-y-3 text-[13px]">
-              {facts.map((fact) => (
-                <div key={fact.label}>
-                  <dt className="text-[11px] tracking-[0.06em] text-muted uppercase">{fact.label}</dt>
-                  <dd className="mt-0.5 text-ink">{fact.value}</dd>
-                </div>
-              ))}
+              {product.sku ? (
+                <Fact icon={<TagIcon className="size-[18px]" />} label="Référence">{product.sku}</Fact>
+              ) : null}
+              {product.condition !== "new" ? (
+                <Fact icon={<PackageIcon className="size-[18px]" />} label="État">{conditionLabels[product.condition]}</Fact>
+              ) : null}
             </dl>
 
             {product.condition !== "new" && product.defectDescription ? (
@@ -191,19 +167,22 @@ export default async function ProductPage(
             ) : null}
 
             {product.longDescription ? (
-              <div className="mt-8 text-[14px] leading-[1.7] whitespace-pre-line text-body">
-                {product.longDescription}
-              </div>
+              <section className="mt-10">
+                <h2 className="font-display text-[22px] font-medium text-ink">Description</h2>
+                <div className="mt-3 text-[14.5px] leading-[1.75] whitespace-pre-line text-body">
+                  {product.longDescription}
+                </div>
+              </section>
             ) : null}
 
             {product.attributes.length > 0 ? (
-              <section className="mt-8">
-                <h2 className="font-display text-[20px] font-medium text-ink">Caractéristiques</h2>
-                <dl className="mt-3 divide-y divide-sand rounded-xl border border-line bg-white">
+              <section className="mt-10">
+                <h2 className="font-display text-[22px] font-medium text-ink">Caractéristiques</h2>
+                <dl className="mt-3 divide-y divide-sand overflow-hidden rounded-xl border border-line bg-white">
                   {product.attributes.map((attribute) => (
-                    <div key={`${attribute.label}-${attribute.value}`} className="flex justify-between gap-4 px-4 py-2.5 text-[13.5px]">
+                    <div key={`${attribute.label}-${attribute.value}`} className="flex justify-between gap-4 px-4 py-3 text-[13.5px] odd:bg-cream/50">
                       <dt className="text-muted">{attribute.label}</dt>
-                      <dd className="text-right text-ink">
+                      <dd className="text-right font-medium text-ink">
                         {attribute.value}
                         {attribute.unit ? ` ${attribute.unit}` : ""}
                       </dd>
@@ -216,13 +195,30 @@ export default async function ProductPage(
         </article>
 
         {reviews.length > 0 ? (
-          <section className="mt-20">
+          <section id="avis" className="reveal mt-20 scroll-mt-24">
             <h2 className="font-display text-[26px] font-medium text-ink">
               Avis sur ce produit
             </h2>
             <div className="mt-6 grid gap-5 md:grid-cols-2">
               {reviews.map((review) => (
                 <ReviewCard key={review.id} review={review} variant="full" />
+              ))}
+            </div>
+          </section>
+        ) : null}
+
+        {related.length > 0 ? (
+          <section className="reveal mt-20">
+            <div className="flex flex-wrap items-end justify-between gap-4">
+              <h2 className="font-display text-[26px] font-medium text-ink">Vous aimerez aussi</h2>
+              <Link href="/catalogue" className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-honey transition hover:text-honey-dark">
+                Tout le catalogue
+                <ArrowRightIcon className="size-3.5" />
+              </Link>
+            </div>
+            <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+              {related.map((item) => (
+                <ProductCard key={item.id} product={item} rating={ratings[item.id]} />
               ))}
             </div>
           </section>

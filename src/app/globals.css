@@ -122,3 +122,48 @@ summary::-webkit-details-marker {
     transform: translate(-40px, 30px) scale(1.15);
   }
 }
+
+/* Site public : apparition au défilement, pilotée par le défilement lui-même
+   (sans JavaScript). Sans prise en charge du navigateur ou si l'utilisateur
+   réduit les animations, le contenu est simplement affiché. */
+@keyframes reveal-up {
+  from {
+    opacity: 0;
+    transform: translateY(28px);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    .reveal {
+      animation: reveal-up linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 40%;
+    }
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes pop {
+  0% {
+    transform: scale(0.4);
+  }
+  70% {
+    transform: scale(1.2);
+  }
+}
+
+@keyframes bump {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.45);
+  }
+}

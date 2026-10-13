@@ -144,27 +144,27 @@ Le plan d’attaque (lots, ordre, estimation) sera établi **à partir de ce doc
 
 - [x] Produits publiés lus depuis la vue publique, cartes de la maquette : badge, pastille de disponibilité, « à partir de », unité, note moyenne. (Maquette)
 - [x] Recherche et filtres par catégorie et disponibilité, côté navigateur. (Maquette)
-- [ ] Recherche, filtres et tri **côté serveur, portés par l’URL** : formulaire GET partageable qui fonctionne sans JavaScript. (Kayart)
+- [ ] Recherche, filtres et tri **côté serveur, portés par l’URL** : formulaire GET partageable qui fonctionne sans JavaScript. *(partiel : critères portés par l’URL et partageables, recherche multi-mots sans accents (caractéristiques comprises), tri prix et nouveautés, « Tout effacer » ; appliqués dans le navigateur, sans pagination)* (Kayart)
   - recherche multi-mots, insensible à la casse et aux accents, sur nom, référence, descriptions, catégorie et caractéristiques ;
   - filtres : catégorie, type de produit, « disponible maintenant » ;
   - tri : nouveautés, prix croissant, prix décroissant, nom ;
   - pagination (12 par page) et compteur de résultats ;
   - critères actifs affichés, retirables un par un, et bouton « Tout effacer » ;
   - filtres repliables sur mobile ; toute modification revient à la page 1.
-- [ ] Accès rapides : Tout, Disponibles maintenant, Sur réservation, Matériel d’occasion. (Kayart, adapté)
-- [ ] Page ou URL par catégorie (`/catalogue?categorie=…`). (CDC 2-3)
+- [x] Accès rapides : Tout, Disponibles maintenant, Sur réservation, Matériel d’occasion. — affichés seulement s’ils filtrent quelque chose. (Kayart, adapté)
+- [x] Page ou URL par catégorie (`/catalogue?categorie=…`). (CDC 2-3)
 - [x] Ligne « race · particularité » sous le nom, comme sur la maquette, alimentée par les caractéristiques (§6). (Maquette)
 
 ### 5.2 Fiche produit
 
 - [x] Photo, pastille de disponibilité, prix et paliers, descriptions, avis du produit. (CDC 3)
-- [ ] Fil d’Ariane Accueil / Nos essaims / Produit. (Kayart)
-- [ ] Galerie multi-photos : miniatures, précédent/suivant, flèches du clavier, plein écran, zoom (pincement, double-clic), réinitialisation du zoom. (Kayart)
+- [x] Fil d’Ariane Accueil / Nos essaims / Produit. — avec la catégorie. (Kayart)
+- [ ] Galerie multi-photos : miniatures, précédent/suivant, flèches du clavier, plein écran, zoom (pincement, double-clic), réinitialisation du zoom. *(partiel : tout sauf le zoom au pincement ; zoom au clic qui suit le pointeur)* (Kayart)
 - [ ] Badges : type, disponibilité, stock affiché, remise « -X % ». (Kayart)
 - [ ] Bloc d’informations : référence, type, disponibilité, stock (selon le mode d’affichage), mode de transport. *(partiel : référence, transport, disponibilité, état ; pas encore le stock affiché)* (Kayart)
 - [x] Caractéristiques structurées (§6). (Kayart, CDC 3)
-- [ ] Action principale adaptée au cas : Ajouter au panier, Réserver, Demander un devis, Demander la disponibilité, Me prévenir. (Kayart)
-- [ ] « Poser une question » ouvre le contact pré-rempli avec le produit et sa référence. (Kayart)
+- [ ] Action principale adaptée au cas : Ajouter au panier, Réserver, Demander un devis, Demander la disponibilité, Me prévenir. *(partiel : ajouter au panier, demander un devis, me prévenir du retour ; la réservation passe par le panier)* (Kayart)
+- [x] « Poser une question » ouvre le contact pré-rempli avec le produit et sa référence. (Kayart)
 - [ ] Aide sous le prix : TTC ou HT selon le régime, « prix dégressifs selon la quantité », « sur devis », « prix d’une pièce unique ». (Kayart)
 - [ ] Matériel d’occasion ou de second choix : description des défauts, photos des défauts, lien vers le modèle neuf. *(partiel : défauts décrits ; photos dédiées et lien vers le modèle à venir)* (Kayart, Apicole)
 - [ ] Visibilité vérifiée à chaque requête : jamais de cache d’un produit masqué ou épuisé. (Kayart)
@@ -222,16 +222,16 @@ Le plan d’attaque (lots, ordre, estimation) sera établi **à partir de ce doc
 
 ## 7. Panier
 
-- [ ] Ajout au panier depuis la fiche, avec choix de la quantité et confirmation visuelle. (Kayart, CDC 7)
+- [x] Ajout au panier depuis la fiche, avec choix de la quantité et confirmation visuelle. — palier appliqué surligné, total en direct, barre d’achat fixe sur mobile. (Kayart, CDC 7)
 - [ ] Panier conservé dans le navigateur : **identifiants et quantités uniquement**, jamais de nom, d’email ou d’adresse. (Kayart)
 - [ ] Calcul du panier par le serveur à chaque changement : prix unitaire selon le palier, total par ligne, sous-total. (Kayart, CDC 5-7)
 - [ ] Problème signalé par ligne : produit indisponible, sur devis, stock insuffisant (avec « ramener au maximum »), produit retiré du catalogue (affiché sans révéler un produit privé). (Kayart)
 - [ ] Sous-total partiel clairement présenté ; passage en commande bloqué tant qu’un problème subsiste. (Kayart)
-- [ ] Incitation aux paliers : « Encore 2 essaims pour passer à 150 € l’unité ». (Apicole, CDC 5)
+- [x] Incitation aux paliers : « Encore 2 essaims pour passer à 150 € l’unité ». — sur la fiche et par ligne du panier, en un clic. (Apicole, CDC 5)
 - [ ] Estimation de réception : retrait gratuit sur rendez-vous, ou livraison selon pays, code postal et distance (§9). Choix gardé pour la session. (Kayart, CDC 7)
 - [ ] Message préventif quand le panier dépassera un seuil de validation manuelle. (CDC 8)
 - [ ] Par ligne : visuel, référence, état, lien vers la fiche, quantité modifiable, retrait. (Kayart, CDC 7)
-- [ ] Vider le panier (avec confirmation), actualiser, message si le stockage du navigateur est indisponible. (Kayart)
+- [x] Vider le panier (avec confirmation), actualiser, message si le stockage du navigateur est indisponible. — en attendant la commande (lot 4), « Envoyer ma demande » pré-remplit le contact avec le contenu du panier. (Kayart)
 
 ---
 
@@ -552,8 +552,8 @@ Le plan d’attaque (lots, ordre, estimation) sera établi **à partir de ce doc
 ## 22. Expérience, accessibilité et responsive
 
 - [x] Site public responsive, vérifié à 390 et 1 440 px ; menu mobile. (CDC 25)
-- [ ] Lien « Aller au contenu », focus placé sur le contenu principal. *(partiel : administration)* (Kayart)
-- [ ] Échap ferme le menu mobile et les dialogues, puis rend le focus. *(partiel : administration)* (Kayart)
+- [x] Lien « Aller au contenu », focus placé sur le contenu principal. — site public et administration. (Kayart)
+- [x] Échap ferme le menu mobile et les dialogues, puis rend le focus. — site public et administration. (Kayart)
 - [ ] Respect de `prefers-reduced-motion`. (Kayart)
 - [ ] Formulaires : erreur affichée sous chaque champ (`aria-invalid`, `aria-describedby`), valeurs conservées après une erreur, bouton « envoi en cours ». (Kayart)
 - [ ] Champs d’au moins 16 px sur mobile (pas de zoom automatique sur iOS) ; cibles d’au moins 44 px. (Kayart)

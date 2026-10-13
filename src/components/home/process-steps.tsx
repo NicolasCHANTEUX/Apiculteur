@@ -64,7 +64,7 @@ export function ProcessSteps() {
                 key={step.title}
                 className={`lg:flex lg:items-start ${isLast ? "lg:flex-none" : "lg:flex-1"}`}
               >
-                <div className="mx-auto max-w-[220px] text-center lg:w-[146px]">
+                <div className="reveal mx-auto max-w-[220px] text-center lg:w-[146px]">
                   <div
                     className={`relative mx-auto flex size-[74px] items-center justify-center rounded-full border-[3px] border-white shadow-[0_6px_16px_-8px_rgb(61_43_26/0.4)] ${step.tone}`}
                   >

@@ -32,7 +32,7 @@ export function ContactCta() {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-white/15 bg-white/10 p-6">
+        <div className="reveal rounded-2xl border border-white/15 bg-white/10 p-6">
           <div className="flex items-center gap-3">
             <OwnerAvatar className="size-[52px] text-[19px]" />
             <div>

@@ -18,7 +18,7 @@ export function AboutSection() {
       <div
         className={`${container} grid items-center gap-14 md:grid-cols-[minmax(0,478px)_1fr] md:gap-[67px]`}
       >
-        <div className="relative mr-6 mb-6 md:mr-0">
+        <div className="reveal relative mr-6 mb-6 md:mr-0">
           <Image
             src="/images/apiculteur-rucher.jpg"
             alt="Apiculteur en combinaison inspectant un cadre devant ses ruches"
