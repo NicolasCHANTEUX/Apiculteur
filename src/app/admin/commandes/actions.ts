@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { recordAudit } from "@/data/audit";
 import { requireAdmin } from "@/data/auth";
+import { getEmailConfig, scheduleOrderEmails, type OrderEmailTemplate } from "@/data/email";
 import { failure, success, type ActionResult } from "@/lib/admin/action-result";
 import { createClient } from "@/lib/supabase/server";
 
@@ -12,6 +13,19 @@ const CONFLICT = failure("Cette commande a changé entre-temps (autre onglet ?).
 function field(formData: FormData, name: string, max = 2000) {
   const value = formData.get(name);
   return typeof value === "string" ? value.trim().slice(0, max) : "";
+}
+
+/**
+ * Email au client pour cette étape, si l'admin l'a demandé (case cochée par
+ * défaut). Renvoie la phrase à ajouter au message de confirmation.
+ */
+async function notifyCustomer(formData: FormData, id: string, template: OrderEmailTemplate, note?: string) {
+  if (formData.get("notify") !== "true") return "";
+  const queued = await scheduleOrderEmails(id, [template], { note, queueNow: true });
+  if (queued === "failed") return " L’email au client n’a pas pu être préparé : prévenez-le depuis « Écrire au client ».";
+  if (!queued) return " Aucun nouvel email : déjà prévu pour cette étape, ou client sans adresse.";
+  revalidatePath("/admin/emails");
+  return getEmailConfig().provider ? " Le client est prévenu par email." : " Email prêt à envoyer depuis la rubrique Emails.";
 }
 
 function revalidateOrder(id: string) {
@@ -52,8 +66,9 @@ export async function acceptOrderAction(formData: FormData): Promise<ActionResul
     return rpcFailure(error);
   }
   await recordAudit({ actorUserId: admin.userId, action: "order.accepted", entityType: "order", entityId: id, metadata: { order_number: field(formData, "number"), note: note || undefined } });
+  const notice = await notifyCustomer(formData, id, "order_accepted", note);
   revalidateOrder(id);
-  return success("Demande acceptée : le stock a été mis à jour.");
+  return success(`Demande acceptée : le stock a été mis à jour.${notice}`);
 }
 
 // Refus d'une demande en attente, ou annulation d'une commande acceptée
@@ -82,8 +97,9 @@ export async function cancelOrderAction(formData: FormData): Promise<ActionResul
     entityId: id,
     metadata: { order_number: field(formData, "number"), note: note || undefined },
   });
+  const notice = await notifyCustomer(formData, id, refused ? "order_refused" : "order_cancelled", note);
   revalidateOrder(id);
-  return success(refused ? "Demande refusée." : "Commande annulée : le stock a été rendu.");
+  return success(`${refused ? "Demande refusée." : "Commande annulée : le stock a été rendu."}${notice}`);
 }
 
 const steps = ["preparing", "ready", "delivered"] as const;
@@ -109,8 +125,9 @@ export async function advanceOrderAction(formData: FormData): Promise<ActionResu
     return CONFLICT;
   }
   await recordAudit({ actorUserId: admin.userId, action: "order.status_changed", entityType: "order", entityId: id, metadata: { order_number: field(formData, "number"), status: step } });
+  const notice = step === "ready" ? await notifyCustomer(formData, id, "order_ready") : "";
   revalidateOrder(id);
-  return success(step === "ready" ? "Commande prête." : step === "delivered" ? "Commande terminée." : "Commande remise en préparation.");
+  return success(`${step === "ready" ? "Commande prête." : step === "delivered" ? "Commande terminée." : "Commande remise en préparation."}${notice}`);
 }
 
 export async function markOrderPaidAction(formData: FormData): Promise<ActionResult> {
@@ -132,8 +149,9 @@ export async function markOrderPaidAction(formData: FormData): Promise<ActionRes
     return CONFLICT;
   }
   await recordAudit({ actorUserId: admin.userId, action: "order.paid", entityType: "order", entityId: id, metadata: { order_number: field(formData, "number"), method: method || undefined } });
+  const notice = await notifyCustomer(formData, id, "order_paid");
   revalidateOrder(id);
-  return success("Paiement enregistré.");
+  return success(`Paiement enregistré.${notice}`);
 }
 
 export async function saveOrderNoteAction(formData: FormData): Promise<ActionResult> {

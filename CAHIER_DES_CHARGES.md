@@ -359,13 +359,13 @@ Le plan d’attaque (lots, ordre, estimation) sera établi **à partir de ce doc
 
 ## 14. Emails et notifications
 
-- [ ] Choisir le fournisseur (Resend, Brevo, Postmark…) et authentifier le domaine d’envoi (SPF, DKIM, DMARC) ; expéditeur et adresse de réponse configurables. Non configuré dans Kayart. (CDC 14)
-- [ ] Modèles (CDC 14) : création de commande, réception de demande, validation, refus, proposition alternative, devis, facture, paiement confirmé, livraison ou retrait, demande d’avis, remerciement, nouvelle commande (admin), nouvel avis (admin).
+- [ ] Choisir le fournisseur (Resend, Brevo, Postmark…) et authentifier le domaine d’envoi (SPF, DKIM, DMARC) ; expéditeur et adresse de réponse configurables. Non configuré dans Kayart. *(partiel : pilotes Brevo et Resend prêts, expéditeur, réponse et alertes réglables par variables d’environnement ; choix du fournisseur et authentification du domaine à faire)* (CDC 14)
+- [ ] Modèles (CDC 14) : création de commande, réception de demande, validation, refus, proposition alternative, devis, facture, paiement confirmé, livraison ou retrait, demande d’avis, remerciement, nouvelle commande (admin), nouvel avis (admin). *(partiel : réception de demande, acceptation (avec message de l’apiculteur), refus, annulation, commande prête, paiement reçu, nouvelle demande (admin) ; les autres arrivent avec leurs lots)*
 - [ ] Modèles supplémentaires : réservation reçue, réservation acceptée, « c’est disponible » (liste d’attente), lien de paiement. (Apicole, Kayart)
-- [ ] File d’envoi avec reprise en cas d’échec ; journal des emails (destinataire, modèle, date, statut), sans contenu sensible dans les logs. (CDC 14, Kayart)
+- [x] File d’envoi avec reprise en cas d’échec ; journal des emails (destinataire, modèle, date, statut), sans contenu sensible dans les logs. — table `email_outbox`, envoi après la réponse, nouvel essai automatique des échecs récents ou à la demande ; rubrique Emails avec aperçu ; sans fournisseur, emails ouverts tout rédigés dans la messagerie puis marqués envoyés. (CDC 14, Kayart)
 - [ ] Modèles modifiables par l’admin, avec variables. (CDC 14)
 - [ ] Emails d’authentification (confirmation, réinitialisation) via Supabase Auth, personnalisés et distincts des emails métier. (Kayart)
-- [ ] Ton humain, signé par l’apiculteur. (CDC 21)
+- [x] Ton humain, signé par l’apiculteur. (CDC 21)
 
 ---
 

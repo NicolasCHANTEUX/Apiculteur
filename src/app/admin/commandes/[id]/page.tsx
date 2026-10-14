@@ -3,6 +3,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
 import { Badge, Notice, PageHeader, Panel, adminButton } from "@/components/admin/admin-ui";
+import { EmailActions } from "@/components/admin/emails/email-controls";
+import { EmailStatusPill, isQueued } from "@/components/admin/emails/email-status";
 import { OrderActions, OrderNote, OrderStatePill } from "@/components/admin/orders/order-controls";
 import { formatPrice } from "@/components/catalog/product-display";
 import {
@@ -14,8 +16,10 @@ import {
   PhoneIcon,
   TruckIcon,
 } from "@/components/icons";
+import { listOrderEmails } from "@/data/admin/emails";
 import { getAdminOrder } from "@/data/admin/orders";
 import { requireAdmin } from "@/data/auth";
+import { getEmailConfig } from "@/data/email";
 import { formatOrderDate, paymentLabels, type OrderStateKey } from "@/lib/orders/labels";
 import { customerEmailDraft, mailtoHref } from "@/lib/orders/messages";
 import { site } from "@/lib/site";
@@ -43,8 +47,10 @@ function Info({ label, children }: { label: string; children: ReactNode }) {
 export default async function AdminOrderPage(props: PageProps<"/admin/commandes/[id]">) {
   const { id } = await props.params;
   await requireAdmin(`/admin/commandes/${id}`);
-  const order = await getAdminOrder(id);
+  const [order, emails] = await Promise.all([getAdminOrder(id), listOrderEmails(id)]);
   if (!order) notFound();
+  const autoEmail = Boolean(getEmailConfig().provider);
+  const now = new Date();
 
   const ref = { id: order.id, version: order.updatedAt, number: order.orderNumber };
   const stopped = order.state.key === "refused" || order.state.key === "cancelled";
@@ -173,6 +179,42 @@ export default async function AdminOrderPage(props: PageProps<"/admin/commandes/
             </Panel>
           ) : null}
 
+          <Panel
+            title="Emails"
+            description={autoEmail ? "Envoyés automatiquement à chaque étape." : "Préparés à chaque étape : à envoyer depuis votre messagerie."}
+            flush
+          >
+            {emails.length === 0 ? (
+              <p className="px-5 py-4 text-[13.5px] text-muted">
+                {order.customer.email ? "Aucun email pour cette commande." : "Pas d’email : le client n’a pas laissé d’adresse."}
+              </p>
+            ) : (
+              <ul className="divide-y divide-line/60">
+                {emails.map((email) => (
+                  <li key={email.id} className="space-y-2.5 px-5 py-3.5">
+                    <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1.5">
+                      <Link href={`/admin/emails/${email.id}`} className="group min-w-0">
+                        <span className="block font-medium text-ink group-hover:text-honey-dark">{email.templateLabel}</span>
+                        <span className="block text-[12.5px] text-muted">
+                          {email.toEmail} · {formatOrderDate(email.sentAt ?? email.createdAt)}
+                        </span>
+                      </Link>
+                      <EmailStatusPill status={email.status} sentManually={email.sentManually} queued={isQueued(email.status, email.createdAt, autoEmail, now)} />
+                    </div>
+                    {email.status === "failed" && email.lastError ? <p className="text-[12.5px] text-red-700">{email.lastError}</p> : null}
+                    {(email.text && (email.status === "pending" || email.status === "failed")) || email.status === "skipped" ? (
+                      <EmailActions
+                        compact
+                        auto={autoEmail}
+                        email={{ id: email.id, status: email.status, orderId: order.id, toEmail: email.toEmail, subject: email.subject, text: email.text ?? "" }}
+                      />
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Panel>
+
           <Panel title="Historique">
             {order.history.length === 0 ? (
               <p className="text-[13.5px] text-muted">Aucun événement enregistré.</p>
@@ -197,7 +239,7 @@ export default async function AdminOrderPage(props: PageProps<"/admin/commandes/
         <aside className="space-y-6 lg:sticky lg:top-6">
           {!(order.state.key === "done" || stopped) ? (
             <Panel title="Actions">
-              <OrderActions order={ref} state={order.state.key} paymentStatus={order.paymentStatus} />
+              <OrderActions order={ref} state={order.state.key} paymentStatus={order.paymentStatus} canNotify={Boolean(order.customer.email)} />
             </Panel>
           ) : null}
 

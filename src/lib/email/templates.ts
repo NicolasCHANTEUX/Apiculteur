@@ -1,0 +1,338 @@
+// Modèles des emails de commande (CAHIER §14, ROADMAP lot 6). Chaque modèle
+// produit un sujet, une version HTML et une version texte. Fonctions pures,
+// sans dépendance à Next (testables) ; toutes les valeurs venant du client ou
+// de l'admin sont échappées dans la version HTML.
+
+export const emailTemplates = {
+  order_received: "Demande reçue",
+  order_new_admin: "Nouvelle demande (pour vous)",
+  order_accepted: "Demande acceptée",
+  order_refused: "Demande refusée",
+  order_cancelled: "Commande annulée",
+  order_ready: "Commande prête",
+  order_paid: "Paiement reçu",
+  test: "Email de test",
+} as const;
+
+export type EmailTemplate = keyof typeof emailTemplates;
+
+/** Modèles envoyés au client à chaque étape de sa commande. */
+export type CustomerOrderTemplate = Exclude<EmailTemplate, "order_new_admin" | "test">;
+
+export function isEmailTemplate(value: string): value is EmailTemplate {
+  return Object.hasOwn(emailTemplates, value);
+}
+
+export type OrderEmailContext = {
+  id: string;
+  number: string;
+  customerName: string;
+  companyName: string | null;
+  email: string;
+  phone: string | null;
+  lines: { name: string; quantity: number; unitPriceCents: number; lineTotalCents: number }[];
+  totalCents: number;
+  deliveryMethod: "pickup" | "delivery";
+  address: string | null;
+  /** Date souhaitée, AAAA-MM-JJ. */
+  requestedDate: string | null;
+  customerMessage: string | null;
+  /** Message de l'apiculteur saisi en acceptant, refusant ou annulant. */
+  note: string | null;
+  paymentMethod: string | null;
+  paid: boolean;
+  reviewReasons: string[];
+};
+
+export type EmailIdentity = {
+  siteName: string;
+  /** Signature, ex. « Marc Dupont ». */
+  ownerName: string;
+  ownerFirstName: string;
+  /** Origine publique du site, sans barre finale. */
+  siteUrl: string;
+  contactEmail: string;
+  phone: string;
+};
+
+export type RenderedEmail = { subject: string; html: string; text: string };
+
+const colors = {
+  cream: "#faf7f0",
+  line: "#e8e0d0",
+  honey: "#d99a2b",
+  honeyDark: "#a86f12",
+  ink: "#262626",
+  body: "#4a4a4a",
+  muted: "#7a7269",
+};
+
+const price = new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" });
+const day = new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
+
+/** Espaces fines insécables de Intl remplacées : rendu identique partout. */
+export function formatEuros(cents: number) {
+  return price.format(cents / 100).replace(/[  ]/g, " ");
+}
+
+function formatDay(value: string) {
+  const date = new Date(`${value}T12:00:00Z`);
+  return Number.isNaN(date.getTime()) ? value : day.format(date);
+}
+
+export function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+/** Texte libre (plusieurs lignes) en HTML échappé. */
+function multiline(value: string) {
+  return escapeHtml(value).replace(/\r?\n/g, "<br>");
+}
+
+// Blocs de contenu : chacun sait se rendre en HTML et en texte, ce qui garde
+// les deux versions alignées.
+type Block =
+  | { kind: "paragraph"; text: string }
+  | { kind: "quote"; label: string; text: string }
+  | { kind: "summary"; order: OrderEmailContext }
+  | { kind: "details"; rows: [string, string][] }
+  | { kind: "button"; label: string; href: string };
+
+function paragraph(text: string): Block {
+  return { kind: "paragraph", text };
+}
+
+function receptionRows(order: OrderEmailContext): [string, string][] {
+  const rows: [string, string][] = [
+    ["Mode", order.deliveryMethod === "delivery" ? "Livraison" : "Retrait sur l’exploitation"],
+  ];
+  if (order.deliveryMethod === "delivery" && order.address) rows.push(["Adresse", order.address]);
+  rows.push(["Date souhaitée", order.requestedDate ? formatDay(order.requestedDate) : "à convenir ensemble"]);
+  return rows;
+}
+
+function lineLabel(line: OrderEmailContext["lines"][number]) {
+  return `${line.quantity} × ${line.name}`;
+}
+
+function lineAmount(line: OrderEmailContext["lines"][number]) {
+  return line.lineTotalCents > 0 ? formatEuros(line.lineTotalCents) : "prix à confirmer";
+}
+
+function renderHtmlBlock(block: Block): string {
+  switch (block.kind) {
+    case "paragraph":
+      return `<p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:${colors.body}">${multiline(block.text)}</p>`;
+    case "quote":
+      return `<div style="margin:0 0 18px;padding:12px 16px;border-left:3px solid ${colors.honey};background:${colors.cream};border-radius:0 8px 8px 0">`
+        + `<p style="margin:0 0 4px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:${colors.muted}">${escapeHtml(block.label)}</p>`
+        + `<p style="margin:0;font-size:15px;line-height:1.6;color:${colors.ink}">${multiline(block.text)}</p></div>`;
+    case "summary": {
+      const { order } = block;
+      const rows = order.lines
+        .map(
+          (line) =>
+            `<tr><td style="padding:10px 0;border-bottom:1px solid ${colors.line};font-size:14px;color:${colors.ink}">${escapeHtml(lineLabel(line))}</td>`
+            + `<td align="right" style="padding:10px 0 10px 12px;border-bottom:1px solid ${colors.line};font-size:14px;color:${colors.ink};white-space:nowrap">${escapeHtml(lineAmount(line))}</td></tr>`,
+        )
+        .join("");
+      return `<p style="margin:8px 0 6px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:${colors.muted}">Demande ${escapeHtml(order.number)}</p>`
+        + `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin:0 0 6px">${rows}`
+        + `<tr><td style="padding:12px 0 0;font-size:15px;font-weight:bold;color:${colors.ink}">Total</td>`
+        + `<td align="right" style="padding:12px 0 0 12px;font-size:15px;font-weight:bold;color:${colors.ink};white-space:nowrap">${escapeHtml(formatEuros(order.totalCents))}</td></tr></table>`
+        + (order.lines.some((line) => line.lineTotalCents === 0)
+          ? `<p style="margin:0 0 6px;font-size:13px;color:${colors.muted}">Certains prix seront confirmés avec vous.</p>`
+          : "")
+        + renderHtmlBlock({ kind: "details", rows: receptionRows(order) });
+    }
+    case "details":
+      return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin:10px 0 18px">${block.rows
+        .map(
+          ([label, value]) =>
+            `<tr><td valign="top" width="120" style="width:120px;padding:4px 12px 4px 0;font-size:13px;color:${colors.muted};white-space:nowrap">${escapeHtml(label)}</td>`
+            + `<td style="padding:4px 0;font-size:14px;color:${colors.ink}">${multiline(value)}</td></tr>`,
+        )
+        .join("")}</table>`;
+    case "button":
+      return `<p style="margin:8px 0 22px"><a href="${escapeHtml(block.href)}" style="display:inline-block;padding:12px 22px;border-radius:8px;background:${colors.honey};color:#ffffff;font-size:15px;font-weight:bold;text-decoration:none">${escapeHtml(block.label)}</a></p>`;
+  }
+}
+
+function renderTextBlock(block: Block): string {
+  switch (block.kind) {
+    case "paragraph":
+      return block.text;
+    case "quote":
+      return `${block.label}\n${block.text
+        .split(/\r?\n/)
+        .map((line) => `> ${line}`)
+        .join("\n")}`;
+    case "summary": {
+      const { order } = block;
+      return [
+        `Demande ${order.number}`,
+        ...order.lines.map((line) => `- ${lineLabel(line)} : ${lineAmount(line)}`),
+        `Total : ${formatEuros(order.totalCents)}`,
+        ...(order.lines.some((line) => line.lineTotalCents === 0) ? ["Certains prix seront confirmés avec vous."] : []),
+        "",
+        renderTextBlock({ kind: "details", rows: receptionRows(order) }),
+      ].join("\n");
+    }
+    case "details":
+      return block.rows.map(([label, value]) => `${label} : ${value.replace(/\r?\n/g, ", ")}`).join("\n");
+    case "button":
+      return `${block.label} : ${block.href}`;
+  }
+}
+
+function layout(identity: EmailIdentity, preheader: string, blocks: Block[], signed: boolean): { html: string; text: string } {
+  const signature = signed ? [paragraph(`Bien à vous,\n${identity.ownerName}\n${identity.siteName}`)] : [];
+  const all = [...blocks, ...signature];
+  const footer = `${identity.siteName} · ${identity.phone} · ${identity.contactEmail}`;
+  const html = `<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><title>${escapeHtml(identity.siteName)}</title></head>`
+    + `<body style="margin:0;padding:0;background:${colors.cream}">`
+    + `<div style="display:none;max-height:0;overflow:hidden;opacity:0">${escapeHtml(preheader)}</div>`
+    + `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${colors.cream}"><tr><td align="center" style="padding:28px 14px">`
+    + `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif">`
+    + `<tr><td style="padding:0 6px 16px;font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:bold;color:${colors.ink}">`
+    + `<span style="color:${colors.honey}">&#11042;</span> ${escapeHtml(identity.siteName)}</td></tr>`
+    + `<tr><td style="padding:28px 28px 12px;background:#ffffff;border:1px solid ${colors.line};border-radius:14px">${all.map(renderHtmlBlock).join("")}</td></tr>`
+    + `<tr><td style="padding:16px 6px;font-size:12px;line-height:1.6;color:${colors.muted}">${escapeHtml(footer)}<br>`
+    + `<a href="${escapeHtml(identity.siteUrl)}" style="color:${colors.honeyDark}">${escapeHtml(identity.siteUrl.replace(/^https?:\/\//, ""))}</a></td></tr>`
+    + `</table></td></tr></table></body></html>`;
+  const text = [...all.map(renderTextBlock), "—", footer, identity.siteUrl].join("\n\n");
+  return { html, text };
+}
+
+const contactLine = (identity: EmailIdentity) =>
+  `Une question ? Répondez simplement à cet email, ou appelez-moi au ${identity.phone}.`;
+
+/** Email d'une étape de commande. `test` ignore la commande. */
+export function renderOrderEmail(template: EmailTemplate, order: OrderEmailContext, identity: EmailIdentity): RenderedEmail {
+  const hello = paragraph(`Bonjour ${order.customerName},`);
+  const note = (label: string): Block[] => (order.note ? [{ kind: "quote", label, text: order.note }] : []);
+  const pickup = order.deliveryMethod === "pickup";
+
+  switch (template) {
+    case "order_received": {
+      const subject = `Votre demande ${order.number} est bien reçue`;
+      return {
+        subject,
+        ...layout(identity, "Merci ! Je reviens vers vous pour confirmer chaque détail.", [
+          hello,
+          paragraph("Merci pour votre demande ! Je l’ai bien reçue et je l’étudie au plus vite : disponibilités, quantités et organisation du retrait ou de la livraison."),
+          paragraph("Je vous recontacte ensuite pour la confirmer avec vous. Aucun paiement ne vous est demandé à cette étape."),
+          { kind: "summary", order },
+          ...(order.customerMessage ? [{ kind: "quote", label: "Votre message", text: order.customerMessage } satisfies Block] : []),
+          paragraph(contactLine(identity)),
+        ], true),
+      };
+    }
+    case "order_new_admin": {
+      const who = order.companyName ? `${order.customerName} (${order.companyName})` : order.customerName;
+      const subject = `Nouvelle demande ${order.number} — ${who}`;
+      const contact: [string, string][] = [["Client", who], ["Email", order.email]];
+      if (order.phone) contact.push(["Téléphone", order.phone]);
+      return {
+        subject,
+        ...layout(identity, `${who} : ${formatEuros(order.totalCents)}`, [
+          paragraph(`Une nouvelle demande vient d’arriver sur le site : ${order.number}, ${formatEuros(order.totalCents)}.`),
+          ...(order.reviewReasons.length ? [paragraph(`À regarder de près : ${order.reviewReasons.join(", ")}.`)] : []),
+          { kind: "button", label: "Voir la demande", href: `${identity.siteUrl}/admin/commandes/${order.id}` },
+          { kind: "details", rows: contact },
+          { kind: "summary", order },
+          ...(order.customerMessage ? [{ kind: "quote", label: "Message du client", text: order.customerMessage } satisfies Block] : []),
+          paragraph("Le client a reçu un accusé de réception. Répondre à cet email écrit au client."),
+        ], false),
+      };
+    }
+    case "order_accepted":
+      return {
+        subject: `Votre demande ${order.number} est acceptée`,
+        ...layout(identity, "Bonne nouvelle : je prépare votre commande.", [
+          hello,
+          paragraph(
+            pickup
+              ? "Bonne nouvelle : votre demande est acceptée et je prépare votre commande. Nous convenons ensemble du jour et de l’heure du retrait."
+              : "Bonne nouvelle : votre demande est acceptée et je prépare votre commande. Je reviens vers vous pour organiser la livraison.",
+          ),
+          ...note(`Un mot de ${identity.ownerFirstName}`),
+          { kind: "summary", order },
+          paragraph("Le règlement se fait selon les modalités que nous confirmons ensemble."),
+          paragraph(contactLine(identity)),
+        ], true),
+      };
+    case "order_refused":
+      return {
+        subject: `Votre demande ${order.number}`,
+        ...layout(identity, "Ma réponse à votre demande.", [
+          hello,
+          paragraph("Merci pour votre demande. Je suis malheureusement dans l’impossibilité d’y donner suite."),
+          ...note("Précision"),
+          paragraph("N’hésitez pas à me répondre si vous souhaitez en parler ou envisager une autre solution : je ferai mon possible."),
+          { kind: "summary", order },
+        ], true),
+      };
+    case "order_cancelled":
+      return {
+        subject: `Annulation de votre commande ${order.number}`,
+        ...layout(identity, "Confirmation d’annulation.", [
+          hello,
+          paragraph(`Je vous confirme l’annulation de votre commande ${order.number}.`),
+          ...note("Précision"),
+          ...(order.paid ? [paragraph("Votre règlement vous sera remboursé : je reviens vers vous à ce sujet.")] : []),
+          { kind: "summary", order },
+          paragraph(contactLine(identity)),
+        ], true),
+      };
+    case "order_ready":
+      return {
+        subject: `Votre commande ${order.number} est prête`,
+        ...layout(identity, pickup ? "Vous pouvez venir la retirer." : "Je vous contacte pour la livraison.", [
+          hello,
+          paragraph(
+            pickup
+              ? "Votre commande est prête ! Vous pouvez venir la retirer au moment convenu ensemble. Si rien n’est encore fixé, répondez à cet email pour choisir un créneau."
+              : "Votre commande est prête ! Je vous contacte pour fixer le moment de la livraison.",
+          ),
+          { kind: "summary", order },
+          paragraph(contactLine(identity)),
+        ], true),
+      };
+    case "order_paid":
+      return {
+        subject: `Paiement reçu — commande ${order.number}`,
+        ...layout(identity, "Merci pour votre règlement.", [
+          hello,
+          paragraph(
+            `J’ai bien reçu votre règlement de ${formatEuros(order.totalCents)}${order.paymentMethod ? ` (${order.paymentMethod.toLowerCase()})` : ""}. Merci !`,
+          ),
+          { kind: "summary", order },
+          paragraph("Ce message confirme la réception de votre paiement ; il ne remplace pas une facture."),
+        ], true),
+      };
+    case "test":
+      return renderTestEmail(identity);
+  }
+}
+
+export function renderTestEmail(identity: EmailIdentity): RenderedEmail {
+  return {
+    subject: `Email de test — ${identity.siteName}`,
+    ...layout(identity, "L’envoi des emails fonctionne.", [
+      paragraph("Bonjour,"),
+      paragraph("Si vous lisez ce message, l’envoi des emails du site fonctionne : vos clients recevront les confirmations de leurs commandes."),
+      paragraph("Pensez à vérifier qu’il n’est pas arrivé dans les indésirables."),
+    ], true),
+  };
+}
+
+/** Clé d'unicité : un même email d'une même étape n'est mis en file qu'une fois. */
+export function orderEmailKey(template: EmailTemplate, orderId: string) {
+  return `${template}:${orderId}`;
+}

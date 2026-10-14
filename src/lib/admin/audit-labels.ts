@@ -77,6 +77,14 @@ export function describeAuditAction(action: string, metadata: Record<string, unk
       return "Note interne modifiée";
     case "settings.orders_open":
       return meta.open === true ? "Demandes en ligne ouvertes" : "Demandes en ligne fermées";
+    case "email.sent_manually":
+      return typeof meta.template_label === "string" ? `Email « ${meta.template_label} » envoyé depuis votre messagerie` : "Email envoyé depuis votre messagerie";
+    case "email.skipped":
+      return typeof meta.template_label === "string" ? `Email « ${meta.template_label} » écarté` : "Email écarté";
+    case "email.restored":
+      return typeof meta.template_label === "string" ? `Email « ${meta.template_label} » remis à envoyer` : "Email remis à envoyer";
+    case "email.test_sent":
+      return "Email de test envoyé";
     default:
       return action;
   }

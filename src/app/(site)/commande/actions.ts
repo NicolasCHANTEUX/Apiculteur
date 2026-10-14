@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { getPublicCatalog } from "@/data/catalog";
+import { scheduleOrderEmails } from "@/data/email";
 import { getOrderSettings } from "@/data/settings";
 import { parisDay } from "@/lib/admin/series";
 import { parseCart } from "@/lib/cart/storage";
@@ -108,6 +109,10 @@ export async function submitOrderRequestAction(
     console.error("Demande de commande", error?.code, error?.message);
     return failure(UNAVAILABLE);
   }
+
+  // Accusé de réception au client et alerte à l'apiculteur, envoyés après
+  // la réponse (une demande rejouée ne renvoie rien).
+  if (!data.already_submitted) await scheduleOrderEmails(data.order_id, ["order_received", "order_new_admin"]);
 
   redirect(`/commande/merci?numero=${encodeURIComponent(data.order_number)}`);
 }

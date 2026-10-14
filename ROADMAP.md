@@ -81,7 +81,7 @@ Règle de fin de lot : lint, types, tests et build réussis ; recette visuelle �
 - Incitation aux paliers ; avertissement de validation manuelle (§7, §8.2).
 - Choix retrait ou livraison à organiser (H4).
 
-### Lot 4 — Demande de commande · **fait** (migration `20261014100000_order_requests.sql` à appliquer en ligne)
+### Lot 4 — Demande de commande · **fait**
 
 - Page `/commande` : coordonnées, adresse, identifiant pro, date souhaitée, message (§8.1).
 - Création atomique en base (fonction SQL) avec clé d’idempotence ; recalcul serveur (§8.1).
@@ -96,16 +96,16 @@ Règle de fin de lot : lint, types, tests et build réussis ; recette visuelle �
 - Marquer payée (moyen et date) ; suivi de préparation ; annulation ; note interne (§10, §9).
 - Ventes manuelles (§17.4).
 
-### Lot 6 — Emails · **prochain**
+### Lot 6 — Emails · **fait** (migration `20261014120000_email_outbox.sql` à appliquer en ligne ; fournisseur et domaine à choisir, §26-12)
 
 - File d’attente et pilote d’envoi interchangeable (H7) ; journal dans l’admin (§14).
-- Modèles : demande reçue (client et admin), acceptée, refusée, alternative proposée, paiement reçu, commande prête ou expédiée (§14).
+- Modèles : demande reçue (client et admin), acceptée, refusée, alternative proposée, paiement reçu, commande prête ou expédiée (§14). Reste « alternative proposée », avec la fin du lot 5.
 
 ---
 
 ## Phase C — Relation client
 
-### Lot 7 — Demandes clients
+### Lot 7 — Demandes clients · **prochain**
 
 - Contact, devis grande quantité, signalement d’essaim : enregistrés en base (§12.1).
 - Photos privées ; protections anti-abus (§12.1).

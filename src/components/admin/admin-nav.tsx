@@ -7,6 +7,7 @@ import type { ComponentType, SVGProps } from "react";
 import {
   DashboardIcon,
   InboxIcon,
+  MailIcon,
   PackageIcon,
   SettingsIcon,
   ShoppingBagIcon,
@@ -26,6 +27,7 @@ const ready: NavItem[] = [
   { href: "/admin/commandes", label: "Commandes", icon: ShoppingBagIcon },
   { href: "/admin/produits", label: "Produits", icon: PackageIcon },
   { href: "/admin/categories", label: "Catégories", icon: TagIcon },
+  { href: "/admin/emails", label: "Emails", icon: MailIcon },
 ];
 
 // Les rubriques arrivent lot par lot (ROADMAP.md) : elles sont annoncées

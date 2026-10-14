@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ClearCart } from "@/components/order/clear-cart";
 import { ArrowRightIcon, CircleCheckIcon, MessageCircleIcon } from "@/components/icons";
 import { buttonStyles, container } from "@/components/ui";
+import { getEmailConfig } from "@/data/email";
 import { site } from "@/lib/site";
 
 export const metadata: Metadata = { title: "Demande envoyée", robots: { index: false, follow: false } };
@@ -16,6 +17,7 @@ const steps = [
 export default async function OrderThanksPage(props: PageProps<"/commande/merci">) {
   const { numero } = await props.searchParams;
   const number = typeof numero === "string" && /^CMD-\d{1,10}$/.test(numero) ? numero : null;
+  const emailed = Boolean(getEmailConfig().provider);
 
   return (
     <main className={`${container} flex-1 pt-14 pb-24`}>
@@ -32,8 +34,10 @@ export default async function OrderThanksPage(props: PageProps<"/commande/merci"
           </p>
         ) : null}
         <p className="mt-4 text-[14.5px] leading-[1.65] text-muted">
-          Notez ce numéro : il vous sera utile si vous m’écrivez au sujet de cette demande. Aucun paiement ne vous est
-          demandé à cette étape.
+          {emailed
+            ? "Un récapitulatif vient de vous être envoyé par email (pensez à regarder dans les indésirables). "
+            : "Notez ce numéro : il vous sera utile si vous m’écrivez au sujet de cette demande. "}
+          Aucun paiement ne vous est demandé à cette étape.
         </p>
       </div>
 

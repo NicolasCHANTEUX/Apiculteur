@@ -1,0 +1,96 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import { emailTemplates, escapeHtml, formatEuros, renderOrderEmail, type EmailTemplate, type OrderEmailContext } from "./templates.ts";
+
+const identity = {
+  siteName: "Ruchers de Normandie",
+  ownerName: "Marc Dupont",
+  ownerFirstName: "Marc",
+  siteUrl: "https://ruchers.test",
+  contactEmail: "contact@ruchers.test",
+  phone: "06 12 34 56 78",
+};
+
+const order: OrderEmailContext = {
+  id: "11111111-1111-4111-8111-111111111111",
+  number: "CMD-000042",
+  customerName: "Claire <Martin>",
+  companyName: null,
+  email: "claire@exemple.test",
+  phone: "06 00 00 00 00",
+  lines: [
+    { name: "Essaim Buckfast", quantity: 2, unitPriceCents: 18000, lineTotalCents: 36000 },
+    { name: "Reine fécondée", quantity: 1, unitPriceCents: 0, lineTotalCents: 0 },
+  ],
+  totalCents: 36000,
+  deliveryMethod: "pickup",
+  address: null,
+  requestedDate: "2026-04-18",
+  customerMessage: "Bonjour,\n<script>alert(1)</script>",
+  note: null,
+  paymentMethod: null,
+  paid: false,
+  reviewReasons: [],
+};
+
+test("chaque modèle produit un sujet, du HTML et du texte", () => {
+  for (const template of Object.keys(emailTemplates) as EmailTemplate[]) {
+    const email = renderOrderEmail(template, order, identity);
+    assert.ok(email.subject.length > 0 && email.subject.length <= 200, template);
+    assert.match(email.html, /^<!doctype html>/, template);
+    assert.ok(email.text.length > 50, template);
+  }
+});
+
+test("accusé de réception : récapitulatif, date et signature", () => {
+  const email = renderOrderEmail("order_received", order, identity);
+  assert.equal(email.subject, "Votre demande CMD-000042 est bien reçue");
+  assert.match(email.text, /^Bonjour Claire <Martin>,/);
+  assert.match(email.text, /- 2 × Essaim Buckfast : 360,00 €/);
+  assert.match(email.text, /- 1 × Reine fécondée : prix à confirmer/);
+  assert.match(email.text, /Date souhaitée : samedi 18 avril 2026/);
+  assert.match(email.text, /Marc Dupont\nRuchers de Normandie/);
+  assert.match(email.text, /> <script>alert\(1\)<\/script>/);
+});
+
+test("HTML : toutes les valeurs du client sont échappées", () => {
+  const email = renderOrderEmail("order_received", order, identity);
+  assert.doesNotMatch(email.html, /<script>/);
+  assert.match(email.html, /&lt;script&gt;alert\(1\)&lt;\/script&gt;/);
+  assert.match(email.html, /Bonjour Claire &lt;Martin&gt;,/);
+  assert.equal(escapeHtml(`"a" & 'b'`), "&quot;a&quot; &amp; &#39;b&#39;");
+});
+
+test("alerte admin : lien vers la demande, pas de signature", () => {
+  const email = renderOrderEmail("order_new_admin", { ...order, companyName: "GAEC du Bocage", reviewReasons: ["Grande quantité"] }, identity);
+  assert.equal(email.subject, "Nouvelle demande CMD-000042 — Claire <Martin> (GAEC du Bocage)");
+  assert.match(email.text, /Voir la demande : https:\/\/ruchers\.test\/admin\/commandes\/11111111-1111-4111-8111-111111111111/);
+  assert.match(email.text, /À regarder de près : Grande quantité\./);
+  assert.doesNotMatch(email.text, /Bien à vous/);
+});
+
+test("message de l'apiculteur repris dans l'email", () => {
+  const accepted = renderOrderEmail("order_accepted", { ...order, note: "Retrait samedi matin" }, identity);
+  assert.match(accepted.text, /Un mot de Marc\n> Retrait samedi matin/);
+  const refused = renderOrderEmail("order_refused", { ...order, note: "Plus de disponibilité" }, identity);
+  assert.match(refused.text, /Précision\n> Plus de disponibilité/);
+  assert.doesNotMatch(renderOrderEmail("order_accepted", order, identity).text, /Un mot de/);
+});
+
+test("retrait ou livraison : textes adaptés", () => {
+  const delivery = { ...order, deliveryMethod: "delivery" as const, address: "3 rue des Lilas\n14000 Caen" };
+  assert.match(renderOrderEmail("order_ready", delivery, identity).text, /Je vous contacte pour fixer le moment de la livraison/);
+  assert.match(renderOrderEmail("order_ready", order, identity).text, /venir la retirer/);
+  assert.match(renderOrderEmail("order_received", delivery, identity).text, /Adresse : 3 rue des Lilas, 14000 Caen/);
+});
+
+test("paiement et annulation", () => {
+  const paid = renderOrderEmail("order_paid", { ...order, paymentMethod: "Virement", paid: true }, identity);
+  assert.match(paid.text, /règlement de 360,00 € \(virement\)/);
+  assert.match(renderOrderEmail("order_cancelled", { ...order, paid: true }, identity).text, /vous sera remboursé/);
+  assert.doesNotMatch(renderOrderEmail("order_cancelled", order, identity).text, /remboursé/);
+});
+
+test("montants en euros", () => {
+  assert.equal(formatEuros(123456), "1 234,56 €");
+});

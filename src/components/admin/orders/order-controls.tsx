@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useOptimistic, useRef, useState } from "react";
+import { useEffect, useId, useOptimistic, useRef, useState } from "react";
 import {
   acceptOrderAction,
   advanceOrderAction,
@@ -88,7 +88,27 @@ export function OrderStatePill({ state }: { state: { key: OrderStateKey; label: 
 
 type OrderRef = { id: string; version: string; number: string };
 
-/** Dialogue avec une note facultative (motif, précisions pour l'historique). */
+/** Case « Prévenir le client par email », cochée par défaut. */
+function NotifyCheckbox({ checked, onChange }: { checked: boolean; onChange: (value: boolean) => void }) {
+  const id = useId();
+  return (
+    <label htmlFor={id} className="flex items-center gap-2.5 text-[13px] text-ink">
+      <input
+        id={id}
+        type="checkbox"
+        checked={checked}
+        onChange={(event) => onChange(event.target.checked)}
+        className="size-4 rounded border-line accent-honey"
+      />
+      Prévenir le client par email
+    </label>
+  );
+}
+
+/**
+ * Dialogue de décision : message facultatif au client (repris dans l'email
+ * et gardé dans l'historique), et choix de prévenir ou non le client.
+ */
 function NoteDialog({
   open,
   title,
@@ -96,6 +116,7 @@ function NoteDialog({
   confirmLabel,
   tone,
   placeholder,
+  canNotify,
   onCancel,
   onConfirm,
 }: {
@@ -105,11 +126,15 @@ function NoteDialog({
   confirmLabel: string;
   tone: "primary" | "danger";
   placeholder: string;
+  /** Le client a une adresse email. */
+  canNotify: boolean;
   onCancel: () => void;
-  onConfirm: (note: string) => void;
+  onConfirm: (note: string, notify: boolean) => void;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   const [note, setNote] = useState("");
+  const [notify, setNotify] = useState(true);
+  const emailing = canNotify && notify;
 
   useEffect(() => {
     const dialog = ref.current;
@@ -133,14 +158,28 @@ function NoteDialog({
         className="p-6"
         onSubmit={(event) => {
           event.preventDefault();
-          onConfirm(note);
+          onConfirm(note, emailing);
           setNote("");
+          setNotify(true);
         }}
       >
         <h2 className="font-display text-[19px] font-semibold">{title}</h2>
         <p className="mt-2 text-[14px] leading-[1.55] text-body">{description}</p>
+        {canNotify ? (
+          <div className="mt-4">
+            <NotifyCheckbox checked={notify} onChange={setNotify} />
+          </div>
+        ) : null}
         <label className="mt-4 block text-[13px] font-medium text-ink">
-          Note <span className="font-normal text-muted">(facultative, gardée dans l’historique)</span>
+          {emailing ? (
+            <>
+              Message au client <span className="font-normal text-muted">(facultatif, ajouté à l’email)</span>
+            </>
+          ) : (
+            <>
+              Note <span className="font-normal text-muted">(facultative, gardée dans l’historique)</span>
+            </>
+          )}
           <textarea
             value={note}
             onChange={(event) => setNote(event.target.value)}
@@ -171,15 +210,21 @@ export function OrderActions({
   order,
   state,
   paymentStatus,
+  canNotify,
 }: {
   order: OrderRef;
   state: OrderStateKey;
   paymentStatus: PaymentStatus;
+  /** Le client a une adresse email. */
+  canNotify: boolean;
 }) {
   const { run, pending } = useAdminAction();
   const [dialog, setDialog] = useState<"accept" | "refuse" | "cancel" | null>(null);
   const [method, setMethod] = useState(paymentMethods[0]);
-  const fields = { id: order.id, version: order.version, number: order.number };
+  // Pour « prête » et « payée », qui n'ouvrent pas de dialogue.
+  const [notify, setNotify] = useState(true);
+  const fields = { id: order.id, version: order.version, number: order.number, notify: String(canNotify && notify) };
+  const decide = (note: string, emailing: boolean) => ({ ...fields, note, notify: String(emailing) });
   const finished = state === "done" || state === "refused" || state === "cancelled";
 
   return (
@@ -238,30 +283,39 @@ export function OrderActions({
         </button>
       ) : null}
 
+      {canNotify && !finished && state !== "to_validate" ? (
+        <div className="border-t border-line/60 pt-3">
+          <NotifyCheckbox checked={notify} onChange={setNotify} />
+          <p className="mt-1 pl-6.5 text-[12px] text-muted">Quand la commande est prête et quand le paiement est enregistré.</p>
+        </div>
+      ) : null}
+
       <NoteDialog
         open={dialog === "accept"}
         title={`Accepter ${order.number} ?`}
-        description="Le stock des produits vendus en commande directe sera décompté. Pensez ensuite à prévenir le client."
+        description="Le stock des produits vendus en commande directe sera décompté."
         confirmLabel="Accepter"
         tone="primary"
         placeholder="Ex. retrait convenu le samedi 18 avril au matin"
+        canNotify={canNotify}
         onCancel={() => setDialog(null)}
-        onConfirm={(note) => {
+        onConfirm={(note, emailing) => {
           setDialog(null);
-          run(acceptOrderAction, { ...fields, note });
+          run(acceptOrderAction, decide(note, emailing));
         }}
       />
       <NoteDialog
         open={dialog === "refuse"}
         title={`Refuser ${order.number} ?`}
-        description="La demande restera dans l’historique. Pensez à expliquer votre réponse au client."
+        description="La demande restera dans l’historique. Un mot d’explication est toujours apprécié."
         confirmLabel="Refuser la demande"
         tone="danger"
-        placeholder="Motif : plus de disponibilité pour cette date…"
+        placeholder="Ex. plus de disponibilité pour cette date ; je peux vous en proposer en juin"
+        canNotify={canNotify}
         onCancel={() => setDialog(null)}
-        onConfirm={(note) => {
+        onConfirm={(note, emailing) => {
           setDialog(null);
-          run(cancelOrderAction, { ...fields, note });
+          run(cancelOrderAction, decide(note, emailing));
         }}
       />
       <NoteDialog
@@ -271,10 +325,11 @@ export function OrderActions({
         confirmLabel="Annuler la commande"
         tone="danger"
         placeholder="Motif de l’annulation"
+        canNotify={canNotify}
         onCancel={() => setDialog(null)}
-        onConfirm={(note) => {
+        onConfirm={(note, emailing) => {
           setDialog(null);
-          run(cancelOrderAction, { ...fields, note });
+          run(cancelOrderAction, decide(note, emailing));
         }}
       />
     </div>

@@ -1,6 +1,6 @@
-// Brouillon d'email au client depuis la fiche commande (lien mailto), en
-// attendant les emails automatiques (ROADMAP lot 6). Sans dépendance à Next
-// (testable).
+// Brouillon d’email libre au client depuis la fiche commande (bouton
+// « Écrire au client », lien mailto), en plus des emails automatiques de
+// chaque étape (src/lib/email). Sans dépendance à Next (testable).
 
 import type { OrderStateKey } from "./labels.ts";
 

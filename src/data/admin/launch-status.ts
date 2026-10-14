@@ -1,5 +1,6 @@
 import "server-only";
 
+import { emailProviders, readEmailConfig } from "@/lib/email/driver";
 import { getPublicSupabaseConfig } from "@/lib/supabase/env";
 
 export type LaunchCheck = {
@@ -19,6 +20,7 @@ function isHttpsUrl(value: string | undefined) {
 // Seule la présence des réglages est inspectée : aucune valeur n'est lue ni
 // affichée. Les fonctions pas encore développées pointent vers leur lot.
 export function getLaunchChecks({ ordersOpen }: { ordersOpen: boolean }): LaunchCheck[] {
+  const email = readEmailConfig(process.env);
   return [
     {
       label: "Base de données (Supabase)",
@@ -47,7 +49,13 @@ export function getLaunchChecks({ ordersOpen }: { ordersOpen: boolean }): Launch
         ? "Ouvertes : les visiteurs envoient leurs demandes depuis le panier."
         : "Fermées : interrupteur dans la rubrique Commandes.",
     },
-    { label: "Emails aux clients", state: "later", detail: "Lot 6." },
+    {
+      label: "Emails aux clients",
+      state: email.provider ? "ok" : "todo",
+      detail: email.provider
+        ? `Envoi automatique via ${emailProviders[email.provider]}${email.adminEmail ? "" : " (sans alerte de nouvelle demande)"}.`
+        : "Préparés dans la rubrique Emails ; envoi automatique à configurer (Brevo ou Resend).",
+    },
     { label: "Pages légales", state: "later", detail: "Lot 9 — identité réelle à fournir." },
     { label: "Factures", state: "later", detail: "Lot 11 — validation fiscale requise." },
     { label: "Référencement", state: "later", detail: "Lot 15 — désactivé par défaut." },
