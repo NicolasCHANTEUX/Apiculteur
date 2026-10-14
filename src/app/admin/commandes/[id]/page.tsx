@@ -5,7 +5,8 @@ import type { ReactNode } from "react";
 import { Badge, Notice, PageHeader, Panel, adminButton } from "@/components/admin/admin-ui";
 import { EmailActions } from "@/components/admin/emails/email-controls";
 import { EmailStatusPill, isQueued } from "@/components/admin/emails/email-status";
-import { OrderActions, OrderNote, OrderStatePill } from "@/components/admin/orders/order-controls";
+import { OrderActions, OrderNote, OrderStatePill, RequestReviewButton } from "@/components/admin/orders/order-controls";
+import { Stars } from "@/components/ui";
 import { formatPrice } from "@/components/catalog/product-display";
 import {
   AlertTriangleIcon,
@@ -18,9 +19,11 @@ import {
 } from "@/components/icons";
 import { listOrderEmails } from "@/data/admin/emails";
 import { getAdminOrder } from "@/data/admin/orders";
+import { getOrderReview } from "@/data/admin/reviews";
 import { requireAdmin } from "@/data/auth";
 import { getEmailConfig } from "@/data/email";
 import { formatOrderDate, paymentLabels, type OrderStateKey } from "@/lib/orders/labels";
+import { reviewStatusLabels } from "@/lib/reviews/form";
 import { customerEmailDraft, mailtoHref } from "@/lib/orders/messages";
 import { site } from "@/lib/site";
 
@@ -47,7 +50,7 @@ function Info({ label, children }: { label: string; children: ReactNode }) {
 export default async function AdminOrderPage(props: PageProps<"/admin/commandes/[id]">) {
   const { id } = await props.params;
   await requireAdmin(`/admin/commandes/${id}`);
-  const [order, emails] = await Promise.all([getAdminOrder(id), listOrderEmails(id)]);
+  const [order, emails, orderReview] = await Promise.all([getAdminOrder(id), listOrderEmails(id), getOrderReview(id)]);
   if (!order) notFound();
   const autoEmail = Boolean(getEmailConfig().provider);
   const now = new Date();
@@ -214,6 +217,38 @@ export default async function AdminOrderPage(props: PageProps<"/admin/commandes/
               </ul>
             )}
           </Panel>
+
+          {order.state.key === "done" ? (
+            <Panel title="Avis du client">
+              {orderReview.review ? (
+                <p className="flex flex-wrap items-center gap-2 text-[14px] text-body">
+                  <Stars rating={orderReview.review.rating} className="text-[13px]" />
+                  <span>
+                    Avis de <span className="font-medium text-ink">{orderReview.review.customerName}</span> ·{" "}
+                    {reviewStatusLabels[orderReview.review.status].toLowerCase()}
+                  </span>
+                  <Link href="/admin/avis?statut=tous" className="font-medium text-honey-dark hover:underline">
+                    Voir dans Avis
+                  </Link>
+                </p>
+              ) : !order.customer.email ? (
+                <p className="text-[13.5px] text-muted">Pas de demande d’avis possible : le client n’a pas d’email.</p>
+              ) : (
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <p className="text-[13.5px] text-body">
+                    {orderReview.invitation?.sentAt
+                      ? orderReview.invitation.expiresAt && Date.parse(orderReview.invitation.expiresAt) > now.getTime()
+                        ? `Demande envoyée le ${formatOrderDate(orderReview.invitation.sentAt)} ; lien valable jusqu’au ${formatOrderDate(orderReview.invitation.expiresAt)}.`
+                        : `Demande envoyée le ${formatOrderDate(orderReview.invitation.sentAt)} ; le lien a expiré sans réponse.`
+                      : orderReview.invitation
+                        ? `Demande d’avis prévue le ${formatOrderDate(orderReview.invitation.sendAfter)}.`
+                        : "Aucune demande d’avis pour cette commande."}
+                  </p>
+                  <RequestReviewButton orderId={order.id} number={order.orderNumber} resend={Boolean(orderReview.invitation?.sentAt)} />
+                </div>
+              )}
+            </Panel>
+          ) : null}
 
           <Panel title="Historique">
             {order.history.length === 0 ? (

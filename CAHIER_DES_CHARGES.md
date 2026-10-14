@@ -347,13 +347,13 @@ Le plan d’attaque (lots, ordre, estimation) sera établi **à partir de ce doc
 
 - [x] Schéma : avis lié à une commande et à un produit, note de 1 à 5, commentaire, statut, réponse admin, mise en avant, consentement, token d’accès avec expiration. (CDC 13)
 - [x] Affichage public des avis validés uniquement : page Avis (note moyenne, répartition par étoiles), section d’accueil, avis sur la fiche produit, mention « client vérifié ». (CDC 13, Maquette)
-- [ ] Email de demande d’avis X jours après livraison ou retrait (paramètre `review_request_delay_days`). (CDC 13)
-- [ ] Page de dépôt via lien unique sécurisé : (CDC 13, 22)
+- [x] Email de demande d’avis X jours après livraison ou retrait (paramètre `review_request_delay_days`). — délai réglable dans l’admin (ou désactivé), tâche quotidienne `/api/cron/avis` (vercel.json, `CRON_SECRET`), envoi manuel depuis la fiche commande ou la rubrique Avis. (CDC 13)
+- [x] Page de dépôt via lien unique sécurisé : — `/mon-avis/<jeton>`, nom proposé « Claire M. », accord de publication non coché par défaut. (CDC 13, 22)
   - token, expiration à 30 jours, un seul avis par commande ;
   - note, commentaire, consentement à l’affichage, nom affiché (prénom et initiale).
-- [ ] Lecture et écriture via le token uniquement par une route serveur dédiée ; le token n’est jamais exposé par l’API publique. (CDC 13)
-- [ ] Modération admin : en attente, affiché, masqué, refusé ; réponse publique, mise en avant, anonymisation ; avis refusés conservés. (CDC 13)
-- [ ] Notification admin pour chaque nouvel avis ; email de remerciement au client. (CDC 14)
+- [x] Lecture et écriture via le token uniquement par une route serveur dédiée ; le token n’est jamais exposé par l’API publique. — seule l’empreinte SHA-256 est en base, illisible même par l’admin ; dépôt par la fonction `submit_review` (clé serveur). (CDC 13)
+- [x] Modération admin : en attente, affiché, masqué, refusé ; réponse publique, mise en avant, anonymisation ; avis refusés conservés. (CDC 13)
+- [x] Notification admin pour chaque nouvel avis ; email de remerciement au client. (CDC 14)
 - [x] Affichage des avis sur le site choisi depuis l’admin, **masqué par défaut** : page Avis, lien du menu et du pied de page, section de l’accueil, notes du catalogue et des fiches, lien de la FAQ. Confirmation qui rappelle que seuls de vrais avis peuvent être montrés. (Demande de l’apiculteur, 14 oct.)
 
 ---
@@ -361,7 +361,7 @@ Le plan d’attaque (lots, ordre, estimation) sera établi **à partir de ce doc
 ## 14. Emails et notifications
 
 - [ ] Choisir le fournisseur (Resend, Brevo, Postmark…) et authentifier le domaine d’envoi (SPF, DKIM, DMARC) ; expéditeur et adresse de réponse configurables. Non configuré dans Kayart. *(partiel : pilotes Brevo et Resend prêts, expéditeur, réponse et alertes réglables par variables d’environnement ; choix du fournisseur et authentification du domaine à faire)* (CDC 14)
-- [ ] Modèles (CDC 14) : création de commande, réception de demande, validation, refus, proposition alternative, devis, facture, paiement confirmé, livraison ou retrait, demande d’avis, remerciement, nouvelle commande (admin), nouvel avis (admin). *(partiel : réception de demande, acceptation (avec message de l’apiculteur), refus, annulation, commande prête, paiement reçu, nouvelle demande (admin) ; les autres arrivent avec leurs lots)*
+- [ ] Modèles (CDC 14) : création de commande, réception de demande, validation, refus, proposition alternative, devis, facture, paiement confirmé, livraison ou retrait, demande d’avis, remerciement, nouvelle commande (admin), nouvel avis (admin). *(partiel : réception de demande, acceptation (avec message de l’apiculteur), refus, annulation, commande prête, paiement reçu, nouvelle demande (admin), demande d’avis, remerciement, nouvel avis (admin), messages et réponses des demandes clients ; les autres arrivent avec leurs lots)*
 - [ ] Modèles supplémentaires : réservation reçue, réservation acceptée, « c’est disponible » (liste d’attente), lien de paiement. (Apicole, Kayart)
 - [x] File d’envoi avec reprise en cas d’échec ; journal des emails (destinataire, modèle, date, statut), sans contenu sensible dans les logs. — table `email_outbox`, envoi après la réponse, nouvel essai automatique des échecs récents ou à la demande ; rubrique Emails avec aperçu ; sans fournisseur, emails ouverts tout rédigés dans la messagerie puis marqués envoyés. (CDC 14, Kayart)
 - [ ] Modèles modifiables par l’admin, avec variables. (CDC 14)

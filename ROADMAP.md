@@ -111,13 +111,13 @@ Règle de fin de lot : lint, types, tests et build réussis ; recette visuelle �
 - Photos privées ; protections anti-abus (§12.1).
 - Boîte de réception admin : statuts, corbeille, réponse par email (§12.2).
 
-### Lot 8 — Avis clients · **prochain** (commencé : rubrique Avis de l’admin avec l’interrupteur d’affichage sur le site et la liste des avis)
+### Lot 8 — Avis clients · **fait** (migration `20261016100000_review_requests.sql` à appliquer en ligne ; `CRON_SECRET` à créer sur Vercel)
 
 - Demande d’avis automatique après retrait ou livraison (§13).
 - Page de dépôt par lien sécurisé (§13).
 - Modération, réponse publique, mise en avant (§13).
 
-### Lot 9 — Légal, données personnelles, clients
+### Lot 9 — Légal, données personnelles, clients · **prochain**
 
 - Configuration légale et pages générées, bloquées sans approbation (§19).
 - Fiches clients, anonymisation, durées de conservation (§17.6, §19).

@@ -6,6 +6,7 @@ import {
   advanceOrderAction,
   cancelOrderAction,
   markOrderPaidAction,
+  requestReviewAction,
   saveOrderNoteAction,
   setOrdersOpenAction,
 } from "@/app/admin/commandes/actions";
@@ -337,5 +338,21 @@ export function OrderNote({ order, initial }: { order: OrderRef; initial: string
         </button>
       ) : null}
     </form>
+  );
+}
+
+/** Demande d'avis tout de suite, ou nouveau lien (l'ancien ne marche plus). */
+export function RequestReviewButton({ orderId, number, resend }: { orderId: string; number: string; resend: boolean }) {
+  const { run, pending } = useAdminAction();
+  return (
+    <button
+      type="button"
+      disabled={pending}
+      onClick={() => run(requestReviewAction, { id: orderId, number, resend: String(resend) })}
+      className={adminButton.small}
+    >
+      {pending ? <Spinner className="size-3.5" /> : null}
+      {resend ? "Renvoyer le lien" : "Demander un avis maintenant"}
+    </button>
   );
 }

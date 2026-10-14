@@ -14,6 +14,9 @@ export const emailTemplates = {
   request_received: "Message reçu",
   request_new_admin: "Nouvelle demande client (pour vous)",
   request_reply: "Votre réponse",
+  review_request: "Demande d’avis",
+  review_new_admin: "Nouvel avis (pour vous)",
+  review_thanks: "Merci pour l’avis",
   test: "Email de test",
 } as const;
 
@@ -23,6 +26,8 @@ export type EmailTemplate = keyof typeof emailTemplates;
 export type OrderTemplate = Extract<EmailTemplate, `order_${string}`>;
 /** Modèles d'une demande client (contact, devis, essaim). */
 export type RequestTemplate = Extract<EmailTemplate, `request_${string}`>;
+/** Modèles des avis clients. */
+export type ReviewTemplate = Extract<EmailTemplate, `review_${string}`>;
 
 export function isEmailTemplate(value: string): value is EmailTemplate {
   return Object.hasOwn(emailTemplates, value);
@@ -388,6 +393,68 @@ export function renderRequestEmail(template: RequestTemplate, request: RequestEm
         ...layout(identity, (request.reply ?? "").slice(0, 120), [
           paragraph(request.reply ?? ""),
           { kind: "quote", label: `Votre message (${request.reference})`, text: request.message },
+        ], true),
+      };
+  }
+}
+
+export type ReviewEmailContext = {
+  orderId: string;
+  orderNumber: string;
+  customerName: string;
+  /** Produits de la commande (noms figés). */
+  productNames: string[];
+  /** Lien personnel de dépôt (demande d'avis). */
+  link: string | null;
+  linkDays: number;
+  rating: number | null;
+  comment: string | null;
+  displayName: string | null;
+  consent: boolean;
+};
+
+function stars(rating: number) {
+  return "★".repeat(rating) + "☆".repeat(Math.max(0, 5 - rating));
+}
+
+/** Emails des avis : demande, alerte « nouvel avis », remerciement. */
+export function renderReviewEmail(template: ReviewTemplate, review: ReviewEmailContext, identity: EmailIdentity): RenderedEmail {
+  switch (template) {
+    case "review_request": {
+      const what = review.productNames.length === 1 ? `« ${review.productNames[0]} »` : "votre commande";
+      return {
+        subject: `Votre avis sur ${review.productNames.length === 1 ? review.productNames[0] : `la commande ${review.orderNumber}`}`,
+        ...layout(identity, "Deux minutes pour partager votre expérience ?", [
+          paragraph(`Bonjour ${review.customerName},`),
+          paragraph(`J’espère que tout se passe bien avec ${what}. Si vous avez deux minutes, votre avis m’aiderait beaucoup, et aiderait d’autres apiculteurs à faire leur choix.`),
+          { kind: "button", label: "Donner mon avis", href: review.link ?? identity.siteUrl },
+          paragraph(`Ce lien est personnel et valable ${review.linkDays} jours. Votre avis n’est publié qu’avec votre accord, sous le nom de votre choix.`),
+        ], true),
+      };
+    }
+    case "review_new_admin": {
+      const rating = review.rating ?? 0;
+      return {
+        subject: `Nouvel avis ${stars(rating)} — ${review.displayName ?? review.customerName} (${review.orderNumber})`,
+        ...layout(identity, review.comment?.slice(0, 120) ?? `${rating} sur 5`, [
+          paragraph(`${review.customerName} a laissé un avis sur la commande ${review.orderNumber} : ${rating} sur 5.`),
+          ...(review.comment ? [{ kind: "quote", label: `Avis de ${review.displayName ?? review.customerName}`, text: review.comment } satisfies Block] : []),
+          paragraph(review.consent ? "Le client accepte qu’il soit publié. Il attend votre relecture." : "Le client ne souhaite pas qu’il soit publié : il reste visible dans l’administration seulement."),
+          { kind: "button", label: "Modérer l’avis", href: `${identity.siteUrl}/admin/avis` },
+        ], false),
+      };
+    }
+    case "review_thanks":
+      return {
+        subject: "Merci pour votre avis !",
+        ...layout(identity, "Votre avis est bien reçu.", [
+          paragraph(`Bonjour ${review.customerName},`),
+          paragraph(
+            review.consent
+              ? "Merci d’avoir pris le temps de donner votre avis ! Il sera publié sur le site après relecture."
+              : "Merci d’avoir pris le temps de donner votre avis ! Comme vous l’avez demandé, il ne sera pas publié : il reste entre nous.",
+          ),
+          paragraph(contactLine(identity)),
         ], true),
       };
   }

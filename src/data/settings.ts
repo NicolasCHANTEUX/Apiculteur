@@ -1,6 +1,7 @@
 import "server-only";
 
 import { cache } from "react";
+import { parseReviewDelay } from "@/lib/reviews/form";
 import { mainNav, type NavLink } from "@/lib/site";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getPublicSupabaseConfig, isDemoMode } from "@/lib/supabase/env";
@@ -19,7 +20,7 @@ export type SiteSettings = {
 
 const closed: OrderSettings = { ordersOpen: false, quantityThreshold: 30 };
 
-const SETTING_KEYS = ["orders_open", "manual_validation_quantity_threshold", "reviews_public"];
+const SETTING_KEYS = ["orders_open", "manual_validation_quantity_threshold", "reviews_public", "review_request_delay_days"];
 
 // Réglages lus avec la clé serveur (app_settings n'est lisible que par les
 // admins), une seule fois par requête. Prudence par défaut : en cas
@@ -53,6 +54,15 @@ export const getSiteSettings = cache(async (): Promise<SiteSettings> => {
   if (isDemoMode()) return { reviewsPublic: true };
   const settings = await readSettings();
   return { reviewsPublic: settings?.get("reviews_public") === true };
+});
+
+/**
+ * Délai (jours) entre le retrait ou la livraison et la demande d'avis ;
+ * 0 : pas de demande automatique. 7 jours si le réglage est illisible.
+ */
+export const getReviewSettings = cache(async (): Promise<{ delayDays: number }> => {
+  const settings = await readSettings();
+  return { delayDays: parseReviewDelay(settings?.get("review_request_delay_days") ?? 7) };
 });
 
 /** Menu public, sans « Avis clients » quand les avis sont masqués. */

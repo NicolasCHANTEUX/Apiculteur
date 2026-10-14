@@ -84,6 +84,22 @@ export function describeAuditAction(action: string, metadata: Record<string, unk
       return "Note interne modifiée";
     case "settings.orders_open":
       return meta.open === true ? "Demandes en ligne ouvertes" : "Demandes en ligne fermées";
+    case "settings.review_delay":
+      return typeof meta.days === "number" && meta.days > 0 ? `Demande d’avis ${meta.days} jours après la livraison` : "Demandes d’avis automatiques coupées";
+    case "review.submitted":
+      return typeof meta.rating === "number" ? `Avis reçu : ${meta.rating} sur 5` : "Avis reçu";
+    case "review.status_changed": {
+      const labels: Record<string, string> = { displayed: "Avis publié", hidden: "Avis masqué", refused: "Avis refusé", pending: "Avis remis à modérer" };
+      return labels[String(meta.status)] ?? "Statut d’avis modifié";
+    }
+    case "review.replied":
+      return meta.removed === true ? "Réponse à un avis retirée" : "Réponse publiée sous un avis";
+    case "review.featured":
+      return meta.featured === true ? "Avis mis en avant" : "Avis retiré de la mise en avant";
+    case "review.anonymized":
+      return "Avis anonymisé";
+    case "review.request_sent":
+      return "Demande d’avis envoyée";
     case "settings.reviews_public":
       return meta.visible === true ? "Avis affichés sur le site" : "Avis masqués sur le site";
     case "email.sent_manually":

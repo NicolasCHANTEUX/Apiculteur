@@ -56,6 +56,11 @@ export function getLaunchChecks({ ordersOpen }: { ordersOpen: boolean }): Launch
         ? `Envoi automatique via ${emailProviders[email.provider]}${email.adminEmail ? "" : " (sans alerte de nouvelle demande)"}.`
         : "Préparés dans la rubrique Emails ; envoi automatique à configurer (Brevo ou Resend).",
     },
+    {
+      label: "Demandes d’avis automatiques",
+      state: (process.env.CRON_SECRET?.length ?? 0) >= 16 ? "ok" : "todo",
+      detail: "CRON_SECRET sur l’hébergement (tâche quotidienne de vercel.json) ; sinon « Envoyer maintenant » dans Avis.",
+    },
     { label: "Pages légales", state: "later", detail: "Lot 9 — identité réelle à fournir." },
     { label: "Factures", state: "later", detail: "Lot 11 — validation fiscale requise." },
     { label: "Référencement", state: "later", detail: "Lot 15 — désactivé par défaut." },

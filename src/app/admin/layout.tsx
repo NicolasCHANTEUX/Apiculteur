@@ -3,6 +3,7 @@ import { AdminShell } from "@/components/admin/admin-shell";
 import { countEmailsToHandle } from "@/data/admin/emails";
 import { countOrdersToValidate } from "@/data/admin/orders";
 import { countNewRequests } from "@/data/admin/requests";
+import { countPendingReviews } from "@/data/admin/reviews";
 import { listCommandProducts } from "@/data/admin/products";
 import { requireAdmin } from "@/data/auth";
 import { site } from "@/lib/site";
@@ -17,17 +18,18 @@ export const metadata: Metadata = {
 // navigation et ne suffit pas à protéger les routes qu'elle entoure.
 export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
   const admin = await requireAdmin();
-  const [products, pendingOrders, newRequests, emailsToHandle] = await Promise.all([
+  const [products, pendingOrders, newRequests, emailsToHandle, pendingReviews] = await Promise.all([
     listCommandProducts(),
     countOrdersToValidate(),
     countNewRequests(),
     countEmailsToHandle(),
+    countPendingReviews(),
   ]);
   return (
     <AdminShell
       email={admin.email}
       products={products}
-      badges={{ "/admin/commandes": pendingOrders, "/admin/demandes": newRequests, "/admin/emails": emailsToHandle }}
+      badges={{ "/admin/commandes": pendingOrders, "/admin/demandes": newRequests, "/admin/emails": emailsToHandle, "/admin/avis": pendingReviews }}
     >
       {children}
     </AdminShell>

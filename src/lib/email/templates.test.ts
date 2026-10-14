@@ -10,6 +10,8 @@ import {
   type OrderTemplate,
   type RequestEmailContext,
   type RequestTemplate,
+  renderReviewEmail,
+  type ReviewEmailContext,
 } from "./templates.ts";
 
 const identity = {
@@ -140,5 +142,31 @@ test("demandes : accusé de réception, alerte et réponse", () => {
   assert.ok(reply.text.startsWith(replyText));
   assert.ok(reply.text.includes("Votre message (DEM-000007)\n> Un essaim dans le cerisier.\n> Il est assez haut."));
   assert.ok(reply.text.includes("Bien à vous,\nMarc Dupont"));
+});
+
+const review: ReviewEmailContext = {
+  orderId: "33333333-3333-4333-8333-333333333333",
+  orderNumber: "CMD-000050",
+  customerName: "Léa Petit",
+  productNames: ["Essaim Buckfast"],
+  link: "https://ruchers.test/mon-avis/abc",
+  linkDays: 30,
+  rating: 4,
+  comment: "Essaim <très> doux.",
+  displayName: "Léa P.",
+  consent: true,
+};
+
+test("avis : demande, alerte et remerciement", () => {
+  const request = renderReviewEmail("review_request", review, identity);
+  assert.equal(request.subject, "Votre avis sur Essaim Buckfast");
+  assert.ok(request.text.includes("Donner mon avis : https://ruchers.test/mon-avis/abc"));
+  assert.ok(request.text.includes("valable 30 jours"));
+  const alert = renderReviewEmail("review_new_admin", review, identity);
+  assert.equal(alert.subject, "Nouvel avis ★★★★☆ — Léa P. (CMD-000050)");
+  assert.doesNotMatch(alert.html, /<très>/);
+  assert.ok(alert.text.includes("Modérer l’avis : https://ruchers.test/admin/avis"));
+  assert.ok(renderReviewEmail("review_thanks", review, identity).text.includes("publié sur le site après relecture"));
+  assert.ok(renderReviewEmail("review_thanks", { ...review, consent: false }, identity).text.includes("il ne sera pas publié"));
 });
 

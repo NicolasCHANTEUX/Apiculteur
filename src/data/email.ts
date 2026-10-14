@@ -7,12 +7,15 @@ import {
   orderEmailKey,
   renderOrderEmail,
   renderRequestEmail,
+  renderReviewEmail,
   renderTestEmail,
   type EmailIdentity,
   type OrderEmailContext,
   type OrderTemplate,
   type RequestEmailContext,
   type RequestTemplate,
+  type ReviewEmailContext,
+  type ReviewTemplate,
 } from "@/lib/email/templates";
 import { describeRequestDetails, requestKinds, type RequestKind } from "@/lib/requests/form";
 import { site } from "@/lib/site";
@@ -361,6 +364,98 @@ export async function scheduleRequestEmails(
   { reply = null, replyKey, queueNow = false }: { reply?: string | null; replyKey?: string; queueNow?: boolean } = {},
 ) {
   return scheduleEmails("Emails de demande", (siteUrl) => queueRequestEmails(requestId, templates, { reply, replyKey, siteUrl }), queueNow);
+}
+
+type ReviewOrderRow = {
+  id: string;
+  order_number: string;
+  contact_name: string | null;
+  contact_email: string | null;
+  customers: { full_name: string; email: string } | null;
+  order_items: { product_name_snapshot: string }[] | null;
+};
+
+export type ReviewEmailExtra = {
+  link?: string | null;
+  linkDays?: number;
+  review?: { rating: number; comment: string | null; displayName: string; consent: boolean } | null;
+};
+
+async function loadReviewContext(orderId: string, extra: ReviewEmailExtra) {
+  const { data, error } = await createAdminClient()
+    .from("orders")
+    .select("id, order_number, contact_name, contact_email, customers(full_name, email), order_items(product_name_snapshot)")
+    .eq("id", orderId)
+    .maybeSingle<ReviewOrderRow>();
+  if (error) throw new Error(`Commande pour avis : ${error.message}`);
+  if (!data) return null;
+  const email = data.contact_email ?? data.customers?.email ?? null;
+  if (!email) return null;
+  const context: ReviewEmailContext = {
+    orderId: data.id,
+    orderNumber: data.order_number,
+    customerName: data.contact_name ?? data.customers?.full_name ?? "Madame, Monsieur",
+    productNames: [...new Set((data.order_items ?? []).map((item) => item.product_name_snapshot))],
+    link: extra.link ?? null,
+    linkDays: extra.linkDays ?? 30,
+    rating: extra.review?.rating ?? null,
+    comment: extra.review?.comment || null,
+    displayName: extra.review?.displayName ?? null,
+    consent: extra.review?.consent ?? false,
+  };
+  return { context, email };
+}
+
+/**
+ * Met en file les emails d'avis d'une commande. `dedupeSuffix` distingue
+ * chaque lien envoyé (un nouveau lien remplace l'ancien).
+ */
+export async function queueReviewEmails(
+  orderId: string,
+  templates: ReviewTemplate[],
+  options: ReviewEmailExtra & { dedupeSuffix: string; siteUrl?: string },
+): Promise<string[]> {
+  const loaded = await loadReviewContext(orderId, options);
+  if (!loaded) return [];
+  const { context, email } = loaded;
+  const config = getEmailConfig();
+  const identity = await emailIdentity(options.siteUrl);
+
+  const rows = templates.flatMap((template) => {
+    const forAdmin = template === "review_new_admin";
+    if (forAdmin && !(config.provider && config.adminEmail)) return [];
+    const rendered = renderReviewEmail(template, context, identity);
+    return [
+      {
+        template,
+        dedupe_key: `${template}:${orderId}:${options.dedupeSuffix}`.slice(0, 200),
+        to_email: forAdmin ? config.adminEmail! : email,
+        to_name: forAdmin ? null : context.customerName.slice(0, 120),
+        reply_to: forAdmin ? email : config.replyTo,
+        subject: rendered.subject.slice(0, 200),
+        html: rendered.html,
+        text_body: rendered.text,
+        order_id: orderId,
+      },
+    ];
+  });
+  if (rows.length === 0) return [];
+
+  const { data, error } = await createAdminClient()
+    .from("email_outbox")
+    .upsert(rows, { onConflict: "dedupe_key", ignoreDuplicates: true })
+    .select("id");
+  if (error) throw new Error(`File d'emails : ${error.message}`);
+  return (data ?? []).map((row) => row.id as string);
+}
+
+/** Emails d'avis envoyés après la réponse (voir scheduleEmails). */
+export async function scheduleReviewEmails(
+  orderId: string,
+  templates: ReviewTemplate[],
+  options: ReviewEmailExtra & { dedupeSuffix: string; queueNow?: boolean },
+) {
+  return scheduleEmails("Emails d'avis", (siteUrl) => queueReviewEmails(orderId, templates, { ...options, siteUrl }), options.queueNow ?? false);
 }
 
 /** Email de test, envoyé tout de suite (vérification de la configuration). */

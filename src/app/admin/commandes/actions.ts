@@ -1,9 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { recordAudit } from "@/data/audit";
 import { requireAdmin } from "@/data/auth";
-import { getEmailConfig, scheduleOrderEmails, type OrderEmailTemplate } from "@/data/email";
+import { deliverEmails, getEmailConfig, scheduleOrderEmails, type OrderEmailTemplate } from "@/data/email";
+import { getReviewSettings } from "@/data/settings";
+import { scheduleReviewInvitation, sendReviewInvitation } from "@/data/review-invitations";
 import { failure, success, type ActionResult } from "@/lib/admin/action-result";
 import { createClient } from "@/lib/supabase/server";
 
@@ -125,7 +128,12 @@ export async function advanceOrderAction(formData: FormData): Promise<ActionResu
     return CONFLICT;
   }
   await recordAudit({ actorUserId: admin.userId, action: "order.status_changed", entityType: "order", entityId: id, metadata: { order_number: field(formData, "number"), status: step } });
-  const notice = step === "ready" ? await notifyCustomer(formData, id, "order_ready") : "";
+  let notice = step === "ready" ? await notifyCustomer(formData, id, "order_ready") : "";
+  // Commande terminée : la demande d'avis part après le délai réglé.
+  if (step === "delivered" && (await scheduleReviewInvitation(id)) === "scheduled") {
+    const { delayDays } = await getReviewSettings();
+    notice = ` Demande d’avis prévue dans ${delayDays} jour${delayDays > 1 ? "s" : ""}.`;
+  }
   revalidateOrder(id);
   return success(`${step === "ready" ? "Commande prête." : step === "delivered" ? "Commande terminée." : "Commande remise en préparation."}${notice}`);
 }
@@ -187,4 +195,32 @@ export async function setOrdersOpenAction(formData: FormData): Promise<ActionRes
   revalidatePath("/panier");
   revalidatePath("/commande");
   return success(open ? "Les demandes en ligne sont ouvertes." : "Les demandes en ligne sont fermées.");
+}
+
+/** Demande d'avis tout de suite (ou nouveau lien si le précédent n'a pas servi). */
+export async function requestReviewAction(formData: FormData): Promise<ActionResult> {
+  const admin = await requireAdmin("/admin/commandes");
+  const id = field(formData, "id");
+  if (!UUID.test(id)) return failure("Commande invalide.");
+  const result = await sendReviewInvitation(id, { resend: formData.get("resend") === "true" });
+  revalidateOrder(id);
+  revalidatePath("/admin/avis");
+  revalidatePath("/admin/emails");
+  switch (result.status) {
+    case "queued": {
+      if (result.emailIds.length) after(() => deliverEmails(result.emailIds, { retryFailed: false }).then(() => undefined));
+      await recordAudit({ actorUserId: admin.userId, action: "review.request_sent", entityType: "order", entityId: id, metadata: { order_number: field(formData, "number") } });
+      return success(getEmailConfig().provider ? "Demande d’avis envoyée au client." : "Demande d’avis prête : envoyez-la depuis le panneau Emails.");
+    }
+    case "used":
+      return failure("Le client a déjà donné son avis pour cette commande.");
+    case "already":
+      return failure("Une demande d’avis est déjà partie : utilisez « Renvoyer le lien ».");
+    case "no-email":
+      return failure("Pas d’email pour ce client.");
+    case "ineligible":
+      return failure("La demande d’avis n’est possible qu’une fois la commande retirée ou livrée.");
+    default:
+      return failure("La demande d’avis n’a pas pu être préparée. Réessayez.");
+  }
 }
