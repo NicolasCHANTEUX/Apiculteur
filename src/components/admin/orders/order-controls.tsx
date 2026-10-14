@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useOptimistic, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import {
   acceptOrderAction,
   advanceOrderAction,
@@ -11,59 +11,28 @@ import {
 } from "@/app/admin/commandes/actions";
 import { Spinner, useAdminAction } from "@/components/admin/action-button";
 import { adminButton, adminInput } from "@/components/admin/admin-ui";
-import { ConfirmDialog } from "@/components/admin/confirm-dialog";
+import { SettingSwitch } from "@/components/admin/setting-switch";
 import { CheckIcon, CloseIcon, CoinsIcon, PackageIcon } from "@/components/icons";
 import type { OrderStateKey, PaymentStatus } from "@/lib/orders/labels";
 
 // Interrupteur « Demandes en ligne ». Ouvrir demande confirmation : les
 // visiteurs pourront alors envoyer leurs demandes depuis le panier.
-export function OrdersOpenSwitch({ open: saved }: { open: boolean }) {
-  const { run, pending } = useAdminAction();
-  const [asking, setAsking] = useState(false);
-  // Bascule immédiate à l'écran ; revient à la valeur enregistrée si le
-  // serveur refuse.
-  const [open, setOpen] = useOptimistic(saved);
-  const toggle = (next: boolean) => run(setOrdersOpenAction, { open: String(next) }, { before: () => setOpen(next) });
-
+export function OrdersOpenSwitch({ open }: { open: boolean }) {
   return (
-    <div className="flex items-center gap-3 rounded-xl border border-line bg-white px-4 py-2.5 shadow-[0_1px_2px_rgb(61_43_26/0.05)]">
-      <div className="text-[13px] leading-tight">
-        <p className="font-medium text-ink">Demandes en ligne</p>
-        <p className={open ? "text-green-700" : "text-muted"}>{open ? "Ouvertes aux visiteurs" : "Fermées (contact par email)"}</p>
-      </div>
-      <button
-        type="button"
-        role="switch"
-        aria-checked={open}
-        aria-label="Recevoir les demandes de commande en ligne"
-        disabled={pending}
-        onClick={() => (open ? toggle(false) : setAsking(true))}
-        className={`relative h-7 w-12 shrink-0 rounded-full transition disabled:opacity-60 ${open ? "bg-green-600" : "bg-line"}`}
-      >
-        <span
-          className={`absolute top-1 left-1 flex size-5 items-center justify-center rounded-full bg-white shadow transition-transform ${open ? "translate-x-5" : ""}`}
-        >
-          {pending ? <Spinner className="size-3 text-muted" /> : null}
-        </span>
-      </button>
-      <ConfirmDialog
-        options={
-          asking
-            ? {
-                title: "Ouvrir les demandes en ligne ?",
-                description:
-                  "Les visiteurs pourront envoyer une demande de commande depuis leur panier. Vous les accepterez ou les refuserez ici ; aucun paiement n’est demandé en ligne.",
-                confirmLabel: "Ouvrir les demandes",
-              }
-            : null
-        }
-        onCancel={() => setAsking(false)}
-        onConfirm={() => {
-          setAsking(false);
-          toggle(true);
-        }}
-      />
-    </div>
+    <SettingSwitch
+      checked={open}
+      action={setOrdersOpenAction}
+      title="Demandes en ligne"
+      onLabel="Ouvertes aux visiteurs"
+      offLabel="Fermées (contact par email)"
+      ariaLabel="Recevoir les demandes de commande en ligne"
+      confirmOn={{
+        title: "Ouvrir les demandes en ligne ?",
+        description:
+          "Les visiteurs pourront envoyer une demande de commande depuis leur panier. Vous les accepterez ou les refuserez ici ; aucun paiement n’est demandé en ligne.",
+        confirmLabel: "Ouvrir les demandes",
+      }}
+    />
   );
 }
 

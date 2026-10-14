@@ -84,6 +84,8 @@ export function describeAuditAction(action: string, metadata: Record<string, unk
       return "Note interne modifiée";
     case "settings.orders_open":
       return meta.open === true ? "Demandes en ligne ouvertes" : "Demandes en ligne fermées";
+    case "settings.reviews_public":
+      return meta.visible === true ? "Avis affichés sur le site" : "Avis masqués sur le site";
     case "email.sent_manually":
       return typeof meta.template_label === "string" ? `Email « ${meta.template_label} » envoyé depuis votre messagerie` : "Email envoyé depuis votre messagerie";
     case "email.skipped":

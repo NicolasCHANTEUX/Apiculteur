@@ -28,6 +28,7 @@ import {
   ShoppingBagIcon,
   MailIcon,
   InboxIcon,
+  StarIcon,
   TagIcon,
 } from "@/components/icons";
 import { productStatusLabels } from "@/lib/catalog/labels";
@@ -52,6 +53,7 @@ const baseCommands: Command[] = [
   { id: "products", group: "Aller à", label: "Produits", href: "/admin/produits", icon: PackageIcon, keywords: "catalogue liste" },
   { id: "new", group: "Aller à", label: "Nouveau produit", hint: "Créer une fiche", href: "/admin/produits/nouveau", icon: PlusIcon, keywords: "ajouter creer" },
   { id: "categories", group: "Aller à", label: "Catégories", href: "/admin/categories", icon: TagIcon },
+  { id: "reviews", group: "Aller à", label: "Avis", hint: "Affichage sur le site", href: "/admin/avis", icon: StarIcon, keywords: "avis clients notes temoignages afficher masquer" },
   { id: "emails", group: "Aller à", label: "Emails", href: "/admin/emails", icon: MailIcon, keywords: "messages clients journal envoi" },
   { id: "site", group: "Aller à", label: "Voir la boutique", hint: "Nouvel onglet", href: "/", external: true, icon: ExternalLinkIcon, keywords: "site public" },
   { id: "to-validate", group: "Filtres", label: "Commandes à valider", href: "/admin/commandes?statut=a-valider", icon: ShoppingBagIcon, keywords: "demandes en attente" },

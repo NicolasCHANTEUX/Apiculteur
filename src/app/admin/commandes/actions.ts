@@ -171,7 +171,7 @@ export async function saveOrderNoteAction(formData: FormData): Promise<ActionRes
 // Interrupteur « demandes en ligne » (fermé par défaut, CAHIER 1.1).
 export async function setOrdersOpenAction(formData: FormData): Promise<ActionResult> {
   const admin = await requireAdmin("/admin/commandes");
-  const open = formData.get("open") === "true";
+  const open = formData.get("value") === "true";
 
   const supabase = await createClient();
   const { error } = await supabase

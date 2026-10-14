@@ -354,6 +354,7 @@ Le plan d’attaque (lots, ordre, estimation) sera établi **à partir de ce doc
 - [ ] Lecture et écriture via le token uniquement par une route serveur dédiée ; le token n’est jamais exposé par l’API publique. (CDC 13)
 - [ ] Modération admin : en attente, affiché, masqué, refusé ; réponse publique, mise en avant, anonymisation ; avis refusés conservés. (CDC 13)
 - [ ] Notification admin pour chaque nouvel avis ; email de remerciement au client. (CDC 14)
+- [x] Affichage des avis sur le site choisi depuis l’admin, **masqué par défaut** : page Avis, lien du menu et du pied de page, section de l’accueil, notes du catalogue et des fiches, lien de la FAQ. Confirmation qui rappelle que seuls de vrais avis peuvent être montrés. (Demande de l’apiculteur, 14 oct.)
 
 ---
 

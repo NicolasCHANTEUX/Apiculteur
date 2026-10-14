@@ -29,12 +29,12 @@ const ready: NavItem[] = [
   { href: "/admin/produits", label: "Produits", icon: PackageIcon },
   { href: "/admin/categories", label: "Catégories", icon: TagIcon },
   { href: "/admin/emails", label: "Emails", icon: MailIcon },
+  { href: "/admin/avis", label: "Avis", icon: StarIcon },
 ];
 
 // Les rubriques arrivent lot par lot (ROADMAP.md) : elles sont annoncées
 // sans lien pour montrer la structure à venir.
 const upcoming: (NavItem & { lot: string })[] = [
-  { href: "/admin/avis", label: "Avis", icon: StarIcon, lot: "Lot 8" },
   { href: "/admin/clients", label: "Clients", icon: UsersIcon, lot: "Lot 9" },
   { href: "/admin/parametres", label: "Paramètres", icon: SettingsIcon, lot: "Lot 14" },
 ];

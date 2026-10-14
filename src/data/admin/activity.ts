@@ -67,7 +67,7 @@ export async function getRecentActivity(limit = 8): Promise<ActivityEntry[] | nu
     if (row.entity_type === "product" && row.entity_id && currentName) href = `/admin/produits/${row.entity_id}`;
     if (row.entity_type === "category" && row.action !== "category.deleted") href = "/admin/categories";
     if (row.entity_type === "order" && row.entity_id) href = `/admin/commandes/${row.entity_id}`;
-    if (row.entity_type === "settings") href = "/admin/commandes";
+    if (row.entity_type === "settings") href = row.action === "settings.reviews_public" ? "/admin/avis" : "/admin/commandes";
     if (row.entity_type === "email") href = "/admin/emails";
     if (row.entity_type === "contact_request" && row.entity_id && row.action !== "request.deleted") href = `/admin/demandes/${row.entity_id}`;
     return {

@@ -263,7 +263,7 @@ export default async function AdminDashboardPage(props: PageProps<"/admin">) {
     todos.push({ key: "requests", icon: InboxIcon, tone: "honey", title: `${plural(newRequests, "nouvelle demande", "nouvelles demandes")} dans la boîte de réception`, detail: "Questions, devis et essaims signalés depuis la page contact.", href: "/admin/demandes", cta: "Lire" });
   }
   if (data.reviewsPending > 0) {
-    todos.push({ key: "reviews", icon: StarIcon, tone: "honey", title: `${plural(data.reviewsPending, "avis", "avis")} à modérer`, detail: "Invisibles tant que vous ne les avez pas acceptés." });
+    todos.push({ key: "reviews", icon: StarIcon, tone: "honey", title: `${plural(data.reviewsPending, "avis", "avis")} à modérer`, detail: "Invisibles tant que vous ne les avez pas acceptés.", href: "/admin/avis", cta: "Voir" });
   }
   if (data.outOfStock.length > 0) {
     todos.push({ key: "out", icon: AlertTriangleIcon, tone: "critical", title: `${plural(data.outOfStock.length, "produit en ligne est", "produits en ligne sont")} en rupture`, detail: names(data.outOfStock), href: "/admin/produits?statut=published&stock=rupture", cta: "Réapprovisionner" });
