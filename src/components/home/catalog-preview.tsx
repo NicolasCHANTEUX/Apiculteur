@@ -61,7 +61,7 @@ function Spotlight({ product }: { product: PublicProduct }) {
             <ArrowRightIcon className="size-4" />
           </Link>
           <Link
-            href={contactHref("Question sur un essaim", productQuestionMessage(product.name, product.sku))}
+            href={contactHref("Question sur un essaim", productQuestionMessage(product.name, product.sku), { product: product.slug })}
             className="inline-flex min-h-12 items-center gap-2 rounded-lg border border-line px-5 text-[14px] font-medium text-ink transition hover:border-honey/50 hover:bg-cream"
           >
             <MessageCircleIcon className="size-4 text-honey" />

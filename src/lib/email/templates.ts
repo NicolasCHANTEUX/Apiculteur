@@ -11,13 +11,18 @@ export const emailTemplates = {
   order_cancelled: "Commande annulée",
   order_ready: "Commande prête",
   order_paid: "Paiement reçu",
+  request_received: "Message reçu",
+  request_new_admin: "Nouvelle demande client (pour vous)",
+  request_reply: "Votre réponse",
   test: "Email de test",
 } as const;
 
 export type EmailTemplate = keyof typeof emailTemplates;
 
-/** Modèles envoyés au client à chaque étape de sa commande. */
-export type CustomerOrderTemplate = Exclude<EmailTemplate, "order_new_admin" | "test">;
+/** Modèles d'une étape de commande. */
+export type OrderTemplate = Extract<EmailTemplate, `order_${string}`>;
+/** Modèles d'une demande client (contact, devis, essaim). */
+export type RequestTemplate = Extract<EmailTemplate, `request_${string}`>;
 
 export function isEmailTemplate(value: string): value is EmailTemplate {
   return Object.hasOwn(emailTemplates, value);
@@ -212,8 +217,8 @@ function layout(identity: EmailIdentity, preheader: string, blocks: Block[], sig
 const contactLine = (identity: EmailIdentity) =>
   `Une question ? Répondez simplement à cet email, ou appelez-moi au ${identity.phone}.`;
 
-/** Email d'une étape de commande. `test` ignore la commande. */
-export function renderOrderEmail(template: EmailTemplate, order: OrderEmailContext, identity: EmailIdentity): RenderedEmail {
+/** Email d'une étape de commande. */
+export function renderOrderEmail(template: OrderTemplate, order: OrderEmailContext, identity: EmailIdentity): RenderedEmail {
   const hello = paragraph(`Bonjour ${order.customerName},`);
   const note = (label: string): Block[] => (order.note ? [{ kind: "quote", label, text: order.note }] : []);
   const pickup = order.deliveryMethod === "pickup";
@@ -316,8 +321,75 @@ export function renderOrderEmail(template: EmailTemplate, order: OrderEmailConte
           paragraph("Ce message confirme la réception de votre paiement ; il ne remplace pas une facture."),
         ], true),
       };
-    case "test":
-      return renderTestEmail(identity);
+  }
+}
+
+export type RequestEmailContext = {
+  id: string;
+  reference: string;
+  /** « Question », « Devis », « Essaim ». */
+  kindLabel: string;
+  customerName: string;
+  email: string;
+  phone: string | null;
+  subject: string;
+  message: string;
+  /** Détails propres au type, déjà mis en forme. */
+  details: [string, string][];
+  productName: string | null;
+  photoCount: number;
+  /** Réponse de l'apiculteur (modèle request_reply). */
+  reply: string | null;
+};
+
+/** Emails d'une demande client : accusé de réception, alerte, réponse. */
+export function renderRequestEmail(template: RequestTemplate, request: RequestEmailContext, identity: EmailIdentity): RenderedEmail {
+  const recap: Block[] = [
+    { kind: "details", rows: [["Demande", `${request.reference} · ${request.kindLabel}`], ["Sujet", request.subject], ...(request.productName ? [["Produit", request.productName] as [string, string]] : []), ...request.details] },
+  ];
+  const photos = request.photoCount ? `${request.photoCount} photo${request.photoCount > 1 ? "s" : ""} jointe${request.photoCount > 1 ? "s" : ""}` : null;
+
+  switch (template) {
+    case "request_received":
+      return {
+        subject: `J’ai bien reçu votre message — ${request.reference}`,
+        ...layout(identity, "Je vous réponds personnellement, au plus vite.", [
+          paragraph(`Bonjour ${request.customerName},`),
+          paragraph(
+            request.kindLabel === "Essaim"
+              ? "Merci de votre signalement ! Je regarde au plus vite si je peux venir récupérer l’essaim, et je vous appelle. En attendant, gardez vos distances : un essaim est en général calme, mais mieux vaut ne pas le déranger."
+              : "Merci pour votre message ! Je l’ai bien reçu et je vous réponds personnellement, au plus vite.",
+          ),
+          ...recap,
+          { kind: "quote", label: "Votre message", text: request.message },
+          ...(photos ? [paragraph(`${photos} à votre message.`)] : []),
+          paragraph(contactLine(identity)),
+        ], true),
+      };
+    case "request_new_admin": {
+      const contact: [string, string][] = [["De", request.customerName], ["Email", request.email]];
+      if (request.phone) contact.push(["Téléphone", request.phone]);
+      return {
+        subject: `${request.kindLabel === "Essaim" ? "Essaim signalé" : "Nouvelle demande"} ${request.reference} — ${request.customerName}`,
+        ...layout(identity, request.subject, [
+          paragraph(`Nouvelle demande sur le site : ${request.subject}.`),
+          { kind: "button", label: "Voir la demande", href: `${identity.siteUrl}/admin/demandes/${request.id}` },
+          { kind: "details", rows: contact },
+          ...recap,
+          { kind: "quote", label: "Message", text: request.message },
+          ...(photos ? [paragraph(`${photos} : visibles dans l’administration.`)] : []),
+          paragraph("Le client a reçu un accusé de réception. Répondre à cet email écrit au client."),
+        ], false),
+      };
+    }
+    case "request_reply":
+      return {
+        subject: `Re : ${request.subject}`,
+        ...layout(identity, (request.reply ?? "").slice(0, 120), [
+          paragraph(request.reply ?? ""),
+          { kind: "quote", label: `Votre message (${request.reference})`, text: request.message },
+        ], true),
+      };
   }
 }
 

@@ -1,5 +1,5 @@
-// Messages pré-remplis du formulaire de contact (demande depuis le panier,
-// question sur un produit), en attendant la commande en ligne (lot 4).
+// Messages pré-remplis du formulaire de contact (demande depuis le panier
+// quand les commandes en ligne sont fermées, question sur un produit).
 // Sans dépendance à Next (testables).
 
 import { formatEuros } from "../domain/pricing.ts";
@@ -44,7 +44,20 @@ export function productQuestionMessage(name: string, sku: string | null): string
   return `Bonjour,\n\nJe souhaiterais des informations sur « ${name} »${sku ? ` (réf. ${sku})` : ""}.\n\n`;
 }
 
-/** Lien vers le contact, avec un sujet et un message pré-remplis. */
-export function contactHref(subject: string, message: string): string {
-  return `/contact?${new URLSearchParams({ sujet: subject, message }).toString()}`;
+/**
+ * Lien vers le contact, avec un sujet et un message pré-remplis ; en option
+ * le type de demande (`devis`, `essaim`), le produit (slug) et la quantité.
+ */
+export function contactHref(
+  subject: string,
+  message: string,
+  extra: { type?: "question" | "devis" | "essaim"; product?: string; quantity?: number } = {},
+): string {
+  const params = new URLSearchParams();
+  if (extra.type) params.set("type", extra.type);
+  if (subject) params.set("sujet", subject);
+  if (message) params.set("message", message);
+  if (extra.product) params.set("produit", extra.product);
+  if (extra.quantity) params.set("quantite", String(extra.quantity));
+  return `/contact?${params.toString()}`;
 }

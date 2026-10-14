@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { CatalogUnconfigured } from "@/components/catalog/catalog-unconfigured";
 import { ReviewCard } from "@/components/reviews/review-card";
@@ -69,6 +70,8 @@ export default async function ReviewsPage() {
       (error: unknown) => ({ value: null, error }),
     ),
   ]);
+  // Avis masqués depuis l'administration : la page n'existe pas.
+  if (reviews.kind === "hidden") notFound();
   if (catalogResult.error) console.error("Avis : noms des produits indisponibles", catalogResult.error);
   const catalog = catalogResult.value;
   const productNames = new Map(

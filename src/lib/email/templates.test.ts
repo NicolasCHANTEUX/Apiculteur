@@ -1,6 +1,16 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { emailTemplates, escapeHtml, formatEuros, renderOrderEmail, type EmailTemplate, type OrderEmailContext } from "./templates.ts";
+import {
+  emailTemplates,
+  escapeHtml,
+  formatEuros,
+  renderOrderEmail,
+  renderRequestEmail,
+  type OrderEmailContext,
+  type OrderTemplate,
+  type RequestEmailContext,
+  type RequestTemplate,
+} from "./templates.ts";
 
 const identity = {
   siteName: "Ruchers de Normandie",
@@ -34,7 +44,8 @@ const order: OrderEmailContext = {
 };
 
 test("chaque modèle produit un sujet, du HTML et du texte", () => {
-  for (const template of Object.keys(emailTemplates) as EmailTemplate[]) {
+  const keys = Object.keys(emailTemplates);
+  for (const template of keys.filter((key) => key.startsWith("order_")) as OrderTemplate[]) {
     const email = renderOrderEmail(template, order, identity);
     assert.ok(email.subject.length > 0 && email.subject.length <= 200, template);
     assert.match(email.html, /^<!doctype html>/, template);
@@ -94,3 +105,40 @@ test("paiement et annulation", () => {
 test("montants en euros", () => {
   assert.equal(formatEuros(123456), "1 234,56 €");
 });
+
+const request: RequestEmailContext = {
+  id: "22222222-2222-4222-8222-222222222222",
+  reference: "DEM-000007",
+  kindLabel: "Essaim",
+  customerName: "Paul <Lefèvre>",
+  email: "paul@exemple.test",
+  phone: "06 00 00 00 00",
+  subject: "Essaim à récupérer — Caen",
+  message: "Un essaim dans le cerisier.\nIl est assez haut.",
+  details: [["Lieu", "Caen"], ["Hauteur", "Plus de 3 mètres"]],
+  productName: null,
+  photoCount: 2,
+  reply: null,
+};
+const replyText = "Bonjour Paul,\n\nJe passe demain matin.";
+
+test("demandes : accusé de réception, alerte et réponse", () => {
+  for (const template of ["request_received", "request_new_admin", "request_reply"] as RequestTemplate[]) {
+    const email = renderRequestEmail(template, { ...request, reply: replyText }, identity);
+    assert.doesNotMatch(email.html, /<Lefèvre>/, template);
+  }
+  const received = renderRequestEmail("request_received", request, identity);
+  assert.equal(received.subject, "J’ai bien reçu votre message — DEM-000007");
+  assert.match(received.text, /Merci de votre signalement/);
+  assert.match(received.text, /Hauteur : Plus de 3 mètres/);
+  assert.match(received.text, /2 photos jointes à votre message\./);
+  const alert = renderRequestEmail("request_new_admin", request, identity);
+  assert.equal(alert.subject, "Essaim signalé DEM-000007 — Paul <Lefèvre>");
+  assert.match(alert.text, /Voir la demande : https:\/\/ruchers\.test\/admin\/demandes\/22222222/);
+  const reply = renderRequestEmail("request_reply", { ...request, reply: replyText }, identity);
+  assert.equal(reply.subject, "Re : Essaim à récupérer — Caen");
+  assert.ok(reply.text.startsWith(replyText));
+  assert.ok(reply.text.includes("Votre message (DEM-000007)\n> Un essaim dans le cerisier.\n> Il est assez haut."));
+  assert.ok(reply.text.includes("Bien à vous,\nMarc Dupont"));
+});
+

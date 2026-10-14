@@ -1,7 +1,7 @@
 import "server-only";
 
 import sharp, { type Metadata } from "sharp";
-import { MAX_UPLOAD_BYTES } from "@/lib/images/limits";
+import { MAX_REQUEST_PHOTO_BYTES, MAX_UPLOAD_BYTES } from "@/lib/images/limits";
 
 export { MAX_IMAGES_PER_PRODUCT, MAX_UPLOAD_BYTES } from "@/lib/images/limits";
 
@@ -18,7 +18,21 @@ export async function normalizeProductImage(input: Buffer, extraRotation = 0) {
   if (input.byteLength > MAX_UPLOAD_BYTES) {
     throw new ImageRejectedError("Chaque photo doit faire 8 Mo au maximum.");
   }
+  return normalize(input, { maxSide: 2000, quality: 82, extraRotation });
+}
 
+/**
+ * Photo jointe à une demande par un visiteur : mêmes contrôles, 1 600 px
+ * au plus. La position GPS de la photo n'est jamais conservée.
+ */
+export async function normalizeRequestPhoto(input: Buffer) {
+  if (input.byteLength > MAX_REQUEST_PHOTO_BYTES) {
+    throw new ImageRejectedError("Chaque photo doit faire 5 Mo au maximum.");
+  }
+  return normalize(input, { maxSide: 1600, quality: 80, extraRotation: 0 });
+}
+
+async function normalize(input: Buffer, { maxSide, quality, extraRotation }: { maxSide: number; quality: number; extraRotation: number }) {
   let metadata: Metadata;
   try {
     metadata = await sharp(input, { limitInputPixels: 60_000_000 }).metadata();
@@ -35,8 +49,8 @@ export async function normalizeProductImage(input: Buffer, extraRotation = 0) {
   const { data, info } = await sharp(input, { limitInputPixels: 60_000_000 })
     .autoOrient()
     .rotate(extraRotation)
-    .resize({ width: 2000, height: 2000, fit: "inside", withoutEnlargement: true })
-    .webp({ quality: 82 })
+    .resize({ width: maxSide, height: maxSide, fit: "inside", withoutEnlargement: true })
+    .webp({ quality })
     .toBuffer({ resolveWithObject: true });
 
   return { buffer: data, width: info.width, height: info.height };

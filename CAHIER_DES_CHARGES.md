@@ -318,27 +318,27 @@ Le plan d’attaque (lots, ordre, estimation) sera établi **à partir de ce doc
 
 ### 12.1 Formulaires publics
 
-- [x] Contact qui ouvre la messagerie du visiteur, sans enregistrement. (Maquette)
-- [ ] Demandes enregistrées en base, avec accusé de réception à l’écran. (Kayart)
-- [ ] Types de demandes, à valider : (Kayart, Apicole)
+- [x] Contact qui ouvre la messagerie du visiteur, sans enregistrement. — gardé comme repli tant que la base des demandes n’est pas prête. (Maquette)
+- [x] Demandes enregistrées en base, avec accusé de réception à l’écran. — table `contact_requests`, référence « DEM-000042 », page `/contact/merci`. (Kayart)
+- [ ] Types de demandes, à valider : *(partiel : contact, devis et signalement d’essaim ; la visite de rucher n’est pas proposée)* (Kayart, Apicole)
   - **Contact** ;
   - **Devis grande quantité ou professionnel** (adapté de « sur mesure ») : nombre, race, période, lieu, budget indicatif ;
   - **Signalement ou récupération d’essaim** (adapté de « réparation ») : lieu, hauteur, depuis quand, photos ;
   - **Accompagnement ou visite de rucher** (option).
-- [ ] Champs communs : nom, email, téléphone facultatif, sujet, message de 20 caractères minimum. Produit et référence pré-remplis depuis une fiche. (Kayart)
-- [ ] Photos jointes : 3 au maximum, 5 Mo chacune. Réencodées en WebP, stockées dans un bucket **privé** (vérifié non public avant tout envoi), visibles seulement par l’admin via une route protégée. (Kayart)
-- [ ] Anti-abus : champ piège invisible, limitation de débit persistante (identifiant haché par HMAC), clé de soumission unique, taille de requête bornée. (Kayart)
-- [ ] Information sur l’usage des données et case obligatoire. (Kayart, CDC 23)
-- [ ] Formulaire désactivé proprement si le stockage n’est pas configuré, avec repli vers l’email. (Kayart)
-- [ ] Email de confirmation au client et notification à l’admin. (CDC 14)
+- [x] Champs communs : nom, email, téléphone facultatif, sujet, message de 20 caractères minimum. Produit et référence pré-remplis depuis une fiche. — téléphone obligatoire pour un essaim ; quantité pré-remplie pour un devis. (Kayart)
+- [x] Photos jointes : 3 au maximum, 5 Mo chacune. Réencodées en WebP, stockées dans un bucket **privé** (vérifié non public avant tout envoi), visibles seulement par l’admin via une route protégée. — réduites dans le navigateur avant l’envoi ; position GPS jamais conservée. (Kayart)
+- [x] Anti-abus : champ piège invisible, limitation de débit persistante (identifiant haché par HMAC), clé de soumission unique, taille de requête bornée. (Kayart)
+- [x] Information sur l’usage des données et case obligatoire. — date du consentement enregistrée. (Kayart, CDC 23)
+- [x] Formulaire désactivé proprement si le stockage n’est pas configuré, avec repli vers l’email. — sans bucket privé, demandes sans photos. (Kayart)
+- [x] Email de confirmation au client et notification à l’admin. (CDC 14)
 
 ### 12.2 Traitement admin (§17.7)
 
-- [ ] Onglets par type de demande, filtre par statut (nouvelle, en cours, réponse envoyée, clôturée), pagination, aperçu, page de détail. (Kayart)
-- [ ] Email et téléphone cliquables ; photos ouvertes en grand. (Kayart)
-- [ ] Changement de statut avec contrôle de conflit. (Kayart)
-- [ ] Corbeille (suppression douce) et restauration avec les photos. (Kayart)
-- [ ] Répondre au client depuis l’admin. Absent de Kayart, où un changement de statut n’envoie rien. (CDC 10)
+- [x] Onglets par type de demande, filtre par statut (nouvelle, en cours, réponse envoyée, clôturée), pagination, aperçu, page de détail. — onglets par état, filtre par type, recherche. (Kayart)
+- [x] Email et téléphone cliquables ; photos ouvertes en grand. (Kayart)
+- [x] Changement de statut avec contrôle de conflit. (Kayart)
+- [x] Corbeille (suppression douce) et restauration avec les photos. — suppression définitive depuis la corbeille seulement, fichiers compris. (Kayart)
+- [x] Répondre au client depuis l’admin. Absent de Kayart, où un changement de statut n’envoie rien. — réponse signée, message d’origine cité, passage en « réponse envoyée ». (CDC 10)
 - [ ] Transformer une demande de devis en devis ou en commande. (CDC 11, Apicole)
 
 ---

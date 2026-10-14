@@ -59,7 +59,9 @@ export async function getRecentActivity(limit = 8): Promise<ActivityEntry[] | nu
         ? row.metadata.name
         : typeof row.metadata?.order_number === "string"
           ? row.metadata.order_number
-          : null;
+          : typeof row.metadata?.reference === "string"
+            ? row.metadata.reference
+            : null;
     const currentName = row.entity_id ? names.get(row.entity_id) : undefined;
     let href: string | null = null;
     if (row.entity_type === "product" && row.entity_id && currentName) href = `/admin/produits/${row.entity_id}`;
@@ -67,6 +69,7 @@ export async function getRecentActivity(limit = 8): Promise<ActivityEntry[] | nu
     if (row.entity_type === "order" && row.entity_id) href = `/admin/commandes/${row.entity_id}`;
     if (row.entity_type === "settings") href = "/admin/commandes";
     if (row.entity_type === "email") href = "/admin/emails";
+    if (row.entity_type === "contact_request" && row.entity_id && row.action !== "request.deleted") href = `/admin/demandes/${row.entity_id}`;
     return {
       id: row.id,
       action: row.action,

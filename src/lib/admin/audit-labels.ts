@@ -9,6 +9,13 @@ const statusLabels: Record<string, string> = {
   archived: "archivé",
 };
 
+const requestStatusLabels: Record<string, string> = {
+  new: "nouvelle",
+  in_progress: "en cours",
+  answered: "réponse envoyée",
+  closed: "clôturée",
+};
+
 const orderStepLabels: Record<string, string> = {
   preparing: "en préparation",
   ready: "prête",
@@ -85,6 +92,22 @@ export function describeAuditAction(action: string, metadata: Record<string, unk
       return typeof meta.template_label === "string" ? `Email « ${meta.template_label} » remis à envoyer` : "Email remis à envoyer";
     case "email.test_sent":
       return "Email de test envoyé";
+    case "request.received":
+      return "Demande reçue";
+    case "request.status_changed": {
+      const label = requestStatusLabels[String(meta.status)];
+      return label ? `Passée en « ${label} »` : "Statut modifié";
+    }
+    case "request.replied":
+      return meta.prepared === true ? "Réponse préparée (à envoyer depuis la messagerie)" : "Réponse envoyée";
+    case "request.note_updated":
+      return "Note interne modifiée";
+    case "request.trashed":
+      return "Mise à la corbeille";
+    case "request.restored":
+      return "Sortie de la corbeille";
+    case "request.deleted":
+      return "Demande supprimée définitivement";
     default:
       return action;
   }

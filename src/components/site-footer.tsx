@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { MailIcon, MapPinIcon, PhoneIcon } from "@/components/icons";
 import { Logo, container } from "@/components/ui";
-import { infoNav, mainNav, site } from "@/lib/site";
+import { infoNav, site, type NavLink } from "@/lib/site";
 
 function FooterHeading({ children }: { children: React.ReactNode }) {
   return (
@@ -11,10 +11,9 @@ function FooterHeading({ children }: { children: React.ReactNode }) {
   );
 }
 
-// La FAQ figure deja dans la colonne "Informations".
-const footerNav = mainNav.filter((link) => link.href !== "/faq");
-
-export function SiteFooter() {
+export function SiteFooter({ nav }: { nav: NavLink[] }) {
+  // La FAQ figure deja dans la colonne "Informations".
+  const footerNav = nav.filter((link) => link.href !== "/faq");
   const years = new Date().getFullYear() - site.owner.since;
 
   return (

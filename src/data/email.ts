@@ -6,11 +6,15 @@ import { EmailSendError, createEmailDriver, readEmailConfig, type EmailConfig } 
 import {
   orderEmailKey,
   renderOrderEmail,
+  renderRequestEmail,
   renderTestEmail,
   type EmailIdentity,
-  type EmailTemplate,
   type OrderEmailContext,
+  type OrderTemplate,
+  type RequestEmailContext,
+  type RequestTemplate,
 } from "@/lib/email/templates";
+import { describeRequestDetails, requestKinds, type RequestKind } from "@/lib/requests/form";
 import { site } from "@/lib/site";
 import { getSiteUrl } from "@/lib/site-url";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -24,7 +28,7 @@ export function getEmailConfig(): EmailConfig {
   return readEmailConfig(process.env);
 }
 
-export type OrderEmailTemplate = Exclude<EmailTemplate, "test">;
+export type OrderEmailTemplate = OrderTemplate;
 
 async function emailIdentity(siteUrl?: string): Promise<EmailIdentity> {
   return {
@@ -222,26 +226,25 @@ export async function deliverEmails(ids: string[], { retryFailed = true } = {}):
 }
 
 /**
- * Prépare les emails d'une étape de commande et les envoie *après* la
- * réponse au navigateur : l'action reste rapide, et un souci d'email ne
- * bloque jamais la commande. `queueNow` : mise en file immédiate, pour que
- * la page admin rechargée affiche déjà l'email ; renvoie alors le nombre
- * d'emails ajoutés (0 si déjà en file pour cette étape, ou sans adresse),
- * ou « failed » si la file est indisponible.
+ * Met en file des emails puis les envoie *après* la réponse au navigateur :
+ * l'action reste rapide, et un souci d'email ne bloque jamais l'essentiel.
+ * `queueNow` : mise en file immédiate, pour que la page admin rechargée
+ * affiche déjà l'email ; renvoie alors le nombre d'emails ajoutés (0 si déjà
+ * en file, ou sans adresse), ou « failed » si la file est indisponible.
  */
-export async function scheduleOrderEmails(
-  orderId: string,
-  templates: OrderEmailTemplate[],
-  { note = null, queueNow = false }: { note?: string | null; queueNow?: boolean } = {},
+async function scheduleEmails(
+  label: string,
+  queue: (siteUrl: string) => Promise<string[]>,
+  queueNow: boolean,
 ): Promise<number | "failed" | null> {
   // L'adresse du site dépend de la requête : lue maintenant.
   const siteUrl = await getSiteUrl();
-  const report = (error: unknown) => console.error("Emails de commande", error instanceof Error ? error.message : error);
+  const report = (error: unknown) => console.error(label, error instanceof Error ? error.message : error);
 
   if (queueNow) {
     let ids: string[];
     try {
-      ids = await queueOrderEmails(orderId, templates, { note, siteUrl });
+      ids = await queue(siteUrl);
     } catch (error) {
       report(error);
       return "failed";
@@ -252,12 +255,112 @@ export async function scheduleOrderEmails(
 
   after(async () => {
     try {
-      await deliverEmails(await queueOrderEmails(orderId, templates, { note, siteUrl }));
+      await deliverEmails(await queue(siteUrl));
     } catch (error) {
       report(error);
     }
   });
   return null;
+}
+
+/** Emails d'une étape de commande (voir scheduleEmails). */
+export async function scheduleOrderEmails(
+  orderId: string,
+  templates: OrderEmailTemplate[],
+  { note = null, queueNow = false }: { note?: string | null; queueNow?: boolean } = {},
+) {
+  return scheduleEmails("Emails de commande", (siteUrl) => queueOrderEmails(orderId, templates, { note, siteUrl }), queueNow);
+}
+
+type RequestRow = {
+  id: string;
+  reference: string;
+  kind: RequestKind;
+  name: string;
+  email: string;
+  phone: string | null;
+  subject: string;
+  message: string;
+  details: Record<string, unknown> | null;
+  product_name: string | null;
+  contact_request_photos: { count: number }[] | null;
+};
+
+async function loadRequestContext(requestId: string, reply: string | null): Promise<RequestEmailContext | null> {
+  const { data, error } = await createAdminClient()
+    .from("contact_requests")
+    .select("id, reference, kind, name, email, phone, subject, message, details, product_name, contact_request_photos(count)")
+    .eq("id", requestId)
+    .maybeSingle<RequestRow>();
+  if (error) throw new Error(`Demande pour email : ${error.message}`);
+  if (!data) return null;
+  return {
+    id: data.id,
+    reference: data.reference,
+    kindLabel: requestKinds[data.kind]?.short ?? "Question",
+    customerName: data.name,
+    email: data.email,
+    phone: data.phone,
+    subject: data.subject,
+    message: data.message,
+    details: describeRequestDetails(data.kind, data.details),
+    productName: data.product_name,
+    photoCount: data.contact_request_photos?.[0]?.count ?? 0,
+    reply: reply?.trim() || null,
+  };
+}
+
+/**
+ * Met en file les emails d'une demande client. Accusé de réception et alerte
+ * une seule fois par demande ; chaque réponse a sa propre clé (`replyKey`,
+ * générée par le formulaire de réponse) pour ne jamais partir deux fois.
+ */
+export async function queueRequestEmails(
+  requestId: string,
+  templates: RequestTemplate[],
+  options: { reply?: string | null; replyKey?: string; siteUrl?: string } = {},
+): Promise<string[]> {
+  const request = await loadRequestContext(requestId, options.reply ?? null);
+  if (!request) return [];
+  const config = getEmailConfig();
+  const identity = await emailIdentity(options.siteUrl);
+
+  const rows = templates.flatMap((template) => {
+    const forAdmin = template === "request_new_admin";
+    if (forAdmin && !(config.provider && config.adminEmail)) return [];
+    if (template === "request_reply" && (!request.reply || !options.replyKey)) return [];
+    const rendered = renderRequestEmail(template, request, identity);
+    return [
+      {
+        template,
+        dedupe_key: template === "request_reply" ? `request_reply:${options.replyKey}` : `${template}:${request.id}`,
+        to_email: forAdmin ? config.adminEmail! : request.email,
+        to_name: forAdmin ? null : request.customerName.slice(0, 120),
+        reply_to: forAdmin ? request.email : config.replyTo,
+        subject: rendered.subject.slice(0, 200),
+        html: rendered.html,
+        text_body: rendered.text,
+        contact_request_id: request.id,
+      },
+    ];
+  });
+  if (rows.length === 0) return [];
+
+  const { data, error } = await createAdminClient()
+    .from("email_outbox")
+    .upsert(rows, { onConflict: "dedupe_key", ignoreDuplicates: true })
+    .select("id");
+  if (error) throw new Error(`File d'emails : ${error.message}`);
+  return (data ?? []).map((row) => row.id as string);
+}
+
+/** Emails d'une demande client (voir scheduleEmails). */
+export async function scheduleRequestEmails(
+  requestId: string,
+  templates: RequestTemplate[],
+  { reply = null, replyKey, queueNow = false }: { reply?: string | null; replyKey?: string; queueNow?: boolean } = {},
+) {
+  return scheduleEmails("Emails de demande", (siteUrl) => queueRequestEmails(requestId, templates, { reply, replyKey, siteUrl }), queueNow);
 }
 
 /** Email de test, envoyé tout de suite (vérification de la configuration). */

@@ -57,6 +57,10 @@ const nextConfig: NextConfig = {
       // ensuite en WebP). Par défaut : 1 Mo.
       bodySizeLimit: "30mb",
     },
+    // Le proxy (proxy.ts, sur toutes les routes) garde en mémoire le corps
+    // des requêtes, 10 Mo par défaut : au-delà, il serait tronqué. Même
+    // plafond que les actions (photos produit, photos des demandes).
+    proxyClientMaxBodySize: "30mb",
   },
   async headers() {
     return [{ source: "/(.*)", headers: securityHeaders }];

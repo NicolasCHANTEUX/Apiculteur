@@ -105,13 +105,13 @@ Règle de fin de lot : lint, types, tests et build réussis ; recette visuelle �
 
 ## Phase C — Relation client
 
-### Lot 7 — Demandes clients · **prochain**
+### Lot 7 — Demandes clients · **fait** (migration `20261015100000_contact_requests.sql` à appliquer en ligne)
 
 - Contact, devis grande quantité, signalement d’essaim : enregistrés en base (§12.1).
 - Photos privées ; protections anti-abus (§12.1).
 - Boîte de réception admin : statuts, corbeille, réponse par email (§12.2).
 
-### Lot 8 — Avis clients
+### Lot 8 — Avis clients · **prochain**
 
 - Demande d’avis automatique après retrait ou livraison (§13).
 - Page de dépôt par lien sécurisé (§13).

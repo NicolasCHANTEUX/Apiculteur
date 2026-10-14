@@ -3,6 +3,7 @@ import Link from "next/link";
 import { FaqBrowser } from "@/components/faq/faq-browser";
 import { MailIcon, MessageCircleIcon, PhoneIcon } from "@/components/icons";
 import { OwnerAvatar, PageIntro, buttonStyles, container } from "@/components/ui";
+import { getSiteSettings } from "@/data/settings";
 import { faq } from "@/lib/faq";
 import { site } from "@/lib/site";
 
@@ -24,7 +25,10 @@ const structuredData = JSON.stringify({
   })),
 }).replace(/</g, "\\u003c");
 
-export default function FaqPage() {
+export default async function FaqPage() {
+  // Sans avis affichés sur le site, pas de lien vers leur page.
+  const { reviewsPublic } = await getSiteSettings();
+  const items = reviewsPublic ? faq : faq.map((item) => (item.link?.href === "/avis" ? { ...item, link: undefined } : item));
   return (
     <main className={`${container} flex-1 pb-24`}>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: structuredData }} />
@@ -34,7 +38,7 @@ export default function FaqPage() {
         subtitle="Si vous ne trouvez pas la réponse, n'hésitez pas à me contacter directement."
       />
 
-      <FaqBrowser items={faq} />
+      <FaqBrowser items={items} />
 
       <section className="reveal relative mt-16 overflow-hidden rounded-3xl bg-brown px-6 py-10 sm:px-10">
         <div className="absolute -top-20 -right-16 size-64 rounded-full bg-honey/20 blur-3xl" aria-hidden />

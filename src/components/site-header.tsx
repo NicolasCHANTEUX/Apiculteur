@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { CartIcon, CloseIcon, MenuIcon } from "@/components/icons";
 import { Logo, container } from "@/components/ui";
-import { mainNav } from "@/lib/site";
+import type { NavLink } from "@/lib/site";
 import { cartSnapshot, parseCart, subscribeCart } from "@/lib/cart/storage";
 
 function isActive(pathname: string, href: string) {
@@ -21,7 +21,8 @@ function subscribeScroll(callback: () => void) {
   return () => window.removeEventListener("scroll", callback);
 }
 
-export function SiteHeader() {
+/** `nav` : menu calculé côté serveur (sans « Avis clients » quand ils sont masqués). */
+export function SiteHeader({ nav }: { nav: NavLink[] }) {
   const cart = useSyncExternalStore(subscribeCart, cartSnapshot, () => "[]");
   const cartCount = parseCart(cart).reduce((sum, item) => sum + item.quantity, 0);
   const scrolled = useSyncExternalStore(subscribeScroll, () => window.scrollY > 8, () => false);
@@ -63,7 +64,7 @@ export function SiteHeader() {
 
         <nav aria-label="Navigation principale" className="hidden lg:block">
           <ul className="flex items-center gap-1">
-            {mainNav.map((link) => {
+            {nav.map((link) => {
               const active = isActive(pathname, link.href);
               return (
                 <li key={link.href}>
@@ -131,7 +132,7 @@ export function SiteHeader() {
           className="border-t border-line/60 bg-cream motion-safe:animate-[fade-in_.2s_ease-out] lg:hidden"
         >
           <ul className={`${container} flex flex-col gap-1 py-4`}>
-            {mainNav.map((link) => {
+            {nav.map((link) => {
               const active = isActive(pathname, link.href);
               return (
                 <li key={link.href}>

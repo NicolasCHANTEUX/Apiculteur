@@ -1,7 +1,9 @@
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
+import { getSiteNav } from "@/data/settings";
 
-export default function SiteLayout({ children }: LayoutProps<"/">) {
+export default async function SiteLayout({ children }: LayoutProps<"/">) {
+  const nav = await getSiteNav();
   return (
     <>
       <a
@@ -10,11 +12,11 @@ export default function SiteLayout({ children }: LayoutProps<"/">) {
       >
         Aller au contenu
       </a>
-      <SiteHeader />
+      <SiteHeader nav={nav} />
       <div id="contenu" tabIndex={-1} className="flex flex-1 flex-col outline-none">
         {children}
       </div>
-      <SiteFooter />
+      <SiteFooter nav={nav} />
     </>
   );
 }

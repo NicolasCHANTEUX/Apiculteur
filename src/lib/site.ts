@@ -21,6 +21,8 @@ export const site = {
   },
 } as const;
 
+export type NavLink = { href: string; label: string };
+
 export const mainNav = [
   { href: "/", label: "Accueil" },
   { href: "/catalogue", label: "Nos essaims" },

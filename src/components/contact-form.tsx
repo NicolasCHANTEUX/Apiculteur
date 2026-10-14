@@ -9,6 +9,7 @@ const subjects = [
   "Commande ou réservation",
   "Grande quantité",
   "Livraison ou retrait",
+  "Facture",
   "Autre demande",
 ];
 
@@ -22,9 +23,9 @@ function Label({ htmlFor, children }: { htmlFor: string; children: string }) {
   );
 }
 
-// Pas encore d'envoi cote serveur (lot 5 de la roadmap) : le formulaire
-// prepare un email dans la messagerie du visiteur plutot que de simuler un
-// envoi.
+// Repli quand les demandes ne peuvent pas être enregistrées (base pas
+// prête, voir src/data/requests.ts) : le formulaire prépare un email dans la
+// messagerie du visiteur plutôt que de simuler un envoi.
 export function ContactForm({
   initialSubject = "",
   initialMessage = "",

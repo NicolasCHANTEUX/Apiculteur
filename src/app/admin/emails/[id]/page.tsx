@@ -93,6 +93,13 @@ export default async function AdminEmailPage(props: PageProps<"/admin/emails/[id
                   </Link>
                 </Info>
               ) : null}
+              {email.request ? (
+                <Info label="Demande">
+                  <Link href={`/admin/demandes/${email.request.id}`} className="text-honey-dark hover:underline">
+                    {email.request.reference}
+                  </Link>
+                </Info>
+              ) : null}
               {email.sentAt ? (
                 <Info label="Envoyé le">
                   {formatOrderDate(email.sentAt)}

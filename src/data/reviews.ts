@@ -2,6 +2,7 @@ import "server-only";
 
 import { cache } from "react";
 import { demoReviews } from "@/data/demo";
+import { getSiteSettings } from "@/data/settings";
 import { getPublicSupabaseConfig, isDemoMode } from "@/lib/supabase/env";
 import { createPublicClient } from "@/lib/supabase/public";
 
@@ -19,6 +20,8 @@ export type PublicReview = {
 
 export type ReviewsResult =
   | { kind: "unconfigured" }
+  /** Avis masqués par l'apiculteur (réglage reviews_public). */
+  | { kind: "hidden" }
   | { kind: "ready"; reviews: PublicReview[] };
 
 type ReviewRow = {
@@ -45,6 +48,11 @@ export const getPublicReviews = cache(async (): Promise<ReviewsResult> => {
 
   if (!getPublicSupabaseConfig()) {
     return { kind: "unconfigured" };
+  }
+
+  // Masqués : rien n'est lu ni affiché (accueil, catalogue, fiches, page Avis).
+  if (!(await getSiteSettings()).reviewsPublic) {
+    return { kind: "hidden" };
   }
 
   const supabase = createPublicClient();

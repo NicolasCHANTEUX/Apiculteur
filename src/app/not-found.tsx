@@ -2,13 +2,15 @@ import Link from "next/link";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { PageIntro, buttonStyles } from "@/components/ui";
+import { getSiteNav } from "@/data/settings";
 
 // 404 globale (URL inconnues) : rendue hors du groupe (site), elle reprend
 // donc elle-même l'en-tête et le pied de page publics.
-export default function NotFound() {
+export default async function NotFound() {
+  const nav = await getSiteNav();
   return (
     <>
-      <SiteHeader />
+      <SiteHeader nav={nav} />
       <main className="mx-auto w-full max-w-[768px] flex-1 px-6 pb-24 text-center">
         <PageIntro
           eyebrow="Erreur 404"
@@ -19,7 +21,7 @@ export default function NotFound() {
           Revenir à l&apos;accueil
         </Link>
       </main>
-      <SiteFooter />
+      <SiteFooter nav={nav} />
     </>
   );
 }

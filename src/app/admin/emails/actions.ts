@@ -33,14 +33,27 @@ async function changeStatus(id: string, from: string[], values: Record<string, u
   return { email: data, error };
 }
 
+/** Demande liée à un email (colonne absente tant que la migration du lot 7 n'est pas appliquée). */
+async function linkedRequest(emailId: string) {
+  const { data, error } = await createAdminClient()
+    .from("email_outbox")
+    .select("contact_request_id, contact_requests(reference)")
+    .eq("id", emailId)
+    .maybeSingle<{ contact_request_id: string | null; contact_requests: { reference: string } | null }>();
+  if (error || !data?.contact_request_id) return null;
+  return { id: data.contact_request_id, reference: data.contact_requests?.reference };
+}
+
+// L'action est gardée dans l'historique de la commande ou de la demande.
 async function audit(userId: string, action: string, email: Changed) {
   const templateLabel = isEmailTemplate(email.template) ? emailTemplates[email.template] : email.template;
+  const request = email.order_id ? null : await linkedRequest(email.id);
   await recordAudit({
     actorUserId: userId,
     action,
-    entityType: email.order_id ? "order" : "email",
-    entityId: email.order_id ?? email.id,
-    metadata: { template_label: templateLabel, order_number: email.orders?.order_number },
+    entityType: email.order_id ? "order" : request ? "contact_request" : "email",
+    entityId: email.order_id ?? request?.id ?? email.id,
+    metadata: { template_label: templateLabel, order_number: email.orders?.order_number, reference: request?.reference },
   });
 }
 

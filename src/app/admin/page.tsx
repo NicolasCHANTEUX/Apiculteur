@@ -23,6 +23,7 @@ import {
   PlusIcon,
   SearchIcon,
   ShoppingBagIcon,
+  InboxIcon,
   SparklesIcon,
   StarFilledIcon,
   StarIcon,
@@ -32,6 +33,7 @@ import {
 import { getActivitySeries, getRecentActivity } from "@/data/admin/activity";
 import { SERIES_DAYS, getDashboardData } from "@/data/admin/dashboard";
 import { getLaunchChecks } from "@/data/admin/launch-status";
+import { countNewRequests } from "@/data/admin/requests";
 import { getOrderSettings } from "@/data/settings";
 import { requireAdmin } from "@/data/auth";
 import { formatRelativeTime } from "@/lib/admin/audit-labels";
@@ -226,11 +228,12 @@ export default async function AdminDashboardPage(props: PageProps<"/admin">) {
   await requireAdmin("/admin");
   const now = new Date();
   const days = lastDays(SERIES_DAYS, now);
-  const [data, activity, actionSeries, params] = await Promise.all([
+  const [data, activity, actionSeries, params, newRequests] = await Promise.all([
     getDashboardData(days),
     getRecentActivity(6),
     getActivitySeries(days),
     props.searchParams,
+    countNewRequests(),
   ]);
   const checks = getLaunchChecks({ ordersOpen: (await getOrderSettings()).ordersOpen });
   const configChecks = checks.filter((check) => check.state !== "later");
@@ -248,12 +251,16 @@ export default async function AdminDashboardPage(props: PageProps<"/admin">) {
   ];
   if (stockAlerts) highlights.push(<strong key="stock" className="font-semibold text-[#f6d27a]">{plural(stockAlerts, "alerte de stock", "alertes de stock")}</strong>);
   if (data.ordersToValidate) highlights.push(<strong key="orders" className="font-semibold text-[#f6d27a]">{plural(data.ordersToValidate, "commande à valider", "commandes à valider")}</strong>);
+  if (newRequests) highlights.push(<strong key="requests" className="font-semibold text-[#f6d27a]">{plural(newRequests, "nouvelle demande", "nouvelles demandes")}</strong>);
   if (data.reviewsPending) highlights.push(<strong key="reviews" className="font-semibold text-white">{plural(data.reviewsPending, "avis à modérer", "avis à modérer")}</strong>);
   const sentence = highlights.flatMap((part, index) => (index === 0 ? [part] : [index === highlights.length - 1 ? " et " : ", ", part]));
 
   const todos: Todo[] = [];
   if (data.ordersToValidate > 0) {
     todos.push({ key: "orders", icon: ShoppingBagIcon, tone: "honey", title: `${plural(data.ordersToValidate, "commande attend", "commandes attendent")} votre validation`, detail: "Acceptez ou refusez-les depuis la rubrique Commandes.", href: "/admin/commandes?statut=a-valider", cta: "Traiter" });
+  }
+  if (newRequests > 0) {
+    todos.push({ key: "requests", icon: InboxIcon, tone: "honey", title: `${plural(newRequests, "nouvelle demande", "nouvelles demandes")} dans la boîte de réception`, detail: "Questions, devis et essaims signalés depuis la page contact.", href: "/admin/demandes", cta: "Lire" });
   }
   if (data.reviewsPending > 0) {
     todos.push({ key: "reviews", icon: StarIcon, tone: "honey", title: `${plural(data.reviewsPending, "avis", "avis")} à modérer`, detail: "Invisibles tant que vous ne les avez pas acceptés." });
@@ -313,7 +320,7 @@ export default async function AdminDashboardPage(props: PageProps<"/admin">) {
             </h1>
             <p className="mt-3 max-w-[560px] text-[15.5px] leading-[1.6] text-white/70">
               Votre boutique compte {sentence}.
-              {!stockAlerts && !data.ordersToValidate && !data.reviewsPending ? " Tout est calme au rucher." : ""}
+              {!stockAlerts && !data.ordersToValidate && !newRequests && !data.reviewsPending ? " Tout est calme au rucher." : ""}
             </p>
             <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center">
               <CommandTrigger className="group flex min-h-12 w-full items-center gap-3 rounded-xl bg-white/10 px-4 text-left text-[14px] text-white/65 ring-1 ring-white/15 backdrop-blur-md transition hover:bg-white/15 hover:text-white hover:ring-white/30 sm:max-w-[380px]">

@@ -27,6 +27,7 @@ import {
   SearchIcon,
   ShoppingBagIcon,
   MailIcon,
+  InboxIcon,
   TagIcon,
 } from "@/components/icons";
 import { productStatusLabels } from "@/lib/catalog/labels";
@@ -46,13 +47,16 @@ type Command = {
 
 const baseCommands: Command[] = [
   { id: "dashboard", group: "Aller à", label: "Tableau de bord", href: "/admin", icon: DashboardIcon, keywords: "accueil" },
-  { id: "orders", group: "Aller à", label: "Commandes", href: "/admin/commandes", icon: ShoppingBagIcon, keywords: "demandes clients" },
+  { id: "orders", group: "Aller à", label: "Commandes", href: "/admin/commandes", icon: ShoppingBagIcon, keywords: "demandes de commande clients" },
+  { id: "requests", group: "Aller à", label: "Demandes", hint: "Contact, devis, essaims", href: "/admin/demandes", icon: InboxIcon, keywords: "messages contact devis essaim boite reception" },
   { id: "products", group: "Aller à", label: "Produits", href: "/admin/produits", icon: PackageIcon, keywords: "catalogue liste" },
   { id: "new", group: "Aller à", label: "Nouveau produit", hint: "Créer une fiche", href: "/admin/produits/nouveau", icon: PlusIcon, keywords: "ajouter creer" },
   { id: "categories", group: "Aller à", label: "Catégories", href: "/admin/categories", icon: TagIcon },
   { id: "emails", group: "Aller à", label: "Emails", href: "/admin/emails", icon: MailIcon, keywords: "messages clients journal envoi" },
   { id: "site", group: "Aller à", label: "Voir la boutique", hint: "Nouvel onglet", href: "/", external: true, icon: ExternalLinkIcon, keywords: "site public" },
   { id: "to-validate", group: "Filtres", label: "Commandes à valider", href: "/admin/commandes?statut=a-valider", icon: ShoppingBagIcon, keywords: "demandes en attente" },
+  { id: "swarms", group: "Filtres", label: "Essaims signalés", href: "/admin/demandes?statut=a-traiter&type=swarm", icon: InboxIcon, keywords: "recuperation essaim signalement" },
+  { id: "quotes", group: "Filtres", label: "Demandes de devis", href: "/admin/demandes?statut=a-traiter&type=quote", icon: InboxIcon, keywords: "devis grande quantite professionnel" },
   { id: "out", group: "Filtres", label: "Produits en rupture", href: "/admin/produits?stock=rupture", icon: AlertTriangleIcon, keywords: "stock vide epuise" },
   { id: "low", group: "Filtres", label: "Stock faible", href: "/admin/produits?stock=faible", icon: AlertTriangleIcon, keywords: "alerte seuil" },
   { id: "drafts", group: "Filtres", label: "Brouillons", href: "/admin/produits?statut=draft", icon: PencilIcon },

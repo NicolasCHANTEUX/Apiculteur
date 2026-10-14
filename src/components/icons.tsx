@@ -401,3 +401,14 @@ export const SendIcon = createIcon(
     <path d="m21.854 2.147-10.94 10.939" />
   </>,
 );
+
+export const HexagonIcon = createIcon(
+  <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />,
+);
+
+export const CameraIcon = createIcon(
+  <>
+    <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" />
+    <circle cx="12" cy="13" r="3" />
+  </>,
+);

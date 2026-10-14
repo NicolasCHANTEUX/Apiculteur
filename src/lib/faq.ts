@@ -44,7 +44,15 @@ export const faq: FaqItem[] = [
     question: "Peut-on commander plusieurs dizaines d'essaims ?",
     answer:
       "Oui. Les grandes quantités bénéficient de tarifs dégressifs. Afin de garantir des essaims de qualité et une livraison adaptée, ces demandes sont d'abord étudiées personnellement avant validation définitive.",
-    link: { href: "/contact?sujet=Grande+quantit%C3%A9", label: "Demander un devis" },
+    link: { href: "/contact?type=devis", label: "Demander un devis" },
+  },
+  {
+    id: "essaim-chez-moi",
+    theme: "commander",
+    question: "Un essaim s'est posé chez moi : que faire ?",
+    answer:
+      "Pas de panique : un essaim qui vient de se poser est en général calme. Gardez vos distances, ne l'aspergez pas et n'essayez pas de le déplacer. Signalez-le moi avec son emplacement et, si possible, une photo : je vous rappelle pour voir si je peux venir le récupérer.",
+    link: { href: "/contact?type=essaim", label: "Signaler un essaim" },
   },
   {
     id: "validation-des-commandes",
@@ -80,7 +88,7 @@ export const faq: FaqItem[] = [
     question: "Quand vais-je recevoir ma facture ?",
     answer:
       "La facture vous est envoyée par email une fois votre commande validée. Vous pouvez aussi la demander à tout moment par message.",
-    link: { href: "/contact?sujet=Autre+demande", label: "Demander une facture" },
+    link: { href: "/contact?sujet=Facture", label: "Demander une facture" },
   },
   {
     id: "laisser-un-avis",

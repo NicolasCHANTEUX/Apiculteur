@@ -40,7 +40,7 @@ export function PurchasePanel({ product }: { product: PublicProduct }) {
   const activeTier = product.pricingTiers.findIndex(
     (tier) => quantity >= tier.minQuantity && (tier.maxQuantity === null || quantity <= tier.maxQuantity),
   );
-  const question = contactHref("Question sur un essaim", productQuestionMessage(product.name, product.sku));
+  const question = contactHref("Question sur un essaim", productQuestionMessage(product.name, product.sku), { product: product.slug });
   const unit = product.saleUnit || "unité";
 
   // Barre d'achat fixée en bas sur mobile quand les boutons ne sont plus visibles.
@@ -67,14 +67,14 @@ export function PurchasePanel({ product }: { product: PublicProduct }) {
 
   const mainAction = unavailable ? (
     <Link
-      href={contactHref("Question sur un essaim", `Bonjour,\n\nPouvez-vous me prévenir lorsque « ${product.name} » sera de nouveau disponible ?\n\n`)}
+      href={contactHref("Question sur un essaim", `Bonjour,\n\nPouvez-vous me prévenir lorsque « ${product.name} » sera de nouveau disponible ?\n\n`, { product: product.slug })}
       className="inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-espresso px-5 text-[15px] font-semibold text-white transition hover:bg-brown"
     >
       Me prévenir du retour
     </Link>
   ) : quote ? (
     <Link
-      href={contactHref("Grande quantité", `Bonjour,\n\nJe souhaiterais un devis pour ${quantity} × « ${product.name} »${product.sku ? ` (réf. ${product.sku})` : ""}.\n\n`)}
+      href={contactHref("", "", { type: "devis", product: product.slug, quantity })}
       className="inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-honey px-5 text-[15px] font-semibold text-white shadow-[0_8px_20px_-8px_rgb(217_154_43/0.8)] transition hover:bg-honey-dark"
     >
       Demander un devis
