@@ -3,6 +3,7 @@
 import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
 import { getPublicCatalog } from "@/data/catalog";
+import { assessDelivery, type DeliveryAssessment } from "@/data/delivery";
 import { scheduleOrderEmails } from "@/data/email";
 import { getPublishedLegal } from "@/data/legal";
 import { getOrderSettings } from "@/data/settings";
@@ -90,6 +91,23 @@ export async function submitOrderRequestAction(
     return failure("Votre panier a changé depuis votre visite : vérifiez-le avant d’envoyer la demande.", { problems: priced.problems });
   }
 
+  // Livraison : produits à retirer sur place, puis adresse localisée,
+  // distance, zone et frais estimés (confirmés à l'acceptation).
+  let delivery: DeliveryAssessment | null = null;
+  if (contact.deliveryMethod === "delivery") {
+    const pickupOnly = priced.lines.filter((line) => line.product.deliveryMode === "pickup_only").map((line) => `« ${line.product.name} »`);
+    if (pickupOnly.length) {
+      return failure("Certains produits ne se livrent pas.", {
+        errors: { deliveryMethod: `${pickupOnly.join(", ")} ${pickupOnly.length > 1 ? "sont" : "est"} à retirer sur l’exploitation : choisissez le retrait.` },
+      });
+    }
+    delivery = await assessDelivery({
+      address: { line1: contact.addressLine1, postalCode: contact.postalCode, city: contact.city },
+      lines: priced.lines.map((line) => ({ name: line.product.name, quantity: line.quantity, deliveryMode: line.product.deliveryMode })),
+    });
+  }
+  const feeCents = delivery?.quote.kind === "zone" ? delivery.quote.feeCents : 0;
+
   const { data, error } = await createAdminClient()
     .rpc("submit_order_request", {
       p_request: {
@@ -106,7 +124,7 @@ export async function submitOrderRequestAction(
         requested_date: contact.requestedDate,
         message: contact.message,
         subtotal: centsToDecimal(priced.subtotalCents),
-        review_reasons: reviewReasons(priced, contact.deliveryMethod, settings.quantityThreshold),
+        review_reasons: reviewReasons(priced, contact.deliveryMethod, settings.quantityThreshold, delivery?.reasons),
         items: priced.lines.map((line) => ({
           product_id: line.product.id,
           name: line.product.name,
@@ -123,11 +141,27 @@ export async function submitOrderRequestAction(
     return failure(UNAVAILABLE);
   }
 
+  if (!data.already_submitted && (legal || delivery)) {
+    // Compléments de la demande : version des CGV, livraison évaluée.
+    const { error: updateError } = await createAdminClient()
+      .from("orders")
+      .update({
+        ...(legal ? { terms_version: legal.version } : {}),
+        ...(delivery
+          ? {
+              delivery_fee: centsToDecimal(feeCents),
+              total_amount: centsToDecimal(priced.subtotalCents + feeCents),
+              delivery_distance_km: delivery.distanceKm,
+              delivery_zone_id: delivery.quote.kind === "zone" ? delivery.quote.zone.id : null,
+              delivery_latitude: delivery.geocoded?.lat ?? null,
+              delivery_longitude: delivery.geocoded?.lng ?? null,
+            }
+          : {}),
+      })
+      .eq("id", data.order_id);
+    if (updateError) console.error("Demande de commande : compléments", updateError.code, updateError.message);
+  }
   if (!data.already_submitted) {
-    if (legal) {
-      const { error: termsError } = await createAdminClient().from("orders").update({ terms_version: legal.version }).eq("id", data.order_id);
-      if (termsError) console.error("Demande de commande : version des CGV", termsError.code, termsError.message);
-    }
     // Accusé de réception au client et alerte à l'apiculteur, envoyés après
     // la réponse (une demande rejouée ne renvoie rien).
     await scheduleOrderEmails(data.order_id, ["order_received", "order_new_admin"]);

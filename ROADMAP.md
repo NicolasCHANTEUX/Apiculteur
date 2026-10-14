@@ -126,11 +126,11 @@ Règle de fin de lot : lint, types, tests et build réussis ; recette visuelle �
 
 ## Phase D — Métier avancé
 
-### Lot 10 — Livraison et distance · **prochain**
+### Lot 10 — Livraison et distance · **fait** (migration `20261018100000_delivery.sql` à appliquer en ligne ; adresse de l’exploitation et zones à régler)
 
 - Zones administrables ; géocodage et distance (H5) ; frais ; règles de distance (§9, §8.2).
 
-### Lot 11 — Factures et devis
+### Lot 11 — Factures et devis · **prochain**
 
 - Numérotation, données figées, PDF, archive privée ; désactivé par défaut (H8, §15).
 - Devis et avoirs (§15).

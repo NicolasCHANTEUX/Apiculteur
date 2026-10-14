@@ -228,7 +228,7 @@ Le plan d’attaque (lots, ordre, estimation) sera établi **à partir de ce doc
 - [ ] Problème signalé par ligne : produit indisponible, sur devis, stock insuffisant (avec « ramener au maximum »), produit retiré du catalogue (affiché sans révéler un produit privé). (Kayart)
 - [ ] Sous-total partiel clairement présenté ; passage en commande bloqué tant qu’un problème subsiste. (Kayart)
 - [x] Incitation aux paliers : « Encore 2 essaims pour passer à 150 € l’unité ». — sur la fiche et par ligne du panier, en un clic. (Apicole, CDC 5)
-- [ ] Estimation de réception : retrait gratuit sur rendez-vous, ou livraison selon pays, code postal et distance (§9). Choix gardé pour la session. (Kayart, CDC 7)
+- [ ] Estimation de réception : retrait gratuit sur rendez-vous, ou livraison selon pays, code postal et distance (§9). *(partiel : estimation sur la page de commande dès le code postal saisi, distance vérifiée à l’envoi ; pas encore dans le panier)* Choix gardé pour la session. (Kayart, CDC 7)
 - [ ] Message préventif quand le panier dépassera un seuil de validation manuelle. (CDC 8)
 - [ ] Par ligne : visuel, référence, état, lien vers la fiche, quantité modifiable, retrait. (Kayart, CDC 7)
 - [x] Vider le panier (avec confirmation), actualiser, message si le stockage du navigateur est indisponible. — en attendant la commande (lot 4), « Envoyer ma demande » pré-remplit le contact avec le contenu du panier. (Kayart)
@@ -258,11 +258,11 @@ Le plan d’attaque (lots, ordre, estimation) sera établi **à partir de ce doc
 ### 8.2 Validation spéciale (quantité × distance)
 
 - [x] Seuils en base (`app_settings`) : distance et quantité automatiques, seuils de validation manuelle, délai de demande d’avis. (CDC 19-20)
-- [ ] Moteur de règles lisant ces seuils, sans valeur codée en dur. *(partiel : seuil de quantité lu en base, raisons d’attention affichées à l’admin ; distance au lot 10)* (CDC 8, 20)
+- [x] Moteur de règles lisant ces seuils, sans valeur codée en dur. — quantité et distance (éloignée, très longue), produits « retrait obligatoire » ou « sur devis », adresse non localisée ; seuils réglables dans Livraison. (CDC 8, 20)
   - quantité seule, distance seule ou combinaison ;
   - produits « retrait obligatoire » ou « livraison impossible automatiquement » ;
   - message personnalisé par règle.
-- [ ] Calcul de la distance entre l’adresse du client et l’adresse de départ. Service de géocodage à choisir (§26). (CDC 8-9)
+- [x] Calcul de la distance entre l’adresse du client et l’adresse de départ. Service de géocodage à choisir (§26). — Géoplateforme de l’IGN (Base Adresse Nationale), ancienne API en secours, repli sur la commune ; distance à vol d’oiseau (H5). (CDC 8-9)
 - [ ] Statuts de validation : non requise, en attente, acceptée, refusée, modification proposée. *(partiel : 4 statuts en base, sans « modification proposée »)* (CDC 8)
 - [x] Message client préventif et pédagogique, sans blocage brutal : la commande devient une « demande à valider ». — toute commande est une demande étudiée (H2). (CDC 8)
 - [ ] Admin : accepter, refuser, proposer une alternative (quantité, date, retrait), message personnalisé, email au client, historique de la décision. *(partiel : accepter, refuser, note, historique, brouillon d’email au client ; alternative et email automatique à venir)* (CDC 8)
@@ -272,17 +272,17 @@ Le plan d’attaque (lots, ordre, estimation) sera établi **à partir de ce doc
 
 ## 9. Livraison et retrait
 
-- [ ] Retrait sur l’exploitation, gratuit, sur rendez-vous. Adresse affichée seulement si elle est validée, jamais une adresse fictive. (Kayart, CDC 9)
+- [x] Retrait sur l’exploitation, gratuit, sur rendez-vous. Adresse affichée seulement si elle est validée, jamais une adresse fictive. — adresse publique, communiquée à l’acceptation ou au cas par cas, au choix ; consignes de retrait. (Kayart, CDC 9)
 - [ ] Rendez-vous de retrait : simple date souhaitée ou vrais créneaux (§26). (CDC 9, Apicole)
-- [ ] Zones de livraison administrables : pays (codes ISO), préfixes postaux inclus et exclus, tarif TTC. Une zone ne s’active qu’avec un tarif strictement positif. (Kayart)
-- [ ] Zone de départ « France métropolitaine », désactivée et sans tarif ; Corse et outre-mer exclus ; ces cas restent sur devis. (Kayart)
-- [ ] Frais selon la distance et/ou la quantité. (CDC 9)
-- [ ] Livraison proposée automatiquement seulement si **tous** les articles sont livrables et qu’une zone active correspond ; sinon retrait ou « demander un devis de transport ». (Kayart)
-- [ ] Aucun seuil de livraison gratuite sans décision explicite. (Kayart)
-- [ ] Contraintes du vivant à définir avec l’apiculteur : transport des essaims (ruchettes, délais, météo), éventuel envoi postal des reines. (Apicole)
+- [x] Zones de livraison administrables : pays (codes ISO), préfixes postaux inclus et exclus, tarif TTC. Une zone ne s’active qu’avec un tarif strictement positif. — plus distance maximale et supplément par unité ; contrainte aussi en base. (Kayart)
+- [x] Zone de départ « France métropolitaine », désactivée et sans tarif ; Corse et outre-mer exclus ; ces cas restent sur devis. (Kayart)
+- [x] Frais selon la distance et/ou la quantité. — zones limitées en distance, supplément par unité ; frais modifiables par l’admin avant paiement. (CDC 9)
+- [x] Livraison proposée automatiquement seulement si **tous** les articles sont livrables et qu’une zone active correspond ; sinon retrait ou « demander un devis de transport ». (Kayart)
+- [x] Aucun seuil de livraison gratuite sans décision explicite. (Kayart)
+- [ ] Contraintes du vivant à définir avec l’apiculteur : transport des essaims (ruchettes, délais, météo), éventuel envoi postal des reines. *(partiel : texte « Transport des essaims » réglable, affiché sur la page Livraison ; règles à définir)* (Apicole)
 - [ ] Livraisons groupées par tournée ou par région, selon décision. (Apicole)
 - [ ] Note admin liée à la livraison. (CDC 9)
-- [ ] Statuts : à préparer, prête (retrait) ou expédiée (livraison), livrée ou terminée, annulée. (CDC 9, Kayart)
+- [x] Statuts : à préparer, prête (retrait) ou expédiée (livraison), livrée ou terminée, annulée. — email « en route » à l’expédition. (CDC 9, Kayart)
 
 ---
 
@@ -462,7 +462,7 @@ Le plan d’attaque (lots, ordre, estimation) sera établi **à partir de ce doc
 
 ### 17.8 Livraison et réglages
 
-- [ ] Zones de livraison, conditions de retrait, adresse de départ. (Kayart, CDC 9)
+- [x] Zones de livraison, conditions de retrait, adresse de départ. — rubrique Livraison, avec les seuils d’attention. (Kayart, CDC 9)
 
 ### 17.9 Paramètres (CDC 19)
 

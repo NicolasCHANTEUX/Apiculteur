@@ -11,6 +11,7 @@ export const emailTemplates = {
   order_cancelled: "Commande annulée",
   order_ready: "Commande prête",
   order_paid: "Paiement reçu",
+  order_shipped: "Commande en route",
   request_received: "Message reçu",
   request_new_admin: "Nouvelle demande client (pour vous)",
   request_reply: "Votre réponse",
@@ -51,6 +52,10 @@ export type OrderEmailContext = {
   note: string | null;
   paymentMethod: string | null;
   paid: boolean;
+  /** Frais de livraison retenus (0 : à convenir). */
+  deliveryFeeCents: number;
+  /** Adresse de retrait : publique, ou communiquée à l'acceptation. */
+  pickupAddress: { public: string | null; afterAcceptance: string | null };
   reviewReasons: string[];
 };
 
@@ -109,7 +114,7 @@ function multiline(value: string) {
 type Block =
   | { kind: "paragraph"; text: string }
   | { kind: "quote"; label: string; text: string }
-  | { kind: "summary"; order: OrderEmailContext }
+  | { kind: "summary"; order: OrderEmailContext; pickupAddress: string | null }
   | { kind: "details"; rows: [string, string][] }
   | { kind: "button"; label: string; href: string };
 
@@ -117,13 +122,18 @@ function paragraph(text: string): Block {
   return { kind: "paragraph", text };
 }
 
-function receptionRows(order: OrderEmailContext): [string, string][] {
+function receptionRows(order: OrderEmailContext, pickupAddress: string | null): [string, string][] {
   const rows: [string, string][] = [
     ["Mode", order.deliveryMethod === "delivery" ? "Livraison" : "Retrait sur l’exploitation"],
   ];
   if (order.deliveryMethod === "delivery" && order.address) rows.push(["Adresse", order.address]);
+  if (order.deliveryMethod === "pickup" && pickupAddress) rows.push(["Adresse de retrait", pickupAddress]);
   rows.push(["Date souhaitée", order.requestedDate ? formatDay(order.requestedDate) : "à convenir ensemble"]);
   return rows;
+}
+
+function deliveryAmount(order: OrderEmailContext) {
+  return order.deliveryFeeCents > 0 ? formatEuros(order.deliveryFeeCents) : "à convenir";
 }
 
 function lineLabel(line: OrderEmailContext["lines"][number]) {
@@ -150,7 +160,11 @@ function renderHtmlBlock(block: Block): string {
             `<tr><td style="padding:10px 0;border-bottom:1px solid ${colors.line};font-size:14px;color:${colors.ink}">${escapeHtml(lineLabel(line))}</td>`
             + `<td align="right" style="padding:10px 0 10px 12px;border-bottom:1px solid ${colors.line};font-size:14px;color:${colors.ink};white-space:nowrap">${escapeHtml(lineAmount(line))}</td></tr>`,
         )
-        .join("");
+        .join("")
+        + (order.deliveryMethod === "delivery"
+          ? `<tr><td style="padding:10px 0;border-bottom:1px solid ${colors.line};font-size:14px;color:${colors.ink}">Livraison</td>`
+            + `<td align="right" style="padding:10px 0 10px 12px;border-bottom:1px solid ${colors.line};font-size:14px;color:${colors.ink};white-space:nowrap">${escapeHtml(deliveryAmount(order))}</td></tr>`
+          : "");
       return `<p style="margin:8px 0 6px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:${colors.muted}">Demande ${escapeHtml(order.number)}</p>`
         + `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin:0 0 6px">${rows}`
         + `<tr><td style="padding:12px 0 0;font-size:15px;font-weight:bold;color:${colors.ink}">Total</td>`
@@ -158,7 +172,7 @@ function renderHtmlBlock(block: Block): string {
         + (order.lines.some((line) => line.lineTotalCents === 0)
           ? `<p style="margin:0 0 6px;font-size:13px;color:${colors.muted}">Certains prix seront confirmés avec vous.</p>`
           : "")
-        + renderHtmlBlock({ kind: "details", rows: receptionRows(order) });
+        + renderHtmlBlock({ kind: "details", rows: receptionRows(order, block.pickupAddress) });
     }
     case "details":
       return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin:10px 0 18px">${block.rows
@@ -187,10 +201,11 @@ function renderTextBlock(block: Block): string {
       return [
         `Demande ${order.number}`,
         ...order.lines.map((line) => `- ${lineLabel(line)} : ${lineAmount(line)}`),
+        ...(order.deliveryMethod === "delivery" ? [`- Livraison : ${deliveryAmount(order)}`] : []),
         `Total : ${formatEuros(order.totalCents)}`,
         ...(order.lines.some((line) => line.lineTotalCents === 0) ? ["Certains prix seront confirmés avec vous."] : []),
         "",
-        renderTextBlock({ kind: "details", rows: receptionRows(order) }),
+        renderTextBlock({ kind: "details", rows: receptionRows(order, block.pickupAddress) }),
       ].join("\n");
     }
     case "details":
@@ -226,7 +241,9 @@ const contactLine = (identity: EmailIdentity) =>
 export function renderOrderEmail(template: OrderTemplate, order: OrderEmailContext, identity: EmailIdentity): RenderedEmail {
   const hello = paragraph(`Bonjour ${order.customerName},`);
   const note = (label: string): Block[] => (order.note ? [{ kind: "quote", label, text: order.note }] : []);
-  const pickup = order.deliveryMethod === "pickup";
+  const isPickup = order.deliveryMethod === "pickup";
+  // L'adresse de retrait non publique n'apparaît qu'une fois la commande acceptée.
+  const pickup = template === "order_accepted" || template === "order_ready" ? order.pickupAddress.afterAcceptance : order.pickupAddress.public;
 
   switch (template) {
     case "order_received": {
@@ -237,7 +254,7 @@ export function renderOrderEmail(template: OrderTemplate, order: OrderEmailConte
           hello,
           paragraph("Merci pour votre demande ! Je l’ai bien reçue et je l’étudie au plus vite : disponibilités, quantités et organisation du retrait ou de la livraison."),
           paragraph("Je vous recontacte ensuite pour la confirmer avec vous. Aucun paiement ne vous est demandé à cette étape."),
-          { kind: "summary", order },
+          { kind: "summary", order, pickupAddress: pickup },
           ...(order.customerMessage ? [{ kind: "quote", label: "Votre message", text: order.customerMessage } satisfies Block] : []),
           paragraph(contactLine(identity)),
         ], true),
@@ -255,7 +272,7 @@ export function renderOrderEmail(template: OrderTemplate, order: OrderEmailConte
           ...(order.reviewReasons.length ? [paragraph(`À regarder de près : ${order.reviewReasons.join(", ")}.`)] : []),
           { kind: "button", label: "Voir la demande", href: `${identity.siteUrl}/admin/commandes/${order.id}` },
           { kind: "details", rows: contact },
-          { kind: "summary", order },
+          { kind: "summary", order, pickupAddress: pickup },
           ...(order.customerMessage ? [{ kind: "quote", label: "Message du client", text: order.customerMessage } satisfies Block] : []),
           paragraph("Le client a reçu un accusé de réception. Répondre à cet email écrit au client."),
         ], false),
@@ -267,12 +284,12 @@ export function renderOrderEmail(template: OrderTemplate, order: OrderEmailConte
         ...layout(identity, "Bonne nouvelle : je prépare votre commande.", [
           hello,
           paragraph(
-            pickup
+            isPickup
               ? "Bonne nouvelle : votre demande est acceptée et je prépare votre commande. Nous convenons ensemble du jour et de l’heure du retrait."
               : "Bonne nouvelle : votre demande est acceptée et je prépare votre commande. Je reviens vers vous pour organiser la livraison.",
           ),
           ...note(`Un mot de ${identity.ownerFirstName}`),
-          { kind: "summary", order },
+          { kind: "summary", order, pickupAddress: pickup },
           paragraph("Le règlement se fait selon les modalités que nous confirmons ensemble."),
           paragraph(contactLine(identity)),
         ], true),
@@ -285,7 +302,7 @@ export function renderOrderEmail(template: OrderTemplate, order: OrderEmailConte
           paragraph("Merci pour votre demande. Je suis malheureusement dans l’impossibilité d’y donner suite."),
           ...note("Précision"),
           paragraph("N’hésitez pas à me répondre si vous souhaitez en parler ou envisager une autre solution : je ferai mon possible."),
-          { kind: "summary", order },
+          { kind: "summary", order, pickupAddress: pickup },
         ], true),
       };
     case "order_cancelled":
@@ -296,21 +313,31 @@ export function renderOrderEmail(template: OrderTemplate, order: OrderEmailConte
           paragraph(`Je vous confirme l’annulation de votre commande ${order.number}.`),
           ...note("Précision"),
           ...(order.paid ? [paragraph("Votre règlement vous sera remboursé : je reviens vers vous à ce sujet.")] : []),
-          { kind: "summary", order },
+          { kind: "summary", order, pickupAddress: pickup },
           paragraph(contactLine(identity)),
         ], true),
       };
     case "order_ready":
       return {
         subject: `Votre commande ${order.number} est prête`,
-        ...layout(identity, pickup ? "Vous pouvez venir la retirer." : "Je vous contacte pour la livraison.", [
+        ...layout(identity, isPickup ? "Vous pouvez venir la retirer." : "Je vous contacte pour la livraison.", [
           hello,
           paragraph(
-            pickup
+            isPickup
               ? "Votre commande est prête ! Vous pouvez venir la retirer au moment convenu ensemble. Si rien n’est encore fixé, répondez à cet email pour choisir un créneau."
               : "Votre commande est prête ! Je vous contacte pour fixer le moment de la livraison.",
           ),
-          { kind: "summary", order },
+          { kind: "summary", order, pickupAddress: pickup },
+          paragraph(contactLine(identity)),
+        ], true),
+      };
+    case "order_shipped":
+      return {
+        subject: `Votre commande ${order.number} est en route`,
+        ...layout(identity, "Votre commande est en chemin.", [
+          hello,
+          paragraph("Votre commande est en route ! Elle vous sera remise au moment convenu ensemble. Prévoyez un endroit calme et ombragé pour accueillir les abeilles à leur arrivée."),
+          { kind: "summary", order, pickupAddress: null },
           paragraph(contactLine(identity)),
         ], true),
       };
@@ -322,7 +349,7 @@ export function renderOrderEmail(template: OrderTemplate, order: OrderEmailConte
           paragraph(
             `J’ai bien reçu votre règlement de ${formatEuros(order.totalCents)}${order.paymentMethod ? ` (${order.paymentMethod.toLowerCase()})` : ""}. Merci !`,
           ),
-          { kind: "summary", order },
+          { kind: "summary", order, pickupAddress: pickup },
           paragraph("Ce message confirme la réception de votre paiement ; il ne remplace pas une facture."),
         ], true),
       };

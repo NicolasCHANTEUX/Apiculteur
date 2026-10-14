@@ -5,8 +5,10 @@ import { OrderRequestForm } from "@/components/order/order-request-form";
 import { ArrowRightIcon, ClockIcon } from "@/components/icons";
 import { Eyebrow, container } from "@/components/ui";
 import { getPublicCatalog } from "@/data/catalog";
+import { getActiveZones } from "@/data/delivery";
 import { getPublishedLegal } from "@/data/legal";
-import { getOrderSettings } from "@/data/settings";
+import { getDeliverySettings, getOrderSettings } from "@/data/settings";
+import { pickupAddress } from "@/lib/delivery/settings";
 import { parisDay } from "@/lib/admin/series";
 
 export const metadata: Metadata = { title: "Ma demande de commande", robots: { index: false, follow: false } };
@@ -14,7 +16,13 @@ export const metadata: Metadata = { title: "Ma demande de commande", robots: { i
 export default async function OrderPage() {
   // Catalogue, prix et ouverture des demandes lus à chaque visite.
   await connection();
-  const [catalog, settings, legal] = await Promise.all([getPublicCatalog(), getOrderSettings(), getPublishedLegal()]);
+  const [catalog, settings, legal, zones, delivery] = await Promise.all([
+    getPublicCatalog(),
+    getOrderSettings(),
+    getPublishedLegal(),
+    getActiveZones(),
+    getDeliverySettings(),
+  ]);
 
   return (
     <main className={`${container} flex-1 pt-12 pb-24`}>
@@ -41,7 +49,10 @@ export default async function OrderPage() {
           </Link>
         </div>
       ) : catalog.kind === "ready" ? (
-        <OrderRequestForm products={catalog.products} today={parisDay(new Date())} termsVersion={legal?.version ?? null} />
+        <OrderRequestForm products={catalog.products} today={parisDay(new Date())} termsVersion={legal?.version ?? null}
+          zones={zones}
+          pickup={{ city: delivery.origin?.city ?? null, address: pickupAddress(delivery, "site"), instructions: delivery.pickupInstructions }}
+        />
       ) : (
         <p className="rounded-xl border border-line bg-white p-6 text-[14px] text-body">Le catalogue n’est pas encore configuré.</p>
       )}

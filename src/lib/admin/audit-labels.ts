@@ -84,6 +84,20 @@ export function describeAuditAction(action: string, metadata: Record<string, unk
       return "Note interne modifiée";
     case "settings.orders_open":
       return meta.open === true ? "Demandes en ligne ouvertes" : "Demandes en ligne fermées";
+    case "delivery.origin_saved":
+      return meta.located === false ? "Adresse de l’exploitation enregistrée (non localisée)" : "Adresse de l’exploitation enregistrée";
+    case "delivery.settings_saved":
+      return "Retrait et transport modifiés";
+    case "delivery.thresholds_saved":
+      return "Seuils de distance et de quantité modifiés";
+    case "delivery.zone_created":
+      return typeof meta.name === "string" ? `Zone de livraison « ${meta.name} » créée` : "Zone de livraison créée";
+    case "delivery.zone_updated":
+      return typeof meta.name === "string" ? `Zone de livraison « ${meta.name} » modifiée` : "Zone de livraison modifiée";
+    case "delivery.zone_deleted":
+      return typeof meta.name === "string" ? `Zone de livraison « ${meta.name} » supprimée` : "Zone de livraison supprimée";
+    case "order.delivery_fee":
+      return typeof meta.fee === "string" && Number(meta.fee) > 0 ? `Frais de livraison : ${meta.fee.replace(".", ",")} €` : "Livraison à convenir";
     case "legal.draft_saved":
       return "Brouillon des informations légales enregistré";
     case "legal.approved":

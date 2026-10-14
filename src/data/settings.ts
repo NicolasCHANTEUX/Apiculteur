@@ -1,6 +1,7 @@
 import "server-only";
 
 import { cache } from "react";
+import { readDeliverySettings, type DeliverySettings } from "@/lib/delivery/settings";
 import { parseReviewDelay } from "@/lib/reviews/form";
 import { mainNav, type NavLink } from "@/lib/site";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -20,7 +21,16 @@ export type SiteSettings = {
 
 const closed: OrderSettings = { ordersOpen: false, quantityThreshold: 30 };
 
-const SETTING_KEYS = ["orders_open", "manual_validation_quantity_threshold", "reviews_public", "review_request_delay_days"];
+const SETTING_KEYS = [
+  "orders_open",
+  "manual_validation_quantity_threshold",
+  "reviews_public",
+  "review_request_delay_days",
+  "delivery_origin_address",
+  "delivery_settings",
+  "max_auto_delivery_distance_km",
+  "manual_validation_distance_threshold_km",
+];
 
 // Réglages lus avec la clé serveur (app_settings n'est lisible que par les
 // admins), une seule fois par requête. Prudence par défaut : en cas
@@ -63,6 +73,17 @@ export const getSiteSettings = cache(async (): Promise<SiteSettings> => {
 export const getReviewSettings = cache(async (): Promise<{ delayDays: number }> => {
   const settings = await readSettings();
   return { delayDays: parseReviewDelay(settings?.get("review_request_delay_days") ?? 7) };
+});
+
+/** Retrait, adresse de départ et seuils de distance (CAHIER §8.2, §9). */
+export const getDeliverySettings = cache(async (): Promise<DeliverySettings> => {
+  const settings = await readSettings();
+  return readDeliverySettings({
+    origin: settings?.get("delivery_origin_address"),
+    settings: settings?.get("delivery_settings"),
+    autoKm: settings?.get("max_auto_delivery_distance_km"),
+    manualKm: settings?.get("manual_validation_distance_threshold_km"),
+  });
 });
 
 /** Menu public, sans « Avis clients » quand les avis sont masqués. */

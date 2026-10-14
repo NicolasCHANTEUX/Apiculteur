@@ -1,6 +1,8 @@
 import "server-only";
 
 import { after } from "next/server";
+import { getDeliverySettings } from "@/data/settings";
+import { pickupAddress } from "@/lib/delivery/settings";
 import { eurosToCents } from "@/lib/domain/pricing";
 import { EmailSendError, createEmailDriver, readEmailConfig, type EmailConfig } from "@/lib/email/driver";
 import {
@@ -52,6 +54,7 @@ type OrderRow = {
   contact_phone: string | null;
   company_name: string | null;
   total_amount: number | string;
+  delivery_fee: number | string;
   delivery_method: "pickup" | "delivery";
   delivery_address_line1: string | null;
   delivery_postal_code: string | null;
@@ -69,7 +72,7 @@ async function loadOrderContext(orderId: string, note: string | null): Promise<O
   const { data, error } = await createAdminClient()
     .from("orders")
     .select(
-      "id, order_number, contact_name, contact_email, contact_phone, company_name, total_amount, delivery_method, delivery_address_line1, delivery_postal_code, delivery_city, requested_date, customer_message, payment_status, payment_method, review_reasons, customers(full_name, email, phone), order_items(product_name_snapshot, quantity, unit_price, line_total)",
+      "id, order_number, contact_name, contact_email, contact_phone, company_name, total_amount, delivery_fee, delivery_method, delivery_address_line1, delivery_postal_code, delivery_city, requested_date, customer_message, payment_status, payment_method, review_reasons, customers(full_name, email, phone), order_items(product_name_snapshot, quantity, unit_price, line_total)",
     )
     .eq("id", orderId)
     .maybeSingle<OrderRow>();
@@ -78,6 +81,7 @@ async function loadOrderContext(orderId: string, note: string | null): Promise<O
   const email = data.contact_email ?? data.customers?.email ?? null;
   if (!email) return null;
   const city = [data.delivery_postal_code, data.delivery_city].filter(Boolean).join(" ");
+  const delivery = await getDeliverySettings();
   return {
     id: data.id,
     number: data.order_number,
@@ -100,6 +104,8 @@ async function loadOrderContext(orderId: string, note: string | null): Promise<O
     paymentMethod: data.payment_method,
     paid: data.payment_status === "paid",
     reviewReasons: data.review_reasons ?? [],
+    deliveryFeeCents: eurosToCents(data.delivery_fee ?? 0),
+    pickupAddress: { public: pickupAddress(delivery, "site"), afterAcceptance: pickupAddress(delivery, "accepted") },
   };
 }
 

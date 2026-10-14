@@ -43,6 +43,8 @@ const order: OrderEmailContext = {
   paymentMethod: null,
   paid: false,
   reviewReasons: [],
+  deliveryFeeCents: 0,
+  pickupAddress: { public: null, afterAcceptance: "4 chemin des Abeilles, 14100 Lisieux" },
 };
 
 test("chaque modèle produit un sujet, du HTML et du texte", () => {
@@ -102,6 +104,17 @@ test("paiement et annulation", () => {
   assert.match(paid.text, /règlement de 360,00 € \(virement\)/);
   assert.match(renderOrderEmail("order_cancelled", { ...order, paid: true }, identity).text, /vous sera remboursé/);
   assert.doesNotMatch(renderOrderEmail("order_cancelled", order, identity).text, /remboursé/);
+});
+
+test("livraison et adresse de retrait dans le récapitulatif", () => {
+  const delivery = { ...order, deliveryMethod: "delivery" as const, address: "3 rue des Lilas\n14000 Caen", deliveryFeeCents: 4500, totalCents: 40500 };
+  assert.match(renderOrderEmail("order_received", delivery, identity).text, /- Livraison : 45,00 €\nTotal : 405,00 €/);
+  assert.match(renderOrderEmail("order_received", { ...delivery, deliveryFeeCents: 0 }, identity).text, /- Livraison : à convenir/);
+  assert.match(renderOrderEmail("order_shipped", delivery, identity).subject, /est en route/);
+  // Adresse de retrait non publique : seulement après acceptation.
+  assert.doesNotMatch(renderOrderEmail("order_received", order, identity).text, /Adresse de retrait/);
+  assert.match(renderOrderEmail("order_accepted", order, identity).text, /Adresse de retrait : 4 chemin des Abeilles, 14100 Lisieux/);
+  assert.match(renderOrderEmail("order_ready", order, identity).text, /Adresse de retrait/);
 });
 
 test("montants en euros", () => {

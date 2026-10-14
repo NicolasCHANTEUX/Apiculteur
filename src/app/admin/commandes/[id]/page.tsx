@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 import { Badge, Notice, PageHeader, Panel, adminButton } from "@/components/admin/admin-ui";
 import { EmailActions } from "@/components/admin/emails/email-controls";
 import { EmailStatusPill, isQueued } from "@/components/admin/emails/email-status";
-import { OrderActions, OrderNote, OrderStatePill, RequestReviewButton } from "@/components/admin/orders/order-controls";
+import { DeliveryFeeEditor, OrderActions, OrderNote, OrderStatePill, RequestReviewButton } from "@/components/admin/orders/order-controls";
 import { Stars } from "@/components/ui";
 import { formatPrice } from "@/components/catalog/product-display";
 import {
@@ -99,13 +99,15 @@ export default async function AdminOrderPage(props: PageProps<"/admin/commandes/
       ) : (
         <ol className="grid grid-cols-4 gap-2" aria-label="Avancement">
           {progress.map((step, index) => {
+            // Livraison : l'étape « prête » devient « expédiée ».
+            const label = step.label === "Prête" && order.deliveryMethod === "delivery" ? "Expédiée" : step.label;
             const done = step.key.includes(order.state.key);
             return (
               <li key={step.label} className="space-y-2">
                 <div className={`h-1.5 rounded-full ${done ? "bg-honey" : "bg-line"}`} />
                 <p className={`flex items-center gap-1.5 text-[12.5px] ${done ? "font-medium text-ink" : "text-muted"}`}>
                   {done ? <CheckIcon className="size-3.5 text-honey" /> : <span className="text-[11px] tabular-nums">{index + 1}.</span>}
-                  {step.label}
+                  {label}
                 </p>
               </li>
             );
@@ -160,7 +162,17 @@ export default async function AdminOrderPage(props: PageProps<"/admin/commandes/
               </div>
               <div className="flex justify-between gap-4 text-body">
                 <dt>{order.deliveryMethod === "delivery" ? "Livraison" : "Retrait"}</dt>
-                <dd>{order.deliveryFee > 0 ? formatPrice(order.deliveryFee) : "à convenir"}</dd>
+                <dd>
+                  {order.deliveryMethod === "delivery" && order.paymentStatus !== "paid" && !(order.state.key === "done" || stopped) ? (
+                    <DeliveryFeeEditor order={ref} fee={order.deliveryFee} />
+                  ) : order.deliveryMethod === "pickup" ? (
+                    "gratuit"
+                  ) : order.deliveryFee > 0 ? (
+                    formatPrice(order.deliveryFee)
+                  ) : (
+                    "à convenir"
+                  )}
+                </dd>
               </div>
               <div className="flex justify-between gap-4 text-[16px] font-semibold text-ink">
                 <dt>Total {priceToConfirm ? "(hors prix à confirmer)" : ""}</dt>
@@ -274,7 +286,13 @@ export default async function AdminOrderPage(props: PageProps<"/admin/commandes/
         <aside className="space-y-6 lg:sticky lg:top-6">
           {!(order.state.key === "done" || stopped) ? (
             <Panel title="Actions">
-              <OrderActions order={ref} state={order.state.key} paymentStatus={order.paymentStatus} canNotify={Boolean(order.customer.email)} />
+              <OrderActions
+                order={ref}
+                state={order.state.key}
+                paymentStatus={order.paymentStatus}
+                canNotify={Boolean(order.customer.email)}
+                deliveryMethod={order.deliveryMethod}
+              />
             </Panel>
           ) : null}
 
@@ -320,7 +338,11 @@ export default async function AdminOrderPage(props: PageProps<"/admin/commandes/
               <Info label="Mode">
                 <span className="inline-flex items-center gap-1.5">
                   {order.deliveryMethod === "delivery" ? <TruckIcon className="size-4 text-honey" /> : <MapPinIcon className="size-4 text-honey" />}
-                  {order.deliveryMethod === "delivery" ? "Livraison à organiser" : "Retrait sur l’exploitation"}
+                  {order.deliveryMethod === "delivery"
+                    ? order.delivery.zoneName
+                      ? "Livraison"
+                      : "Livraison à organiser (sur devis)"
+                    : "Retrait sur l’exploitation"}
                 </span>
               </Info>
               {order.address ? (
@@ -328,6 +350,28 @@ export default async function AdminOrderPage(props: PageProps<"/admin/commandes/
                   {order.address.line1}
                   <br />
                   {order.address.postalCode} {order.address.city}
+                </Info>
+              ) : null}
+              {order.deliveryMethod === "delivery" ? (
+                <Info label="Distance">
+                  {order.delivery.distanceKm !== null ? (
+                    <span>
+                      {Math.round(order.delivery.distanceKm)} km à vol d’oiseau
+                      {order.delivery.zoneName ? <span className="text-muted"> · zone « {order.delivery.zoneName} »</span> : <span className="text-muted"> · hors zone, sur devis</span>}
+                    </span>
+                  ) : (
+                    <span className="text-muted">Non calculée (adresse non localisée ou exploitation sans adresse)</span>
+                  )}
+                  {order.delivery.lat !== null && order.delivery.lng !== null ? (
+                    <a
+                      href={`https://www.openstreetmap.org/?mlat=${order.delivery.lat}&mlon=${order.delivery.lng}#map=12/${order.delivery.lat}/${order.delivery.lng}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-0.5 block text-[13px] font-medium text-honey-dark hover:underline"
+                    >
+                      Voir sur la carte
+                    </a>
+                  ) : null}
                 </Info>
               ) : null}
               <Info label="Date souhaitée">

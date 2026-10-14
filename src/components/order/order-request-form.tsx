@@ -8,6 +8,7 @@ import { inputClass } from "@/components/ui";
 import type { PublicProduct } from "@/data/catalog";
 import { cartSnapshot, parseCart, subscribeCart } from "@/lib/cart/storage";
 import { formatEuros } from "@/lib/domain/pricing";
+import { quoteDelivery, type DeliveryZone } from "@/lib/delivery/rules";
 import { priceRequest, type DeliveryChoice } from "@/lib/orders/request";
 
 const initialState: OrderRequestState = { status: "idle", message: "", errors: {}, problems: [] };
@@ -68,11 +69,26 @@ function Step({ number, title, children }: { number: number; title: string; chil
  * `termsVersion` : version des CGV publiée, à accepter avant l'envoi ;
  * null tant que les informations légales ne sont pas publiées.
  */
-export function OrderRequestForm({ products, today, termsVersion }: { products: PublicProduct[]; today: string; termsVersion: number | null }) {
+export function OrderRequestForm({
+  products,
+  today,
+  termsVersion,
+  zones,
+  pickup,
+}: {
+  products: PublicProduct[];
+  today: string;
+  termsVersion: number | null;
+  /** Zones de livraison actives, pour l'estimation des frais. */
+  zones: DeliveryZone[];
+  /** Lieu de retrait (commune, adresse si elle est publique, consignes). */
+  pickup: { city: string | null; address: string | null; instructions: string };
+}) {
   const cart = parseCart(useSyncExternalStore(subscribeCart, cartSnapshot, () => "[]"));
   const priced = priceRequest(cart, products);
   const [state, action, pending] = useActionState(submitOrderRequestAction, initialState);
   const [delivery, setDelivery] = useState<DeliveryChoice>("pickup");
+  const [postalCode, setPostalCode] = useState("");
   const [professional, setProfessional] = useState(false);
   const keyRef = useRef<string | null>(null);
   const errors = state.errors;
@@ -100,6 +116,21 @@ export function OrderRequestForm({ products, today, termsVersion }: { products: 
   }
 
   const problems = state.problems.length ? state.problems : priced.problems;
+  // Estimation des frais : la distance n'est connue qu'à l'envoi, les zones
+  // limitées en distance sont donc estimées « sous réserve ».
+  const deliveryLines = priced.lines.map((line) => ({ name: line.product.name, quantity: line.quantity, deliveryMode: line.product.deliveryMode }));
+  const pickupOnly = deliveryLines.filter((line) => line.deliveryMode === "pickup_only").map((line) => line.name);
+  const estimate =
+    delivery === "delivery" && /^\d{5}$/.test(postalCode)
+      ? quoteDelivery({ zones: zones.map((zone) => ({ ...zone, maxDistanceKm: null })), lines: deliveryLines, country: "FR", postalCode, distanceKm: null })
+      : null;
+  const feeCents = estimate?.kind === "zone" ? estimate.feeCents : 0;
+  const distanceLimited = estimate?.kind === "zone" && zones.find((zone) => zone.id === estimate.zone.id)?.maxDistanceKm != null;
+  const pickupText = pickup.address
+    ? `${pickup.address}. Sur rendez-vous, gratuit.`
+    : pickup.city
+      ? `À ${pickup.city}, sur rendez-vous, gratuit.`
+      : "Sur rendez-vous, gratuit.";
 
   return (
     <form
@@ -165,15 +196,25 @@ export function OrderRequestForm({ products, today, termsVersion }: { products: 
             <legend className="sr-only">Mode de réception</legend>
             <div className="grid gap-3 sm:grid-cols-2">
               {([
-                { value: "pickup", icon: MapPinIcon, title: "Retrait sur l’exploitation", text: "Sur rendez-vous, convenu ensemble." },
-                { value: "delivery", icon: TruckIcon, title: "Livraison à organiser", text: "Conditions et frais confirmés après étude." },
+                { value: "pickup", icon: MapPinIcon, title: "Retrait sur l’exploitation", text: pickupText },
+                {
+                  value: "delivery",
+                  icon: TruckIcon,
+                  title: zones.length ? "Livraison" : "Livraison à organiser",
+                  text: pickupOnly.length
+                    ? `Indisponible : « ${pickupOnly[0]} » est à retirer sur place.`
+                    : zones.length
+                      ? "Frais selon votre adresse, confirmés après étude."
+                      : "Conditions et frais confirmés après étude.",
+                },
               ] as const).map((option) => {
                 const Icon = option.icon;
                 const checked = delivery === option.value;
+                const disabled = option.value === "delivery" && pickupOnly.length > 0;
                 return (
                   <label
                     key={option.value}
-                    className={`flex cursor-pointer gap-3 rounded-xl border p-4 transition ${
+                    className={`flex gap-3 rounded-xl border p-4 transition ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"} ${
                       checked ? "border-honey bg-honey/8 ring-1 ring-honey/40" : "border-line hover:border-honey/50"
                     }`}
                   >
@@ -182,6 +223,7 @@ export function OrderRequestForm({ products, today, termsVersion }: { products: 
                       name="deliveryMethod"
                       value={option.value}
                       checked={checked}
+                      disabled={disabled}
                       onChange={() => setDelivery(option.value)}
                       className="mt-1 size-4 accent-honey"
                     />
@@ -197,17 +239,39 @@ export function OrderRequestForm({ products, today, termsVersion }: { products: 
               })}
             </div>
           </fieldset>
+          {errors.deliveryMethod ? (
+            <p id="deliveryMethod-error" className="mt-2 text-[12.5px] font-medium text-red-700">
+              {errors.deliveryMethod}
+            </p>
+          ) : null}
+          {delivery === "pickup" && pickup.instructions ? <p className="mt-3 text-[13px] text-body">{pickup.instructions}</p> : null}
           {delivery === "delivery" ? (
             <div className="mt-4 grid gap-4 sm:grid-cols-[1fr_120px_1fr]">
               <Field label="Adresse" name="addressLine1" error={errors.addressLine1} className="sm:col-span-3">
                 <input {...field("addressLine1")} autoComplete="street-address" className={`${inputClass} h-11`} />
               </Field>
               <Field label="Code postal" name="postalCode" error={errors.postalCode} className="sm:col-span-1">
-                <input {...field("postalCode")} inputMode="numeric" autoComplete="postal-code" className={`${inputClass} h-11`} />
+                <input
+                  {...field("postalCode")}
+                  inputMode="numeric"
+                  autoComplete="postal-code"
+                  onChange={(event) => setPostalCode(event.target.value.replace(/\s/g, ""))}
+                  className={`${inputClass} h-11`}
+                />
               </Field>
               <Field label="Ville" name="city" error={errors.city} className="sm:col-span-2">
                 <input {...field("city")} autoComplete="address-level2" className={`${inputClass} h-11`} />
               </Field>
+              {estimate ? (
+                <p
+                  aria-live="polite"
+                  className={`rounded-xl px-3.5 py-2.5 text-[13px] sm:col-span-3 ${estimate.kind === "zone" ? "bg-green-50 text-green-900" : "bg-sand/70 text-body"}`}
+                >
+                  {estimate.kind === "zone"
+                    ? `Livraison estimée : ${formatEuros(estimate.feeCents)} (${estimate.zone.name})${distanceLimited ? ", sous réserve de la distance" : ""}. Confirmée à l’acceptation.`
+                    : "Livraison sur devis pour cette adresse : je vous communique le tarif après étude de votre demande."}
+                </p>
+              ) : null}
             </div>
           ) : null}
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
@@ -235,7 +299,12 @@ export function OrderRequestForm({ products, today, termsVersion }: { products: 
         <div className="overflow-hidden rounded-2xl border border-line bg-white shadow-[0_18px_40px_-28px_rgb(61_43_26/0.5)]">
           <div className="bg-espresso px-6 py-5 text-white">
             <p className="text-[12px] tracking-[0.08em] text-white/60 uppercase">Total estimé</p>
-            <p className="mt-1 text-[30px] leading-none font-semibold">{formatEuros(priced.subtotalCents)}</p>
+            <p className="mt-1 text-[30px] leading-none font-semibold">{formatEuros(priced.subtotalCents + feeCents)}</p>
+            {delivery === "delivery" ? (
+              <p className="mt-2 text-[12.5px] text-white/70">
+                {feeCents ? `dont livraison estimée ${formatEuros(feeCents)}` : "+ livraison selon votre adresse"}
+              </p>
+            ) : null}
             {priced.lines.some((line) => line.unitPriceCents === null) ? (
               <p className="mt-2 text-[12.5px] text-[#f6d27a]">+ produits au prix à confirmer</p>
             ) : null}

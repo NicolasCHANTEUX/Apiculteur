@@ -19,7 +19,16 @@ function isHttpsUrl(value: string | undefined) {
 
 // Seule la présence des réglages est inspectée : aucune valeur n'est lue ni
 // affichée. Les fonctions pas encore développées pointent vers leur lot.
-export function getLaunchChecks({ ordersOpen, legalVersion }: { ordersOpen: boolean; legalVersion: number | null }): LaunchCheck[] {
+export function getLaunchChecks({
+  ordersOpen,
+  legalVersion,
+  originLocated,
+}: {
+  ordersOpen: boolean;
+  legalVersion: number | null;
+  /** Adresse de l'exploitation localisée (distances de livraison). */
+  originLocated: boolean;
+}): LaunchCheck[] {
   const email = readEmailConfig(process.env);
   return [
     {
@@ -55,6 +64,11 @@ export function getLaunchChecks({ ordersOpen, legalVersion }: { ordersOpen: bool
       detail: email.provider
         ? `Envoi automatique via ${emailProviders[email.provider]}${email.adminEmail ? "" : " (sans alerte de nouvelle demande)"}.`
         : "Préparés dans la rubrique Emails ; envoi automatique à configurer (Brevo ou Resend).",
+    },
+    {
+      label: "Adresse de l’exploitation",
+      state: originLocated ? "ok" : "todo",
+      detail: originLocated ? "Localisée : distances de livraison calculées." : "À renseigner dans Livraison (retrait, distances).",
     },
     {
       label: "Tâche quotidienne (avis, purge)",

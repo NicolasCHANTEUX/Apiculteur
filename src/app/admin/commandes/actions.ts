@@ -8,6 +8,8 @@ import { deliverEmails, getEmailConfig, scheduleOrderEmails, type OrderEmailTemp
 import { getReviewSettings } from "@/data/settings";
 import { scheduleReviewInvitation, sendReviewInvitation } from "@/data/review-invitations";
 import { failure, success, type ActionResult } from "@/lib/admin/action-result";
+import { centsToDecimal, parseEurosToCents } from "@/lib/catalog/product-form";
+import { eurosToCents } from "@/lib/domain/pricing";
 import { createClient } from "@/lib/supabase/server";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -105,7 +107,13 @@ export async function cancelOrderAction(formData: FormData): Promise<ActionResul
   return success(`${refused ? "Demande refusée." : "Commande annulée : le stock a été rendu."}${notice}`);
 }
 
-const steps = ["preparing", "ready", "delivered"] as const;
+const steps = ["preparing", "ready", "shipped", "delivered"] as const;
+const stepMessages = {
+  preparing: "Commande remise en préparation.",
+  ready: "Commande prête.",
+  shipped: "Commande expédiée.",
+  delivered: "Commande terminée.",
+} as const;
 
 export async function advanceOrderAction(formData: FormData): Promise<ActionResult> {
   const admin = await requireAdmin("/admin/commandes");
@@ -128,14 +136,52 @@ export async function advanceOrderAction(formData: FormData): Promise<ActionResu
     return CONFLICT;
   }
   await recordAudit({ actorUserId: admin.userId, action: "order.status_changed", entityType: "order", entityId: id, metadata: { order_number: field(formData, "number"), status: step } });
-  let notice = step === "ready" ? await notifyCustomer(formData, id, "order_ready") : "";
+  let notice =
+    step === "ready" ? await notifyCustomer(formData, id, "order_ready") : step === "shipped" ? await notifyCustomer(formData, id, "order_shipped") : "";
   // Commande terminée : la demande d'avis part après le délai réglé.
   if (step === "delivered" && (await scheduleReviewInvitation(id)) === "scheduled") {
     const { delayDays } = await getReviewSettings();
     notice = ` Demande d’avis prévue dans ${delayDays} jour${delayDays > 1 ? "s" : ""}.`;
   }
   revalidateOrder(id);
-  return success(`${step === "ready" ? "Commande prête." : step === "delivered" ? "Commande terminée." : "Commande remise en préparation."}${notice}`);
+  return success(`${stepMessages[step]}${notice}`);
+}
+
+/**
+ * Frais de livraison (estimés à la demande) confirmés ou corrigés par
+ * l'apiculteur, tant que la commande n'est ni payée ni terminée.
+ */
+export async function setDeliveryFeeAction(formData: FormData): Promise<ActionResult> {
+  const admin = await requireAdmin("/admin/commandes");
+  const id = field(formData, "id");
+  if (!UUID.test(id)) return failure("Commande invalide.");
+  const fee = parseEurosToCents(field(formData, "fee", 20) || "0");
+  if (fee === null) return failure("Montant invalide.");
+
+  const supabase = await createClient();
+  const { data: order, error: readError } = await supabase
+    .from("orders")
+    .select("subtotal, payment_status, fulfillment_status, validation_status, updated_at")
+    .eq("id", id)
+    .maybeSingle();
+  if (readError || !order) return failure("Commande introuvable.");
+  if (order.payment_status === "paid" || ["delivered", "cancelled"].includes(order.fulfillment_status as string) || order.validation_status === "refused") {
+    return failure("Les frais ne se modifient plus une fois la commande payée ou terminée.");
+  }
+  const { data, error } = await supabase
+    .from("orders")
+    .update({ delivery_fee: centsToDecimal(fee), total_amount: centsToDecimal(eurosToCents(order.subtotal as number | string) + fee) })
+    .eq("id", id)
+    .eq("updated_at", field(formData, "version"))
+    .select("id");
+  if (error) return rpcFailure(error);
+  if (!data?.length) {
+    revalidateOrder(id);
+    return CONFLICT;
+  }
+  await recordAudit({ actorUserId: admin.userId, action: "order.delivery_fee", entityType: "order", entityId: id, metadata: { order_number: field(formData, "number"), fee: centsToDecimal(fee) } });
+  revalidateOrder(id);
+  return success(fee ? "Frais de livraison enregistrés : le total est mis à jour." : "Livraison à convenir : frais remis à zéro.");
 }
 
 export async function markOrderPaidAction(formData: FormData): Promise<ActionResult> {

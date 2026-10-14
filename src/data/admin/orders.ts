@@ -193,6 +193,8 @@ export type AdminOrder = {
   deliveryFee: number;
   total: number;
   stockReserved: boolean;
+  /** Livraison évaluée à la demande (lot 10). */
+  delivery: { distanceKm: number | null; zoneName: string | null; lat: number | null; lng: number | null };
   lines: AdminOrderLine[];
   history: AdminOrderEvent[];
 };
@@ -240,6 +242,13 @@ export async function getAdminOrder(id: string): Promise<AdminOrder | null> {
   ]);
   if (history.error) console.error("Historique de commande", history.error.message);
 
+  // Zone retenue (lue à part : table absente tant que la migration du lot 10 n'est pas appliquée).
+  let zoneName: string | null = null;
+  if (typeof row.delivery_zone_id === "string") {
+    const { data: zone } = await supabase.from("delivery_zones").select("name").eq("id", row.delivery_zone_id).maybeSingle();
+    zoneName = (zone?.name as string | undefined) ?? null;
+  }
+
   const validation = row.validation_status as ValidationStatus;
   const fulfillment = row.fulfillment_status as FulfillmentStatus;
 
@@ -278,6 +287,12 @@ export async function getAdminOrder(id: string): Promise<AdminOrder | null> {
     deliveryFee: Number(row.delivery_fee),
     total: Number(row.total_amount),
     stockReserved: Boolean(row.stock_reserved),
+    delivery: {
+      distanceKm: row.delivery_distance_km == null ? null : Number(row.delivery_distance_km),
+      zoneName,
+      lat: typeof row.delivery_latitude === "number" ? row.delivery_latitude : null,
+      lng: typeof row.delivery_longitude === "number" ? row.delivery_longitude : null,
+    },
     lines: (row.order_items ?? []).map((item) => ({
       id: item.id,
       productId: item.product_id,

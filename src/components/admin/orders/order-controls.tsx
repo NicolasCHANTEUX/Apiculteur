@@ -7,6 +7,7 @@ import {
   cancelOrderAction,
   markOrderPaidAction,
   requestReviewAction,
+  setDeliveryFeeAction,
   saveOrderNoteAction,
   setOrdersOpenAction,
 } from "@/app/admin/commandes/actions";
@@ -181,12 +182,15 @@ export function OrderActions({
   state,
   paymentStatus,
   canNotify,
+  deliveryMethod,
 }: {
   order: OrderRef;
   state: OrderStateKey;
   paymentStatus: PaymentStatus;
   /** Le client a une adresse email. */
   canNotify: boolean;
+  /** Livraison : étape « expédiée » au lieu de « prête ». */
+  deliveryMethod: "pickup" | "delivery";
 }) {
   const { run, pending } = useAdminAction();
   const [dialog, setDialog] = useState<"accept" | "refuse" | "cancel" | null>(null);
@@ -213,16 +217,21 @@ export function OrderActions({
       ) : null}
 
       {state === "preparing" ? (
-        <button type="button" disabled={pending} onClick={() => run(advanceOrderAction, { ...fields, step: "ready" })} className={`${adminButton.primary} w-full`}>
+        <button
+          type="button"
+          disabled={pending}
+          onClick={() => run(advanceOrderAction, { ...fields, step: deliveryMethod === "delivery" ? "shipped" : "ready" })}
+          className={`${adminButton.primary} w-full`}
+        >
           {pending ? <Spinner /> : <PackageIcon className="size-4" />}
-          Marquer comme prête
+          {deliveryMethod === "delivery" ? "Marquer comme expédiée" : "Marquer comme prête"}
         </button>
       ) : null}
       {state === "ready" || state === "shipped" ? (
         <div className="flex flex-col gap-2 sm:flex-row">
           <button type="button" disabled={pending} onClick={() => run(advanceOrderAction, { ...fields, step: "delivered" })} className={`${adminButton.primary} flex-1`}>
             {pending ? <Spinner /> : <CheckIcon className="size-4" />}
-            Retirée ou livrée
+            {deliveryMethod === "delivery" ? "Livrée" : "Retirée"}
           </button>
           <button type="button" disabled={pending} onClick={() => run(advanceOrderAction, { ...fields, step: "preparing" })} className={`${adminButton.secondary}`}>
             Remettre en préparation
@@ -256,7 +265,9 @@ export function OrderActions({
       {canNotify && !finished && state !== "to_validate" ? (
         <div className="border-t border-line/60 pt-3">
           <NotifyCheckbox checked={notify} onChange={setNotify} />
-          <p className="mt-1 pl-6.5 text-[12px] text-muted">Quand la commande est prête et quand le paiement est enregistré.</p>
+          <p className="mt-1 pl-6.5 text-[12px] text-muted">
+            {deliveryMethod === "delivery" ? "Quand la commande est expédiée" : "Quand la commande est prête"} et quand le paiement est enregistré.
+          </p>
         </div>
       ) : null}
 
@@ -354,5 +365,40 @@ export function RequestReviewButton({ orderId, number, resend }: { orderId: stri
       {pending ? <Spinner className="size-3.5" /> : null}
       {resend ? "Renvoyer le lien" : "Demander un avis maintenant"}
     </button>
+  );
+}
+
+/** Frais de livraison confirmés ou corrigés avant paiement (0 : à convenir). */
+export function DeliveryFeeEditor({ order, fee }: { order: OrderRef; fee: number }) {
+  const { run, pending } = useAdminAction();
+  const initial = fee ? fee.toFixed(2).replace(".", ",") : "";
+  const [value, setValue] = useState(initial);
+  return (
+    <form
+      onSubmit={(event) => {
+        event.preventDefault();
+        run(setDeliveryFeeAction, { ...order, fee: value });
+      }}
+      className="flex items-center gap-2"
+    >
+      <label htmlFor="delivery-fee" className="sr-only">
+        Frais de livraison en euros
+      </label>
+      <input
+        id="delivery-fee"
+        value={value}
+        onChange={(event) => setValue(event.target.value)}
+        inputMode="decimal"
+        placeholder="à convenir"
+        className={`${adminInput} h-9 w-28`}
+      />
+      <span className="text-[13px] text-muted">€</span>
+      {value !== initial ? (
+        <button type="submit" disabled={pending} className={adminButton.small}>
+          {pending ? <Spinner className="size-3.5" /> : null}
+          Enregistrer
+        </button>
+      ) : null}
+    </form>
   );
 }

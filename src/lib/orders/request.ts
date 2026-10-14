@@ -156,14 +156,19 @@ export function priceRequest(
  * Raisons d'attention affichées à l'apiculteur (H2 : elles ne bloquent rien,
  * toute demande est de toute façon étudiée).
  */
+/**
+ * Raisons d'attention pour l'admin. `deliveryReasons` : évaluation de
+ * l'adresse (distance, devis) ; sans évaluation, « Livraison à organiser ».
+ */
 export function reviewReasons(
   request: Pick<PricedRequest, "lines" | "totalQuantity">,
   deliveryMethod: DeliveryChoice,
   quantityThreshold: number,
+  deliveryReasons?: string[],
 ): string[] {
   const reasons: string[] = [];
   if (request.totalQuantity >= quantityThreshold) reasons.push(`Grande quantité (${request.totalQuantity} unités)`);
-  if (deliveryMethod === "delivery") reasons.push("Livraison à organiser");
+  if (deliveryMethod === "delivery") reasons.push(...(deliveryReasons ?? ["Livraison à organiser"]));
   if (request.lines.some(({ product }) => product.purchaseMode === "reservation" || product.stockStatusLabel === "reservation_open")) {
     reasons.push("Réservation");
   }

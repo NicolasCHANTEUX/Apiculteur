@@ -14,6 +14,7 @@ import {
   ShoppingBagIcon,
   StarIcon,
   TagIcon,
+  TruckIcon,
   UsersIcon,
 } from "@/components/icons";
 
@@ -32,6 +33,7 @@ const ready: NavItem[] = [
   { href: "/admin/emails", label: "Emails", icon: MailIcon },
   { href: "/admin/avis", label: "Avis", icon: StarIcon },
   { href: "/admin/clients", label: "Clients", icon: UsersIcon },
+  { href: "/admin/livraison", label: "Livraison", icon: TruckIcon },
   { href: "/admin/informations-legales", label: "Informations légales", icon: ShieldIcon },
 ];
 
