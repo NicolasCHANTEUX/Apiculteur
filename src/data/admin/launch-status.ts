@@ -18,7 +18,7 @@ function isHttpsUrl(value: string | undefined) {
 
 // Seule la présence des réglages est inspectée : aucune valeur n'est lue ni
 // affichée. Les fonctions pas encore développées pointent vers leur lot.
-export function getLaunchChecks(): LaunchCheck[] {
+export function getLaunchChecks({ ordersOpen }: { ordersOpen: boolean }): LaunchCheck[] {
   return [
     {
       label: "Base de données (Supabase)",
@@ -40,7 +40,13 @@ export function getLaunchChecks(): LaunchCheck[] {
       state: isHttpsUrl(process.env.NEXT_PUBLIC_SITE_URL) ? "ok" : "todo",
       detail: "NEXT_PUBLIC_SITE_URL en https, utilisée dans les emails.",
     },
-    { label: "Commandes en ligne", state: "later", detail: "Lots 3 à 5." },
+    {
+      label: "Demandes de commande en ligne",
+      state: ordersOpen ? "ok" : "todo",
+      detail: ordersOpen
+        ? "Ouvertes : les visiteurs envoient leurs demandes depuis le panier."
+        : "Fermées : interrupteur dans la rubrique Commandes.",
+    },
     { label: "Emails aux clients", state: "later", detail: "Lot 6." },
     { label: "Pages légales", state: "later", detail: "Lot 9 — identité réelle à fournir." },
     { label: "Factures", state: "later", detail: "Lot 11 — validation fiscale requise." },

@@ -12,19 +12,21 @@ export type AdminAccess =
   | { status: "admin"; userId: string; email: string | null };
 
 /**
- * Identité vérifiée auprès de Supabase Auth (getUser, pas getSession), puis
- * rôle lu en base via is_admin(), qui s'appuie uniquement sur la table
- * admin_users liée à l'identifiant Auth. Ni l'email ni le contenu du JWT ne
- * donnent de droits. Mis en cache pour la durée d'une requête.
+ * Identité vérifiée par getClaims() (pas getSession) : signature du jeton
+ * contrôlée avec la clé publique du projet, sans appel réseau (ou par
+ * Supabase Auth si la clé est symétrique). Rôle lu ensuite en base via
+ * is_admin(), qui s'appuie uniquement sur la table admin_users ; la base
+ * revérifie le jeton à cet appel. Ni l'email ni le contenu du JWT ne donnent
+ * de droits. Mis en cache pour la durée d'une requête.
  */
 export const getAdminAccess = cache(async (): Promise<AdminAccess> => {
   if (!getPublicSupabaseConfig()) return { status: "unconfigured" };
 
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { status: "anonymous" };
+  const { data, error: claimsError } = await supabase.auth.getClaims();
+  const claims = claimsError ? null : data?.claims;
+  if (!claims?.sub) return { status: "anonymous" };
+  const email = typeof claims.email === "string" ? claims.email : null;
 
   const { data: isAdmin, error } = await supabase.rpc("is_admin");
   if (error) {
@@ -32,8 +34,8 @@ export const getAdminAccess = cache(async (): Promise<AdminAccess> => {
   }
 
   return isAdmin === true
-    ? { status: "admin", userId: user.id, email: user.email ?? null }
-    : { status: "forbidden", email: user.email ?? null };
+    ? { status: "admin", userId: claims.sub, email }
+    : { status: "forbidden", email };
 });
 
 /**

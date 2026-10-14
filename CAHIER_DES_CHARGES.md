@@ -120,7 +120,7 @@ Le plan d’attaque (lots, ordre, estimation) sera établi **à partir de ce doc
 
 - [x] Accueil de la maquette : hero, bandeau de confiance, à propos, essaims disponibles, parcours en 4 étapes, témoignages, appel au contact. (Maquette, CDC 1)
 - [x] Pages Nos essaims, À propos, Avis clients, FAQ, Contact, fiche produit, 404. (Maquette, CDC 2)
-- [ ] Pages Panier, Commande, Confirmation de commande. (CDC 2, Kayart)
+- [x] Pages Panier, Commande, Confirmation de commande. (CDC 2, Kayart)
 - [x] Pages Connexion, Mot de passe oublié, Nouveau mot de passe, Accès refusé. Pas d’inscription publique (H6 du plan). (Kayart)
 - [ ] Mentions légales, CGV, Confidentialité réelles (§19). *(partiel : pages d’attente)* (CDC 2)
 - [ ] Pages de services, selon décision (§12) : récupération d’essaim, devis professionnel, accompagnement. (Kayart, Apicole)
@@ -239,34 +239,34 @@ Le plan d’attaque (lots, ordre, estimation) sera établi **à partir de ce doc
 
 ### 8.1 Passage de commande
 
-- [ ] Page `/commande` séparée du panier. (Kayart, CDC 7)
+- [ ] Page `/commande` séparée du panier. *(partiel : tout sauf une adresse de facturation distincte, prévue avec les factures)* (Kayart, CDC 7)
   - coordonnées : nom, email, téléphone ;
   - adresses de facturation et de livraison ;
   - identifiant professionnel facultatif (SIRET, numéro de TVA) ;
   - retrait ou livraison, date souhaitée ;
   - message libre ;
   - récapitulatif.
-- [ ] Accusé d’information sur les données et acceptation des CGV. (Kayart, §19)
-- [ ] Recalcul complet par le serveur à l’envoi ; refus si le panier a changé dans un autre onglet. (Kayart)
-- [ ] Création atomique du client, de la commande et des lignes, avec copie figée du nom, de la référence et du prix, plus une entrée d’historique. (Kayart, ROADMAP)
-- [ ] Protection contre la double soumission : clé de tentative et empreinte. Une reprise renvoie la même commande. (Kayart)
+- [ ] Accusé d’information sur les données et acceptation des CGV. *(partiel : information sur les données ; acceptation des CGV quand elles existeront)* (Kayart, §19)
+- [x] Recalcul complet par le serveur à l’envoi ; refus si le panier a changé dans un autre onglet. (Kayart)
+- [x] Création atomique du client, de la commande et des lignes, avec copie figée du nom, de la référence et du prix, plus une entrée d’historique. — fonction `submit_order_request` ; coordonnées figées dans la commande, fiche client jamais écrasée. (Kayart, ROADMAP)
+- [ ] Protection contre la double soumission : clé de tentative et empreinte. Une reprise renvoie la même commande. *(partiel : clé de tentative, sans empreinte du contenu)* (Kayart)
 - [x] Numéro de commande lisible (`CMD-000001`), généré en base. (CDC)
-- [ ] Page de confirmation : numéro, récapitulatif, prochaines étapes. Elle n’annonce jamais un paiement non vérifié par le serveur. (Kayart, CDC 7)
-- [ ] Retrait du panier des articles commandés, après confirmation par le serveur. (Kayart)
-- [ ] Interrupteur global « commandes ouvertes / fermées » (hors saison), avec message personnalisé. (CDC 19)
+- [ ] Page de confirmation : numéro, récapitulatif, prochaines étapes. Elle n’annonce jamais un paiement non vérifié par le serveur. *(partiel : numéro et prochaines étapes, sans récapitulatif)* (Kayart, CDC 7)
+- [x] Retrait du panier des articles commandés, après confirmation par le serveur. (Kayart)
+- [ ] Interrupteur global « commandes ouvertes / fermées » (hors saison), avec message personnalisé. *(partiel : interrupteur dans Commandes, fermé par défaut ; sans message personnalisé)* (CDC 19)
 
 ### 8.2 Validation spéciale (quantité × distance)
 
 - [x] Seuils en base (`app_settings`) : distance et quantité automatiques, seuils de validation manuelle, délai de demande d’avis. (CDC 19-20)
-- [ ] Moteur de règles lisant ces seuils, sans valeur codée en dur. (CDC 8, 20)
+- [ ] Moteur de règles lisant ces seuils, sans valeur codée en dur. *(partiel : seuil de quantité lu en base, raisons d’attention affichées à l’admin ; distance au lot 10)* (CDC 8, 20)
   - quantité seule, distance seule ou combinaison ;
   - produits « retrait obligatoire » ou « livraison impossible automatiquement » ;
   - message personnalisé par règle.
 - [ ] Calcul de la distance entre l’adresse du client et l’adresse de départ. Service de géocodage à choisir (§26). (CDC 8-9)
 - [ ] Statuts de validation : non requise, en attente, acceptée, refusée, modification proposée. *(partiel : 4 statuts en base, sans « modification proposée »)* (CDC 8)
-- [ ] Message client préventif et pédagogique, sans blocage brutal : la commande devient une « demande à valider ». (CDC 8)
-- [ ] Admin : accepter, refuser, proposer une alternative (quantité, date, retrait), message personnalisé, email au client, historique de la décision. (CDC 8)
-- [ ] Aucun paiement demandé avant la validation. (CDC 12)
+- [x] Message client préventif et pédagogique, sans blocage brutal : la commande devient une « demande à valider ». — toute commande est une demande étudiée (H2). (CDC 8)
+- [ ] Admin : accepter, refuser, proposer une alternative (quantité, date, retrait), message personnalisé, email au client, historique de la décision. *(partiel : accepter, refuser, note, historique, brouillon d’email au client ; alternative et email automatique à venir)* (CDC 8)
+- [x] Aucun paiement demandé avant la validation. (CDC 12)
 
 ---
 
@@ -437,12 +437,12 @@ Le plan d’attaque (lots, ordre, estimation) sera établi **à partir de ce doc
 
 ### 17.4 Commandes
 
-- [ ] Liste : numéro, date, type (en ligne, manuelle, test), client, nombre d’articles, total, statuts de commande, de paiement et de validation ; recherche par numéro, nom ou email ; filtres ; pagination. (Kayart, CDC 10)
-- [ ] Détail : (Kayart, CDC 10)
+- [ ] Liste : numéro, date, type (en ligne, manuelle, test), client, nombre d’articles, total, statuts de commande, de paiement et de validation ; recherche par numéro, nom ou email ; filtres ; pagination. *(partiel : sans type ni pagination ; onglets par état et recherche)* (Kayart, CDC 10)
+- [ ] Détail : *(partiel : tout sauf TVA, distance et facture)* (Kayart, CDC 10)
   - lignes, montants (HT et TVA une fois facturée), paiement ;
   - client, adresses, livraison, distance, date souhaitée ;
   - note interne, facture, historique chronologique.
-- [ ] Actions : (CDC 10, Kayart)
+- [ ] Actions : *(partiel : valider (stock décompté), refuser, marquer payée, préparation, annuler (stock rendu), contacter le client ; à venir : alternative, modification avant paiement, facture, demande d’avis)* (CDC 10, Kayart)
   - valider, refuser ou proposer une alternative (§8.2) ;
   - avant paiement : modifier quantité, prix, remise ;
   - marquer payée, faire avancer la préparation ;

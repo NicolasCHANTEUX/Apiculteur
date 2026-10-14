@@ -22,7 +22,9 @@ function isUnavailable(product: PublicProduct) {
   return product.stockStatusLabel === "sold_out" || product.stockStatusLabel === "coming_soon" || product.displayedStockQuantity === 0;
 }
 
-export function CartView({ products }: { products: PublicProduct[] }) {
+// Avec la réception des demandes ouverte, « Envoyer ma demande » mène au
+// formulaire de commande ; sinon, à un message pré-rempli (page contact).
+export function CartView({ products, ordersOpen }: { products: PublicProduct[]; ordersOpen: boolean }) {
   const [notSaved, setNotSaved] = useState(false);
   const [confirmClear, setConfirmClear] = useState(false);
   const snapshot = useSyncExternalStore(subscribeCart, cartSnapshot, () => "[]");
@@ -83,7 +85,7 @@ export function CartView({ products }: { products: PublicProduct[] }) {
     );
   }
 
-  const request = contactHref(
+  const request = ordersOpen ? "/commande" : contactHref(
     "Commande ou réservation",
     cartRequestMessage(
       rows

@@ -32,6 +32,7 @@ import {
 import { getActivitySeries, getRecentActivity } from "@/data/admin/activity";
 import { SERIES_DAYS, getDashboardData } from "@/data/admin/dashboard";
 import { getLaunchChecks } from "@/data/admin/launch-status";
+import { getOrderSettings } from "@/data/settings";
 import { requireAdmin } from "@/data/auth";
 import { formatRelativeTime } from "@/lib/admin/audit-labels";
 import { lastDays } from "@/lib/admin/series";
@@ -231,7 +232,7 @@ export default async function AdminDashboardPage(props: PageProps<"/admin">) {
     getActivitySeries(days),
     props.searchParams,
   ]);
-  const checks = getLaunchChecks();
+  const checks = getLaunchChecks({ ordersOpen: (await getOrderSettings()).ordersOpen });
   const configChecks = checks.filter((check) => check.state !== "later");
   const configured = configChecks.filter((check) => check.state === "ok").length;
   const stockAlerts = data.lowStock.length + data.outOfStock.length;
@@ -252,7 +253,7 @@ export default async function AdminDashboardPage(props: PageProps<"/admin">) {
 
   const todos: Todo[] = [];
   if (data.ordersToValidate > 0) {
-    todos.push({ key: "orders", icon: ShoppingBagIcon, tone: "honey", title: `${plural(data.ordersToValidate, "commande attend", "commandes attendent")} votre validation`, detail: "Quantité ou distance de livraison à étudier." });
+    todos.push({ key: "orders", icon: ShoppingBagIcon, tone: "honey", title: `${plural(data.ordersToValidate, "commande attend", "commandes attendent")} votre validation`, detail: "Acceptez ou refusez-les depuis la rubrique Commandes.", href: "/admin/commandes?statut=a-valider", cta: "Traiter" });
   }
   if (data.reviewsPending > 0) {
     todos.push({ key: "reviews", icon: StarIcon, tone: "honey", title: `${plural(data.reviewsPending, "avis", "avis")} à modérer`, detail: "Invisibles tant que vous ne les avez pas acceptés." });
@@ -425,10 +426,11 @@ export default async function AdminDashboardPage(props: PageProps<"/admin">) {
           icon={ShoppingBagIcon}
           value={data.ordersToValidate}
           attention={data.ordersToValidate > 0}
+          href="/admin/commandes?statut=a-valider"
           delay={240}
           footer={
             <p className="text-[12.5px] text-muted">
-              <span className="font-semibold text-ink">{data.ordersToProcess}</span> à préparer · rubrique Commandes au lot 5
+              <span className="font-semibold text-ink">{data.ordersToProcess}</span> en cours de préparation
             </p>
           }
         />
@@ -598,7 +600,8 @@ export default async function AdminDashboardPage(props: PageProps<"/admin">) {
           ) : (
             <ul className="-mx-2 divide-y divide-line/60">
               {data.latestOrders.map((order) => (
-                <li key={order.id} className="flex flex-wrap items-center justify-between gap-2 px-2 py-3 text-[13.5px]">
+                <li key={order.id}>
+                  <Link href={`/admin/commandes/${order.id}`} className="flex flex-wrap items-center justify-between gap-2 rounded-lg px-2 py-3 text-[13.5px] transition hover:bg-cream">
                   <div className="flex items-center gap-3">
                     <span className="flex size-9 items-center justify-center rounded-full bg-sand text-[13px] font-semibold text-brown uppercase" aria-hidden>
                       {order.customerName?.charAt(0) ?? "?"}
@@ -621,6 +624,7 @@ export default async function AdminDashboardPage(props: PageProps<"/admin">) {
                     </span>
                     <span className="font-semibold text-ink tabular-nums">{formatPrice(order.totalAmount)}</span>
                   </div>
+                  </Link>
                 </li>
               ))}
             </ul>

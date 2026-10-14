@@ -2,7 +2,7 @@
 
 Plan de réalisation de [CAHIER_DES_CHARGES.md](CAHIER_DES_CHARGES.md). Le cahier dit **quoi** construire ; ce plan dit **dans quel ordre**. Les numéros entre parenthèses (§) renvoient aux sections du cahier.
 
-Mis à jour le 3 octobre 2026.
+Mis à jour le 14 octobre 2026.
 
 ## Hypothèses provisoires
 
@@ -74,14 +74,14 @@ Règle de fin de lot : lint, types, tests et build réussis ; recette visuelle �
 - Catégories : création, ordre, activation (§6.3).
 - Côté public : ligne « race · particularité » et caractéristiques sur la fiche (§5).
 
-### Lot 3 — Panier · **prochain**
+### Lot 3 — Panier · **fait**
 
 - Panier dans le navigateur et compteur dans l’en-tête (§7).
 - Calcul par le serveur : paliers, problèmes par ligne (§7).
 - Incitation aux paliers ; avertissement de validation manuelle (§7, §8.2).
 - Choix retrait ou livraison à organiser (H4).
 
-### Lot 4 — Demande de commande
+### Lot 4 — Demande de commande · **fait** (migration `20261014100000_order_requests.sql` à appliquer en ligne)
 
 - Page `/commande` : coordonnées, adresse, identifiant pro, date souhaitée, message (§8.1).
 - Création atomique en base (fonction SQL) avec clé d’idempotence ; recalcul serveur (§8.1).
@@ -89,14 +89,14 @@ Règle de fin de lot : lint, types, tests et build réussis ; recette visuelle �
 - Page de confirmation ; panier vidé (§8.1).
 - Interrupteur « commandes ouvertes / fermées » (§8.1).
 
-### Lot 5 — Traitement des commandes par l’admin
+### Lot 5 — Traitement des commandes par l’admin · **en grande partie** (reste : alternative, ventes manuelles)
 
 - Liste filtrable et fiche détaillée avec historique (§17.4).
 - Accepter (avec décrément du stock, H3), refuser ou proposer une alternative, avec message (§8.2).
 - Marquer payée (moyen et date) ; suivi de préparation ; annulation ; note interne (§10, §9).
 - Ventes manuelles (§17.4).
 
-### Lot 6 — Emails
+### Lot 6 — Emails · **prochain**
 
 - File d’attente et pilote d’envoi interchangeable (H7) ; journal dans l’admin (§14).
 - Modèles : demande reçue (client et admin), acceptée, refusée, alternative proposée, paiement reçu, commande prête ou expédiée (§14).

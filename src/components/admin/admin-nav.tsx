@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { LinkPending } from "@/components/admin/link-pending";
 import type { ComponentType, SVGProps } from "react";
 import {
   DashboardIcon,
@@ -22,6 +23,7 @@ type NavItem = {
 
 const ready: NavItem[] = [
   { href: "/admin", label: "Tableau de bord", icon: DashboardIcon },
+  { href: "/admin/commandes", label: "Commandes", icon: ShoppingBagIcon },
   { href: "/admin/produits", label: "Produits", icon: PackageIcon },
   { href: "/admin/categories", label: "Catégories", icon: TagIcon },
 ];
@@ -29,7 +31,6 @@ const ready: NavItem[] = [
 // Les rubriques arrivent lot par lot (ROADMAP.md) : elles sont annoncées
 // sans lien pour montrer la structure à venir.
 const upcoming: (NavItem & { lot: string })[] = [
-  { href: "/admin/commandes", label: "Commandes", icon: ShoppingBagIcon, lot: "Lots 4 et 5" },
   { href: "/admin/demandes", label: "Demandes", icon: InboxIcon, lot: "Lot 7" },
   { href: "/admin/avis", label: "Avis", icon: StarIcon, lot: "Lot 8" },
   { href: "/admin/clients", label: "Clients", icon: UsersIcon, lot: "Lot 9" },
@@ -40,7 +41,8 @@ function isActive(pathname: string, href: string) {
   return href === "/admin" ? pathname === "/admin" : pathname === href || pathname.startsWith(`${href}/`);
 }
 
-export function AdminNav() {
+/** `badges` : compteurs affichés à côté d'une rubrique (ex. demandes à valider). */
+export function AdminNav({ badges = {} }: { badges?: Record<string, number> }) {
   const pathname = usePathname();
 
   return (
@@ -64,7 +66,13 @@ export function AdminNav() {
                   <span className="absolute top-2 bottom-2 left-0 w-[3px] rounded-full bg-honey" aria-hidden />
                 ) : null}
                 <Icon className={`size-[18px] shrink-0 ${active ? "text-honey" : "text-white/50 group-hover:text-white/80"}`} />
-                {item.label}
+                <span className="flex-1">{item.label}</span>
+                <LinkPending className="text-honey" />
+                {badges[item.href] ? (
+                  <span className="rounded-full bg-honey px-1.5 py-px text-[11px] font-semibold text-white tabular-nums" aria-label={`${badges[item.href]} à traiter`}>
+                    {badges[item.href]}
+                  </span>
+                ) : null}
               </Link>
             </li>
           );

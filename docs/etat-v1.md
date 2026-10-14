@@ -2,7 +2,7 @@
 
 Ce document distingue ce qui est **dans le code** de ce qui a été **vérifié en conditions réelles** (vrai projet Supabase, vrai compte, vrai email, vrai paiement). « Implémenté » ne veut pas dire « validé ». La liste des fonctionnalités est dans [CAHIER_DES_CHARGES.md](../CAHIER_DES_CHARGES.md), l’ordre de réalisation dans [ROADMAP.md](../ROADMAP.md).
 
-Mis à jour le 13 octobre 2026.
+Mis à jour le 14 octobre 2026.
 
 ## Par domaine
 
@@ -16,7 +16,8 @@ Mis à jour le 13 octobre 2026.
 | Accès administrateur | Connexion, déconnexion, mot de passe oublié, lien de confirmation, page de refus, limitation de débit, script `npm run admin` | Recette Chrome contre Supabase local (17 contrôles) : email de réinitialisation reçu et suivi, mot de passe, connexion, déconnexion, compte sans droits refusé, blocage au 9ᵉ essai, `/admin` anonyme redirigé | Recette sur le projet Supabase en ligne (envoi d’emails réel) |
 | Tableau de bord admin | Refonte du 13 oct. : bandeau d’accueil avec jauge de complétude des fiches, accès rapides, recherche rapide Ctrl K (toute l’admin), tuiles d’état (produits, stock et valeur, commandes, avis), tendances sur 7, 30 ou 90 jours (commandes, chiffre d’affaires, activité ; survol, clavier, tableau des données), répartition par catégorie, santé du stock avec seuils, « À faire », activité récente, dernières commandes, mise en service | 3 oct. : vraie session admin et seed, à 390 et 1 280 px. 13 oct. : Chrome contre un faux Supabase (données fictives sur 90 jours) : survol et clavier du graphique, changement de période et d’indicateur, recherche rapide jusqu’à l’ouverture d’une fiche ; sans débordement à 320 et 390 px ; palette des graphiques validée par script (daltonisme, contraste) | Rendu avec la vraie base : le journal d’audit exige la migration `20261003100000_security_foundations.sql` (sinon « momentanément indisponible ») |
 | Catalogue géré par l’admin | Produits (formulaire complet, paliers, caractéristiques, prix barré, état, transport, unité), photos (envoi, réencodage WebP, couverture, ordre, rotation, suppression), catégories, stock et statut depuis la liste, journal d’audit. Refonte du 13 oct. : navigation latérale et tiroir mobile, notifications, dialogues de confirmation, onglets par statut, filtre de stock, stock en −/+, menu d’actions (dupliquer, supprimer définitivement), aperçu en direct et liste de contrôle avant publication, garde des modifications non enregistrées, dépôt de photos par glisser-déposer, catégories réordonnables | 3 oct. : recette Chrome contre Supabase local (24 contrôles) : création avec erreur puis correction, photos dont orientation EXIF, conflit de version, masquage → 404, archivage, fiche publique. 13 oct. : Chrome contre un faux Supabase (Auth et PostgREST simulés) : stock ±1, publication, archivage confirmé, suppression (liste et fiche), duplication, filtre de stock, aperçu, garde de sortie, enregistrement, envoi de 2 photos (réencodage réel), catégories (ordre, visibilité, édition) ; clavier (menus, Échap) ; sans débordement à 320 et 390 px | Recette de la refonte contre Supabase local ou le projet en ligne : RLS réelles, copie de photos dans le stockage (`storage.copy`), suppression refusée pour un produit commandé ; photos réelles |
-| Panier, commande, emails, factures, paiement | Absents | — | Lots 3 à 18 |
+| Demandes de commande (lots 3 à 5) | Panier ; page `/commande` (coordonnées, retrait ou livraison à organiser, date, message, identifiant pro), recalcul serveur, clé anti-double envoi, limitation de débit, champ piège, enregistrement tout-ou-rien (`submit_order_request`), confirmation ; admin `/admin/commandes` : onglets par état, recherche, fiche (produits et stock actuel, client, réception, historique, note interne), accepter (stock décompté), refuser, annuler (stock rendu), prête, terminée, payée, brouillon d’email ; interrupteur « demandes en ligne » fermé par défaut | 14 oct. : SQL sur PGlite (migrations rejouées, 13 contrôles : double envoi, fiche client protégée, droits, stock insuffisant, décompte et restitution, conflit) ; parcours complet dans Chrome contre un faux Supabase, à 390 et 1 440 px | Appliquer la migration `20261014100000_order_requests.sql` en ligne, puis recette réelle ; emails (lot 6) ; alternative et ventes manuelles |
+| Emails, factures, paiement | Absents | — | Lots 6 à 18 |
 
 ## Migrations
 
@@ -24,8 +25,9 @@ Mis à jour le 13 octobre 2026.
 
 - `20261003100000_security_foundations.sql` — limitation de débit et journal d’audit (lot 0).
 - `20261003120000_catalog_admin.sql` — champs produit, caractéristiques, bucket `product-images`, fonction `admin_save_product` (lot 2).
+- `20261014100000_order_requests.sql` — demandes de commande : coordonnées figées, clé d’envoi, raisons d’attention, interrupteur `orders_open` (fermé), fonctions `submit_order_request`, `admin_accept_order`, `admin_cancel_order` (lots 4 et 5).
 
-Aucune n’est encore appliquée sur le projet distant. Toutes passent sur une base neuve (`supabase db reset`).
+Constaté le 14 octobre en lecture seule : toutes les migrations jusqu’à `20261012130000_public_catalog_invoker.sql` sont présentes sur le projet distant (ne pas les rejouer : elles échouent sur des objets déjà créés, et `catalog_admin` remettrait l’ancienne vue du catalogue) ; `20261014100000_order_requests.sql` ne l’est pas encore (sans elle, le site garde le contact par email et la page Commandes de l’admin ne s’affiche pas). Toutes passent sur une base neuve (PGlite, 14 octobre).
 
 ## Mise en service de l’accès administrateur
 

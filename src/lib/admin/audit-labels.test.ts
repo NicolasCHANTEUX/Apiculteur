@@ -15,6 +15,12 @@ test("métadonnées absentes ou inattendues : libellé générique", () => {
   assert.equal(describeAuditAction("order.unknown", null), "order.unknown");
 });
 
+test("commandes et réglages", () => {
+  assert.equal(describeAuditAction("order.status_changed", { status: "ready" }), "Passée en « prête »");
+  assert.equal(describeAuditAction("order.paid", { method: "Virement" }), "Paiement enregistré (Virement)");
+  assert.equal(describeAuditAction("settings.orders_open", { open: true }), "Demandes en ligne ouvertes");
+});
+
 test("temps relatif en français", () => {
   const now = new Date("2026-10-13T12:00:00Z");
   assert.equal(formatRelativeTime("2026-10-13T11:59:30Z", now), "à l’instant");

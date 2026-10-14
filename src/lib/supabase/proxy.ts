@@ -40,10 +40,13 @@ export async function updateSession(request: NextRequest) {
     },
   );
 
-  // IMPORTANT : ne pas retirer cet appel. getUser() revalide le token
-  // auprès de Supabase et le rafraîchit si besoin ; sans lui, les sessions
-  // admin peuvent expirer de façon imprévisible.
-  await supabase.auth.getUser();
+  // IMPORTANT : ne pas retirer cet appel. Il rafraîchit la session expirée
+  // (nouveaux cookies) ; sans lui, les sessions admin peuvent expirer de
+  // façon imprévisible. getClaims() vérifie la signature du jeton avec la clé
+  // publique du projet (ES256, gardée en mémoire 10 min) : pas d'appel
+  // réseau à chaque requête, contrairement à getUser(). Avec une clé
+  // symétrique, il revient de lui-même à getUser().
+  await supabase.auth.getClaims();
 
   return supabaseResponse;
 }

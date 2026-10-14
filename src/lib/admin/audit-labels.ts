@@ -9,6 +9,12 @@ const statusLabels: Record<string, string> = {
   archived: "archivé",
 };
 
+const orderStepLabels: Record<string, string> = {
+  preparing: "en préparation",
+  ready: "prête",
+  delivered: "terminée",
+};
+
 function plural(count: number, one: string, many: string) {
   return `${count} ${count > 1 ? many : one}`;
 }
@@ -53,6 +59,24 @@ export function describeAuditAction(action: string, metadata: Record<string, unk
       return "Catégorie supprimée";
     case "category.reordered":
       return "Ordre des catégories modifié";
+    case "order.submitted":
+      return "Demande reçue";
+    case "order.accepted":
+      return "Demande acceptée";
+    case "order.refused":
+      return "Demande refusée";
+    case "order.cancelled":
+      return "Commande annulée";
+    case "order.status_changed": {
+      const label = orderStepLabels[String(meta.status)];
+      return label ? `Passée en « ${label} »` : "Étape modifiée";
+    }
+    case "order.paid":
+      return typeof meta.method === "string" && meta.method ? `Paiement enregistré (${meta.method})` : "Paiement enregistré";
+    case "order.note_updated":
+      return "Note interne modifiée";
+    case "settings.orders_open":
+      return meta.open === true ? "Demandes en ligne ouvertes" : "Demandes en ligne fermées";
     default:
       return action;
   }

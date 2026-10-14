@@ -15,6 +15,7 @@ import { StockStepper } from "@/components/admin/stock-stepper";
 import { formatPrice } from "@/components/catalog/product-display";
 import { ImageIcon, PackageIcon, PencilIcon, PlusIcon, StarFilledIcon, TagIcon } from "@/components/icons";
 import { listAdminCategories, listAdminProducts, type AdminProductRow } from "@/data/admin/products";
+import { LinkPending } from "@/components/admin/link-pending";
 import { requireAdmin } from "@/data/auth";
 import { isStockFilter } from "@/lib/admin/product-health";
 import { productStatusLabels } from "@/lib/catalog/labels";
@@ -127,6 +128,7 @@ export default async function AdminProductsPage(props: PageProps<"/admin/produit
                     >
                       {statusCounts[tab.count]}
                     </span>
+                    <LinkPending className="-ml-1 text-honey" />
                   </Link>
                 </li>
               );

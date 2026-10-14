@@ -42,3 +42,19 @@ export function formatOrderDate(value: string) {
     timeZone: "Europe/Paris",
   }).format(new Date(value));
 }
+
+export type OrderStateKey = "to_validate" | "preparing" | "ready" | "shipped" | "done" | "refused" | "cancelled";
+
+/** État unique, lisible, d'une commande (validation + préparation). */
+export function orderState(
+  validation: ValidationStatus,
+  fulfillment: FulfillmentStatus,
+): { key: OrderStateKey; label: string } {
+  if (validation === "refused") return { key: "refused", label: "Refusée" };
+  if (fulfillment === "cancelled") return { key: "cancelled", label: "Annulée" };
+  if (validation === "pending") return { key: "to_validate", label: "À valider" };
+  if (fulfillment === "ready") return { key: "ready", label: "Prête" };
+  if (fulfillment === "shipped") return { key: "shipped", label: "Expédiée" };
+  if (fulfillment === "delivered") return { key: "done", label: "Terminée" };
+  return { key: "preparing", label: "En préparation" };
+}

@@ -25,6 +25,7 @@ import {
   PencilIcon,
   PlusIcon,
   SearchIcon,
+  ShoppingBagIcon,
   TagIcon,
 } from "@/components/icons";
 import { productStatusLabels } from "@/lib/catalog/labels";
@@ -44,10 +45,12 @@ type Command = {
 
 const baseCommands: Command[] = [
   { id: "dashboard", group: "Aller à", label: "Tableau de bord", href: "/admin", icon: DashboardIcon, keywords: "accueil" },
+  { id: "orders", group: "Aller à", label: "Commandes", href: "/admin/commandes", icon: ShoppingBagIcon, keywords: "demandes clients" },
   { id: "products", group: "Aller à", label: "Produits", href: "/admin/produits", icon: PackageIcon, keywords: "catalogue liste" },
   { id: "new", group: "Aller à", label: "Nouveau produit", hint: "Créer une fiche", href: "/admin/produits/nouveau", icon: PlusIcon, keywords: "ajouter creer" },
   { id: "categories", group: "Aller à", label: "Catégories", href: "/admin/categories", icon: TagIcon },
   { id: "site", group: "Aller à", label: "Voir la boutique", hint: "Nouvel onglet", href: "/", external: true, icon: ExternalLinkIcon, keywords: "site public" },
+  { id: "to-validate", group: "Filtres", label: "Commandes à valider", href: "/admin/commandes?statut=a-valider", icon: ShoppingBagIcon, keywords: "demandes en attente" },
   { id: "out", group: "Filtres", label: "Produits en rupture", href: "/admin/produits?stock=rupture", icon: AlertTriangleIcon, keywords: "stock vide epuise" },
   { id: "low", group: "Filtres", label: "Stock faible", href: "/admin/produits?stock=faible", icon: AlertTriangleIcon, keywords: "alerte seuil" },
   { id: "drafts", group: "Filtres", label: "Brouillons", href: "/admin/produits?statut=draft", icon: PencilIcon },

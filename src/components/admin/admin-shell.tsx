@@ -76,9 +76,12 @@ function SearchButton() {
 export function AdminShell({
   email,
   products,
+  pendingOrders,
   children,
 }: {
   email: string | null;
+  /** Demandes de commande à valider (badge de la navigation). */
+  pendingOrders: number;
   /** Produits proposés par la recherche rapide. */
   products: CommandProduct[];
   children: ReactNode;
@@ -118,7 +121,7 @@ export function AdminShell({
             <SearchButton />
           </div>
           <div className="mt-6 flex-1 overflow-y-auto">
-            <AdminNav />
+            <AdminNav badges={{ "/admin/commandes": pendingOrders }} />
           </div>
           <SidebarFooter email={email} />
         </aside>
@@ -177,7 +180,7 @@ export function AdminShell({
             </button>
           </div>
           <div className="mt-6 flex-1 overflow-y-auto">
-            <AdminNav />
+            <AdminNav badges={{ "/admin/commandes": pendingOrders }} />
           </div>
           <SidebarFooter email={email} />
         </div>

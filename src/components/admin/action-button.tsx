@@ -26,8 +26,14 @@ export function useAdminAction() {
   const [pending, startTransition] = useTransition();
 
   const run = useCallback(
-    (action: AdminAction, fields: Record<string, string>, options: { quiet?: boolean } = {}) => {
+    (
+      action: AdminAction,
+      fields: Record<string, string>,
+      // `before` : mise à jour optimiste (useOptimistic), dans la même transition.
+      options: { quiet?: boolean; before?: () => void } = {},
+    ) => {
       startTransition(async () => {
+        options.before?.();
         const formData = new FormData();
         for (const [name, value] of Object.entries(fields)) formData.append(name, value);
         const result = await action(formData);
