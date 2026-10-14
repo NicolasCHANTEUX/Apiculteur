@@ -117,7 +117,7 @@ Règle de fin de lot : lint, types, tests et build réussis ; recette visuelle �
 - Page de dépôt par lien sécurisé (§13).
 - Modération, réponse publique, mise en avant (§13).
 
-### Lot 9 — Légal, données personnelles, clients · **prochain**
+### Lot 9 — Légal, données personnelles, clients · **fait** (migration `20261017100000_legal_customers.sql` à appliquer en ligne ; informations légales à remplir et approuver)
 
 - Configuration légale et pages générées, bloquées sans approbation (§19).
 - Fiches clients, anonymisation, durées de conservation (§17.6, §19).
@@ -126,7 +126,7 @@ Règle de fin de lot : lint, types, tests et build réussis ; recette visuelle �
 
 ## Phase D — Métier avancé
 
-### Lot 10 — Livraison et distance
+### Lot 10 — Livraison et distance · **prochain**
 
 - Zones administrables ; géocodage et distance (H5) ; frais ; règles de distance (§9, §8.2).
 

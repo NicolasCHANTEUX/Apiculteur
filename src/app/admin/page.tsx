@@ -33,6 +33,7 @@ import {
 import { getActivitySeries, getRecentActivity } from "@/data/admin/activity";
 import { SERIES_DAYS, getDashboardData } from "@/data/admin/dashboard";
 import { getLaunchChecks } from "@/data/admin/launch-status";
+import { getPublishedLegal } from "@/data/legal";
 import { countNewRequests } from "@/data/admin/requests";
 import { getOrderSettings } from "@/data/settings";
 import { requireAdmin } from "@/data/auth";
@@ -235,7 +236,8 @@ export default async function AdminDashboardPage(props: PageProps<"/admin">) {
     props.searchParams,
     countNewRequests(),
   ]);
-  const checks = getLaunchChecks({ ordersOpen: (await getOrderSettings()).ordersOpen });
+  const [orderSettings, legal] = await Promise.all([getOrderSettings(), getPublishedLegal()]);
+  const checks = getLaunchChecks({ ordersOpen: orderSettings.ordersOpen, legalVersion: legal?.version ?? null });
   const configChecks = checks.filter((check) => check.state !== "later");
   const configured = configChecks.filter((check) => check.state === "ok").length;
   const stockAlerts = data.lowStock.length + data.outOfStock.length;

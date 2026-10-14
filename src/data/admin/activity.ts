@@ -70,6 +70,8 @@ export async function getRecentActivity(limit = 8): Promise<ActivityEntry[] | nu
     if (row.entity_type === "settings") href = row.action.startsWith("settings.review") ? "/admin/avis" : "/admin/commandes";
     if (row.entity_type === "email") href = "/admin/emails";
     if (row.entity_type === "review") href = "/admin/avis?statut=tous";
+    if (row.entity_type === "customer" && row.entity_id && row.action !== "customer.deleted") href = `/admin/clients/${row.entity_id}`;
+    if (row.action.startsWith("legal.")) href = "/admin/informations-legales";
     if (row.entity_type === "contact_request" && row.entity_id && row.action !== "request.deleted") href = `/admin/demandes/${row.entity_id}`;
     return {
       id: row.id,

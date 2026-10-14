@@ -1,8 +1,10 @@
 "use server";
 
+import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
 import { getPublicCatalog } from "@/data/catalog";
 import { scheduleOrderEmails } from "@/data/email";
+import { getPublishedLegal } from "@/data/legal";
 import { getOrderSettings } from "@/data/settings";
 import { parisDay } from "@/lib/admin/series";
 import { parseCart } from "@/lib/cart/storage";
@@ -42,8 +44,19 @@ export async function submitOrderRequestAction(
     return failure("La réception des demandes en ligne est fermée pour le moment. Écrivez-moi depuis la page contact.");
   }
 
+  // CGV publiées : acceptation obligatoire, de la version en vigueur.
+  const legal = await getPublishedLegal();
+  const termsAccepted = !legal || formData.get("terms") === "on";
   const parsed = parseOrderContact(formData, parisDay(new Date()));
-  if (!parsed.ok) return failure("Certains champs sont à corriger.", { errors: parsed.errors });
+  if (!parsed.ok || !termsAccepted) {
+    const errors = { ...(parsed.ok ? {} : parsed.errors), ...(termsAccepted ? {} : { terms: "Acceptez les conditions générales de vente pour envoyer votre demande." }) };
+    return failure("Certains champs sont à corriger.", { errors });
+  }
+  if (legal && formData.get("termsVersion") !== String(legal.version)) {
+    // La page se recharge avec la nouvelle version des CGV.
+    refresh();
+    return failure("Les conditions générales de vente viennent d’être mises à jour : relisez-les, puis renvoyez votre demande.", { errors: { terms: "Nouvelle version des CGV." } });
+  }
   const contact = parsed.value;
 
   const key = formData.get("submissionKey");
@@ -110,9 +123,15 @@ export async function submitOrderRequestAction(
     return failure(UNAVAILABLE);
   }
 
-  // Accusé de réception au client et alerte à l'apiculteur, envoyés après
-  // la réponse (une demande rejouée ne renvoie rien).
-  if (!data.already_submitted) await scheduleOrderEmails(data.order_id, ["order_received", "order_new_admin"]);
+  if (!data.already_submitted) {
+    if (legal) {
+      const { error: termsError } = await createAdminClient().from("orders").update({ terms_version: legal.version }).eq("id", data.order_id);
+      if (termsError) console.error("Demande de commande : version des CGV", termsError.code, termsError.message);
+    }
+    // Accusé de réception au client et alerte à l'apiculteur, envoyés après
+    // la réponse (une demande rejouée ne renvoie rien).
+    await scheduleOrderEmails(data.order_id, ["order_received", "order_new_admin"]);
+  }
 
   redirect(`/commande/merci?numero=${encodeURIComponent(data.order_number)}`);
 }

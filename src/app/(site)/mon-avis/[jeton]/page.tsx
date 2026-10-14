@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { ReviewForm } from "@/components/reviews/review-form";
 import { CircleCheckIcon, ClockIcon, MessageCircleIcon, StarIcon } from "@/components/icons";
 import { PageIntro, buttonStyles } from "@/components/ui";
+import { getPublishedLegal } from "@/data/legal";
 import { getInvitationForToken } from "@/data/review-invitations";
 import { site } from "@/lib/site";
 
@@ -32,7 +33,7 @@ function Message({ icon, title, children }: { icon: ReactNode; title: string; ch
 // sur le site : l'apiculteur peut collecter les avis avant de les montrer.
 export default async function ReviewDepositPage(props: PageProps<"/mon-avis/[jeton]">) {
   const { jeton } = await props.params;
-  const invitation = await getInvitationForToken(jeton);
+  const [invitation, legal] = await Promise.all([getInvitationForToken(jeton), getPublishedLegal()]);
 
   return (
     <main className="mx-auto w-full max-w-[760px] flex-1 px-6 pb-24">
@@ -64,7 +65,7 @@ export default async function ReviewDepositPage(props: PageProps<"/mon-avis/[jet
             Commande <span className="font-medium text-ink">{invitation.orderNumber}</span> du {longDate.format(new Date(invitation.orderDate))} :{" "}
             {invitation.products.map((product) => `${product.quantity} × ${product.name}`).join(", ")}
           </p>
-          <ReviewForm token={jeton} suggestedName={invitation.suggestedName} />
+          <ReviewForm token={jeton} suggestedName={invitation.suggestedName} privacyPublished={Boolean(legal)} />
           <p className="text-center text-[12.5px] text-muted">
             Lien personnel valable jusqu’au {longDate.format(new Date(invitation.expiresAt))}. Un seul avis par commande.
           </p>

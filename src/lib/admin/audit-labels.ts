@@ -84,6 +84,20 @@ export function describeAuditAction(action: string, metadata: Record<string, unk
       return "Note interne modifiée";
     case "settings.orders_open":
       return meta.open === true ? "Demandes en ligne ouvertes" : "Demandes en ligne fermées";
+    case "legal.draft_saved":
+      return "Brouillon des informations légales enregistré";
+    case "legal.approved":
+      return typeof meta.version === "number" ? `Informations légales publiées (version ${meta.version})` : "Informations légales publiées";
+    case "customer.updated":
+      return "Fiche client modifiée";
+    case "customer.exported":
+      return "Données d’un client exportées";
+    case "customer.anonymized":
+      return "Client anonymisé";
+    case "customer.deleted":
+      return "Client supprimé";
+    case "privacy.purged":
+      return "Données anciennes supprimées";
     case "settings.review_delay":
       return typeof meta.days === "number" && meta.days > 0 ? `Demande d’avis ${meta.days} jours après la livraison` : "Demandes d’avis automatiques coupées";
     case "review.submitted":

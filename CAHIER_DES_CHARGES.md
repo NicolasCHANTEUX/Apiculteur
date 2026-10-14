@@ -246,7 +246,7 @@ Le plan d’attaque (lots, ordre, estimation) sera établi **à partir de ce doc
   - retrait ou livraison, date souhaitée ;
   - message libre ;
   - récapitulatif.
-- [ ] Accusé d’information sur les données et acceptation des CGV. *(partiel : information sur les données ; acceptation des CGV quand elles existeront)* (Kayart, §19)
+- [x] Accusé d’information sur les données et acceptation des CGV. — case obligatoire dès que les CGV sont publiées ; version acceptée enregistrée sur la commande. (Kayart, §19)
 - [x] Recalcul complet par le serveur à l’envoi ; refus si le panier a changé dans un autre onglet. (Kayart)
 - [x] Création atomique du client, de la commande et des lignes, avec copie figée du nom, de la référence et du prix, plus une entrée d’historique. — fonction `submit_order_request` ; coordonnées figées dans la commande, fiche client jamais écrasée. (Kayart, ROADMAP)
 - [ ] Protection contre la double soumission : clé de tentative et empreinte. Une reprise renvoie la même commande. *(partiel : clé de tentative, sans empreinte du contenu)* (Kayart)
@@ -347,7 +347,7 @@ Le plan d’attaque (lots, ordre, estimation) sera établi **à partir de ce doc
 
 - [x] Schéma : avis lié à une commande et à un produit, note de 1 à 5, commentaire, statut, réponse admin, mise en avant, consentement, token d’accès avec expiration. (CDC 13)
 - [x] Affichage public des avis validés uniquement : page Avis (note moyenne, répartition par étoiles), section d’accueil, avis sur la fiche produit, mention « client vérifié ». (CDC 13, Maquette)
-- [x] Email de demande d’avis X jours après livraison ou retrait (paramètre `review_request_delay_days`). — délai réglable dans l’admin (ou désactivé), tâche quotidienne `/api/cron/avis` (vercel.json, `CRON_SECRET`), envoi manuel depuis la fiche commande ou la rubrique Avis. (CDC 13)
+- [x] Email de demande d’avis X jours après livraison ou retrait (paramètre `review_request_delay_days`). — délai réglable dans l’admin (ou désactivé), tâche quotidienne `/api/cron/quotidien` (vercel.json, `CRON_SECRET`), envoi manuel depuis la fiche commande ou la rubrique Avis. (CDC 13)
 - [x] Page de dépôt via lien unique sécurisé : — `/mon-avis/<jeton>`, nom proposé « Claire M. », accord de publication non coché par défaut. (CDC 13, 22)
   - token, expiration à 30 jours, un seul avis par commande ;
   - note, commentaire, consentement à l’affichage, nom affiché (prénom et initiale).
@@ -455,8 +455,8 @@ Le plan d’attaque (lots, ordre, estimation) sera établi **à partir de ce doc
 
 ### 17.6 Clients (CDC 17)
 
-- [ ] Liste et recherche ; fiche avec coordonnées, commandes, avis, factures et note interne. (CDC 17)
-- [ ] Modification ; suppression ou anonymisation, en conservant les factures. (CDC 17, Kayart)
+- [ ] Liste et recherche ; fiche avec coordonnées, commandes, avis, factures et note interne. *(partiel : tout sauf les factures, lot 11 ; demandes de contact du client en plus)* (CDC 17)
+- [x] Modification ; suppression ou anonymisation, en conservant les factures. — suppression sans commande, anonymisation sinon (commandes conservées), export JSON des données. (CDC 17, Kayart)
 
 ### 17.7 Demandes — §12.2
 
@@ -498,19 +498,19 @@ Le plan d’attaque (lots, ordre, estimation) sera établi **à partir de ce doc
 
 ## 19. Légal, données personnelles et réglementation
 
-- [ ] Configuration légale centralisée : (Kayart)
+- [x] Configuration légale centralisée : — rubrique « Informations légales », brouillon et versions approuvées. (Kayart)
   - raison sociale, forme, adresse, immatriculation, mention fiscale ;
   - directeur de publication, médiateur de la consommation, hébergeur ;
   - CGV standard et CGV des réservations ou commandes spéciales ;
   - base légale, durées de conservation et destinataires des données ;
   - version.
-- [ ] Valeurs de remplissage (maquette) détectées, et approbation explicite exigée. Sinon : pages légales en 404, absentes du pied de page et du sitemap. (Kayart)
-- [ ] Mentions légales, CGV et Politique de confidentialité générées depuis cette configuration. (Kayart, CDC 2)
-- [ ] CGV distinctes pour les produits standards et pour les réservations ou commandes spéciales. Droit de rétractation pour des animaux vivants : à faire valider. (Kayart, Apicole)
-- [ ] Médiateur de la consommation pour la vente aux particuliers. (Kayart)
-- [ ] Information sur les données et case d’accusé sur chaque formulaire. (Kayart, CDC 23)
-- [ ] Pas de traceurs non essentiels sans consentement ; bandeau cookies seulement si nécessaire. (CDC 23)
-- [ ] Droits RGPD : export, suppression ou anonymisation d’un client, anonymisation d’un avis, durées de conservation, purges planifiées. (CDC 23)
+- [x] Valeurs de remplissage (maquette) détectées, et approbation explicite exigée. Sinon : pages légales en 404, absentes du pied de page et du sitemap. — SIRET contrôlé, textes « [À faire valider] » bloquants ; liens retirés des formulaires aussi (sitemap au lot 15). (Kayart)
+- [x] Mentions légales, CGV et Politique de confidentialité générées depuis cette configuration. — numéro de version et date d’entrée en vigueur ; aperçu du brouillon dans l’admin. (Kayart, CDC 2)
+- [ ] CGV distinctes pour les produits standards et pour les réservations ou commandes spéciales. Droit de rétractation pour des animaux vivants : à faire valider. *(partiel : conditions particulières des réservations dans un article dédié ; rétractation et garanties proposées « à faire valider » et bloquantes jusqu’à relecture)* (Kayart, Apicole)
+- [x] Médiateur de la consommation pour la vente aux particuliers. — champ obligatoire, repris dans les CGV. (Kayart)
+- [x] Information sur les données et case d’accusé sur chaque formulaire. — contact, commande (avec les CGV), avis. (Kayart, CDC 23)
+- [x] Pas de traceurs non essentiels sans consentement ; bandeau cookies seulement si nécessaire. — aucun traceur : pas de bandeau ; expliqué dans la politique de confidentialité. (CDC 23)
+- [x] Droits RGPD : export, suppression ou anonymisation d’un client, anonymisation d’un avis, durées de conservation, purges planifiées. — durées réglables, purge par la tâche quotidienne `/api/cron/quotidien` ou à la demande. (CDC 23)
 - [ ] Email client jamais affiché publiquement. *(partiel : la vue des avis n’expose ni email ni token)* (CDC 23)
 - [ ] Réglementation apicole à vérifier auprès des organismes compétents, sans rien affirmer avant validation : numéro d’apiculteur, déclaration des ruchers, documents sanitaires pour la cession et le transport d’essaims. (Apicole)
 

@@ -64,7 +64,11 @@ function Step({ number, title, children }: { number: number; title: string; chil
 // Formulaire de demande de commande. Le récapitulatif reprend le panier du
 // navigateur avec les règles de prix du serveur ; le serveur refait tout à
 // l'envoi. Une clé d'envoi unique évite les doublons (double clic).
-export function OrderRequestForm({ products, today }: { products: PublicProduct[]; today: string }) {
+/**
+ * `termsVersion` : version des CGV publiée, à accepter avant l'envoi ;
+ * null tant que les informations légales ne sont pas publiées.
+ */
+export function OrderRequestForm({ products, today, termsVersion }: { products: PublicProduct[]; today: string; termsVersion: number | null }) {
   const cart = parseCart(useSyncExternalStore(subscribeCart, cartSnapshot, () => "[]"));
   const priced = priceRequest(cart, products);
   const [state, action, pending] = useActionState(submitOrderRequestAction, initialState);
@@ -106,6 +110,7 @@ export function OrderRequestForm({ products, today }: { products: PublicProduct[
         const formData = new FormData(event.currentTarget);
         formData.set("submissionKey", keyRef.current);
         formData.set("items", JSON.stringify(cart));
+        if (termsVersion) formData.set("termsVersion", String(termsVersion));
         startTransition(() => action(formData));
       }}
       className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_360px]"
@@ -272,6 +277,32 @@ export function OrderRequestForm({ products, today }: { products: PublicProduct[
               </div>
             ) : null}
 
+            {termsVersion ? (
+              <div>
+                <label className="flex items-start gap-2.5 text-[13px] leading-[1.5] text-body">
+                  <input
+                    type="checkbox"
+                    name="terms"
+                    aria-invalid={errors.terms ? true : undefined}
+                    aria-describedby={errors.terms ? "terms-error" : undefined}
+                    className="mt-0.5 size-4 shrink-0 rounded border-line accent-honey"
+                  />
+                  <span>
+                    J’ai lu et j’accepte les{" "}
+                    <Link href="/cgv" target="_blank" className="font-medium text-honey-dark underline underline-offset-2">
+                      conditions générales de vente
+                    </Link>
+                    .
+                  </span>
+                </label>
+                {errors.terms ? (
+                  <p id="terms-error" className="mt-1.5 text-[12.5px] font-medium text-red-700">
+                    {errors.terms}
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
+
             <button
               type="submit"
               disabled={pending || priced.problems.length > 0}
@@ -295,9 +326,11 @@ export function OrderRequestForm({ products, today }: { products: PublicProduct[
             </ul>
             <p className="text-[11.5px] leading-[1.5] text-muted">
               Vos coordonnées servent uniquement à traiter votre demande.{" "}
-              <Link href="/confidentialite" className="underline underline-offset-2 hover:text-ink">
-                En savoir plus
-              </Link>
+              {termsVersion ? (
+                <Link href="/confidentialite" className="underline underline-offset-2 hover:text-ink">
+                  En savoir plus
+                </Link>
+              ) : null}
             </p>
           </div>
         </div>

@@ -12,7 +12,7 @@ const ratingWords = ["", "Décevant", "Moyen", "Bien", "Très bien", "Excellent"
 
 // Formulaire de dépôt d'avis (lien personnel). Note obligatoire ; publication
 // seulement avec l'accord explicite du client, sous le nom qu'il choisit.
-export function ReviewForm({ token, suggestedName }: { token: string; suggestedName: string }) {
+export function ReviewForm({ token, suggestedName, privacyPublished }: { token: string; suggestedName: string; privacyPublished: boolean }) {
   const [state, action, pending] = useActionState(submitReviewAction, initialState);
   const [rating, setRating] = useState(0);
   const [hovered, setHovered] = useState(0);
@@ -125,9 +125,11 @@ export function ReviewForm({ token, suggestedName }: { token: string; suggestedN
         <span>
           J’accepte que mon avis soit publié sur le site sous ce nom, après relecture.{" "}
           <span className="text-muted">Sans cette case, il reste privé : seul l’apiculteur le lit.</span>{" "}
-          <Link href="/confidentialite" className="font-medium text-honey-dark underline-offset-2 hover:underline">
-            Vos données
-          </Link>
+          {privacyPublished ? (
+            <Link href="/confidentialite" className="font-medium text-honey-dark underline-offset-2 hover:underline">
+              Vos données
+            </Link>
+          ) : null}
         </span>
       </label>
 

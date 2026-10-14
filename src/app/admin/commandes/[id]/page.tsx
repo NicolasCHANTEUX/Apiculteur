@@ -280,7 +280,15 @@ export default async function AdminOrderPage(props: PageProps<"/admin/commandes/
 
           <Panel title="Client">
             <dl className="space-y-3">
-              <Info label="Nom">{order.customer.name}</Info>
+              <Info label="Nom">
+                {order.customer.id ? (
+                  <Link href={`/admin/clients/${order.customer.id}`} className="text-honey-dark hover:underline">
+                    {order.customer.name}
+                  </Link>
+                ) : (
+                  order.customer.name
+                )}
+              </Info>
               {order.customer.companyName ? <Info label="Exploitation ou entreprise">{order.customer.companyName}</Info> : null}
               {order.customer.professionalId ? <Info label="Identifiant professionnel">{order.customer.professionalId}</Info> : null}
               {order.customer.email ? (

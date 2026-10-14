@@ -1,9 +1,10 @@
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
+import { getInfoNav } from "@/data/legal";
 import { getSiteNav } from "@/data/settings";
 
 export default async function SiteLayout({ children }: LayoutProps<"/">) {
-  const nav = await getSiteNav();
+  const [nav, info] = await Promise.all([getSiteNav(), getInfoNav()]);
   return (
     <>
       <a
@@ -16,7 +17,7 @@ export default async function SiteLayout({ children }: LayoutProps<"/">) {
       <div id="contenu" tabIndex={-1} className="flex flex-1 flex-col outline-none">
         {children}
       </div>
-      <SiteFooter nav={nav} />
+      <SiteFooter nav={nav} info={info} />
     </>
   );
 }

@@ -29,6 +29,8 @@ import {
   MailIcon,
   InboxIcon,
   StarIcon,
+  ShieldIcon,
+  UsersIcon,
   TagIcon,
 } from "@/components/icons";
 import { productStatusLabels } from "@/lib/catalog/labels";
@@ -53,6 +55,8 @@ const baseCommands: Command[] = [
   { id: "products", group: "Aller à", label: "Produits", href: "/admin/produits", icon: PackageIcon, keywords: "catalogue liste" },
   { id: "new", group: "Aller à", label: "Nouveau produit", hint: "Créer une fiche", href: "/admin/produits/nouveau", icon: PlusIcon, keywords: "ajouter creer" },
   { id: "categories", group: "Aller à", label: "Catégories", href: "/admin/categories", icon: TagIcon },
+  { id: "customers", group: "Aller à", label: "Clients", href: "/admin/clients", icon: UsersIcon, keywords: "fiches clients historique rgpd effacer exporter" },
+  { id: "legal", group: "Aller à", label: "Informations légales", hint: "Mentions, CGV, confidentialité", href: "/admin/informations-legales", icon: ShieldIcon, keywords: "cgv mentions legales confidentialite rgpd siret mediateur" },
   { id: "reviews", group: "Aller à", label: "Avis", hint: "Affichage sur le site", href: "/admin/avis", icon: StarIcon, keywords: "avis clients notes temoignages afficher masquer" },
   { id: "emails", group: "Aller à", label: "Emails", href: "/admin/emails", icon: MailIcon, keywords: "messages clients journal envoi" },
   { id: "site", group: "Aller à", label: "Voir la boutique", hint: "Nouvel onglet", href: "/", external: true, icon: ExternalLinkIcon, keywords: "site public" },

@@ -2,12 +2,13 @@ import Link from "next/link";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { PageIntro, buttonStyles } from "@/components/ui";
+import { getInfoNav } from "@/data/legal";
 import { getSiteNav } from "@/data/settings";
 
 // 404 globale (URL inconnues) : rendue hors du groupe (site), elle reprend
 // donc elle-même l'en-tête et le pied de page publics.
 export default async function NotFound() {
-  const nav = await getSiteNav();
+  const [nav, info] = await Promise.all([getSiteNav(), getInfoNav()]);
   return (
     <>
       <SiteHeader nav={nav} />
@@ -21,7 +22,7 @@ export default async function NotFound() {
           Revenir à l&apos;accueil
         </Link>
       </main>
-      <SiteFooter nav={nav} />
+      <SiteFooter nav={nav} info={info} />
     </>
   );
 }

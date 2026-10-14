@@ -11,6 +11,7 @@ import {
 } from "@/components/icons";
 import { PageIntro } from "@/components/ui";
 import { getPublicProductBySlug } from "@/data/catalog";
+import { getPublishedLegal } from "@/data/legal";
 import { getRequestFormAvailability } from "@/data/requests";
 import { kindFromParams } from "@/lib/requests/form";
 import { site } from "@/lib/site";
@@ -63,7 +64,7 @@ async function linkedProduct(slug: string) {
 export default async function ContactPage(props: PageProps<"/contact">) {
   const params = await props.searchParams;
   const prefill = { subject: param(params.sujet, 60), message: param(params.message, 3000) };
-  const [availability, product] = await Promise.all([getRequestFormAvailability(), linkedProduct(param(params.produit, 120))]);
+  const [availability, product, legal] = await Promise.all([getRequestFormAvailability(), linkedProduct(param(params.produit, 120)), getPublishedLegal()]);
   const quantity = param(params.quantite, 5);
   return (
     <main className="mx-auto w-full max-w-[1008px] flex-1 px-6 pb-24">
@@ -83,6 +84,7 @@ export default async function ContactPage(props: PageProps<"/contact">) {
             initialQuantity={/^\d{1,5}$/.test(quantity) ? quantity : ""}
             product={product}
             photosEnabled={availability.photos}
+            privacyPublished={Boolean(legal)}
           />
         ) : (
           <ContactForm key={`${prefill.subject}|${prefill.message}`} initialSubject={prefill.subject} initialMessage={prefill.message} />

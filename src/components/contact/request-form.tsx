@@ -109,6 +109,7 @@ export function RequestForm({
   initialQuantity,
   product,
   photosEnabled,
+  privacyPublished,
 }: {
   initialKind: RequestKind;
   initialSubject: string;
@@ -116,6 +117,8 @@ export function RequestForm({
   initialQuantity: string;
   product: { slug: string; name: string; sku: string | null } | null;
   photosEnabled: boolean;
+  /** Politique de confidentialité publiée (lien « En savoir plus »). */
+  privacyPublished: boolean;
 }) {
   const [state, action, pending] = useActionState(submitContactRequestAction, initialState);
   const [kind, setKind] = useState<RequestKind>(initialKind);
@@ -423,9 +426,11 @@ export function RequestForm({
           />
           <span>
             J’accepte que ces informations servent uniquement à répondre à ma demande.{" "}
-            <Link href="/confidentialite" className="font-medium text-honey-dark underline-offset-2 hover:underline">
-              En savoir plus
-            </Link>
+            {privacyPublished ? (
+              <Link href="/confidentialite" className="font-medium text-honey-dark underline-offset-2 hover:underline">
+                En savoir plus
+              </Link>
+            ) : null}
           </span>
         </label>
         {errors.consent ? (

@@ -19,7 +19,7 @@ function isHttpsUrl(value: string | undefined) {
 
 // Seule la présence des réglages est inspectée : aucune valeur n'est lue ni
 // affichée. Les fonctions pas encore développées pointent vers leur lot.
-export function getLaunchChecks({ ordersOpen }: { ordersOpen: boolean }): LaunchCheck[] {
+export function getLaunchChecks({ ordersOpen, legalVersion }: { ordersOpen: boolean; legalVersion: number | null }): LaunchCheck[] {
   const email = readEmailConfig(process.env);
   return [
     {
@@ -57,11 +57,17 @@ export function getLaunchChecks({ ordersOpen }: { ordersOpen: boolean }): Launch
         : "Préparés dans la rubrique Emails ; envoi automatique à configurer (Brevo ou Resend).",
     },
     {
-      label: "Demandes d’avis automatiques",
+      label: "Tâche quotidienne (avis, purge)",
       state: (process.env.CRON_SECRET?.length ?? 0) >= 16 ? "ok" : "todo",
-      detail: "CRON_SECRET sur l’hébergement (tâche quotidienne de vercel.json) ; sinon « Envoyer maintenant » dans Avis.",
+      detail: "CRON_SECRET sur l’hébergement (vercel.json) : demandes d’avis et purge des données anciennes.",
     },
-    { label: "Pages légales", state: "later", detail: "Lot 9 — identité réelle à fournir." },
+    {
+      label: "Pages légales",
+      state: legalVersion ? "ok" : "todo",
+      detail: legalVersion
+        ? `Version ${legalVersion} publiée : mentions légales, CGV, confidentialité.`
+        : "À remplir et approuver dans Informations légales (masquées en attendant).",
+    },
     { label: "Factures", state: "later", detail: "Lot 11 — validation fiscale requise." },
     { label: "Référencement", state: "later", detail: "Lot 15 — désactivé par défaut." },
     { label: "Paiement en ligne", state: "later", detail: "Lot 17 — selon décision." },

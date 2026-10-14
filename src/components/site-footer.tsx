@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { MailIcon, MapPinIcon, PhoneIcon } from "@/components/icons";
 import { Logo, container } from "@/components/ui";
-import { infoNav, site, type NavLink } from "@/lib/site";
+import { site, type NavLink } from "@/lib/site";
 
 function FooterHeading({ children }: { children: React.ReactNode }) {
   return (
@@ -11,7 +11,8 @@ function FooterHeading({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function SiteFooter({ nav }: { nav: NavLink[] }) {
+/** `info` : liens d'information, sans les pages légales non publiées. */
+export function SiteFooter({ nav, info }: { nav: NavLink[]; info: NavLink[] }) {
   // La FAQ figure deja dans la colonne "Informations".
   const footerNav = nav.filter((link) => link.href !== "/faq");
   const years = new Date().getFullYear() - site.owner.since;
@@ -45,7 +46,7 @@ export function SiteFooter({ nav }: { nav: NavLink[] }) {
         <nav aria-label="Informations">
           <FooterHeading>Informations</FooterHeading>
           <ul className="mt-5 space-y-2.5 text-[13px] leading-[18px]">
-            {infoNav.map((link) => (
+            {info.map((link) => (
               <li key={link.href}>
                 <Link href={link.href} className="transition hover:text-white">
                   {link.label}

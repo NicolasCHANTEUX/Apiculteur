@@ -9,6 +9,7 @@ import {
   InboxIcon,
   MailIcon,
   PackageIcon,
+  ShieldIcon,
   SettingsIcon,
   ShoppingBagIcon,
   StarIcon,
@@ -30,12 +31,13 @@ const ready: NavItem[] = [
   { href: "/admin/categories", label: "Catégories", icon: TagIcon },
   { href: "/admin/emails", label: "Emails", icon: MailIcon },
   { href: "/admin/avis", label: "Avis", icon: StarIcon },
+  { href: "/admin/clients", label: "Clients", icon: UsersIcon },
+  { href: "/admin/informations-legales", label: "Informations légales", icon: ShieldIcon },
 ];
 
 // Les rubriques arrivent lot par lot (ROADMAP.md) : elles sont annoncées
 // sans lien pour montrer la structure à venir.
 const upcoming: (NavItem & { lot: string })[] = [
-  { href: "/admin/clients", label: "Clients", icon: UsersIcon, lot: "Lot 9" },
   { href: "/admin/parametres", label: "Paramètres", icon: SettingsIcon, lot: "Lot 14" },
 ];
 
