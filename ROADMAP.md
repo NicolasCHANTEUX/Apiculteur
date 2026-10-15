@@ -22,7 +22,7 @@ Les décisions du §26 ne sont pas encore prises. En attendant, on suit les hypo
 | H10 | Contenus de la maquette conservés, signalés comme provisoires. | §26-14 |
 | H11 | Types de produits gérés par des catégories modifiables, plus un état générique : neuf, occasion, second choix. | §26-1, §26-2 |
 
-## Revue de sécurité du 15 octobre 2026 · **faite** (migrations `20261020100000_security.sql` et `20261021100000_order_terms.sql`)
+## Revue de sécurité du 15 octobre 2026 · **faite** (`20261020100000_security.sql` appliquée en ligne ; `20261021100000_order_terms.sql` à appliquer)
 
 - Next.js 16.4.1 et sharp 0.35.5 (déni de service des Server Actions ; exécution de code par l’optimisation d’images).
 - Demande de commande enregistrée d’un seul tenant (CGV, frais et livraison dans la même transaction) ; jamais sans les CGV en vigueur, même si elles ne peuvent pas être lues au moment de l’envoi.
@@ -41,6 +41,32 @@ Les décisions du §26 ne sont pas encore prises. En attendant, on suit les hypo
 | F — Ouverture | 17, 18 | Paiement en ligne, recette finale et mise en production |
 
 Règle de fin de lot : lint, types, tests et build réussis ; recette visuelle à 390 et 1 440 px ; `docs/etat-v1.md` mis à jour ; cases du cahier cochées.
+
+## Où on en est (15 octobre 2026)
+
+« Reste » liste les cases du cahier encore ouvertes pour le lot, hors recette réelle (voir `docs/etat-v1.md`).
+
+| Lot | État | Reste |
+| --- | --- | --- |
+| 0 — Socle technique | fait | — |
+| 1 — Accès administrateur | fait | Plusieurs rôles admin (option) |
+| 2 — Catalogue géré par l’admin | fait | Purge des images orphelines ; produit d’occasion créé à partir d’un modèle |
+| 3 — Panier | fait | « Ramener au maximum » ; référence et état sur chaque ligne ; estimation de réception et alerte de validation manuelle dans le panier |
+| 4 — Demande de commande | fait | Empreinte du contenu ; récapitulatif sur la page de confirmation ; message personnalisé quand les demandes sont fermées |
+| 5 — Traitement des commandes | fait | Modifier une commande déjà acceptée, avant paiement |
+| 6 — Emails | fait | Choisir le fournisseur et authentifier le domaine ; email d’alerte de stock faible ; modèles modifiables |
+| 7 — Demandes clients | fait | Transformer un devis en commande (lot 11) |
+| 8 — Avis clients | fait | Liste des derniers avis au tableau de bord |
+| 9 — Légal, données, clients | fait | Remplir, faire relire et approuver les informations légales |
+| 10 — Livraison et distance | fait | Décisions §26-6 à 8 (tarifs, tournées, créneaux de retrait) |
+| 11 — Factures et devis | prochain | Tout |
+| 12 — Réservations et liste d’attente | à faire | Tout |
+| 13 — Catalogue public avancé | fait | Photos des défauts et lien vers le modèle neuf (matériel d’occasion) |
+| 14 — Contenus et paramètres | à faire | Tout |
+| 15 — Référencement et PWA | entamé | Interrupteur d’indexation, `robots.txt`, `sitemap.xml`, URL canonique, image de partage, données structurées des produits |
+| 16 — Statistiques et audit | entamé | Statistiques détaillées ; journal d’audit consultable, avec anciennes et nouvelles valeurs |
+| 17 — Paiement en ligne | à faire (selon §26-3) | Tout |
+| 18 — Recette et mise en production | entamé | Recette HTTP et navigateur automatisées ; environnements, sauvegardes, surveillance ; critères d’ouverture |
 
 ---
 
@@ -96,7 +122,7 @@ Règle de fin de lot : lint, types, tests et build réussis ; recette visuelle �
 - Page de confirmation ; panier vidé (§8.1).
 - Interrupteur « commandes ouvertes / fermées » (§8.1).
 
-### Lot 5 — Traitement des commandes par l’admin · **fait** (migration `20261019100000_order_changes.sql` à appliquer en ligne)
+### Lot 5 — Traitement des commandes par l’admin · **fait**
 
 - Liste filtrable et fiche détaillée avec historique (§17.4).
 - Accepter (avec décrément du stock, H3), refuser ou proposer une alternative, avec message (§8.2).
@@ -159,13 +185,15 @@ Règle de fin de lot : lint, types, tests et build réussis ; recette visuelle �
 
 - Accueil, À propos, FAQ, bandeau modifiables ; paramètres métier ; journal du rucher (option) (§18, §17.9).
 
-### Lot 15 — Référencement et PWA
+### Lot 15 — Référencement et PWA · **entamé**
 
 - Indexation sous interrupteur, sitemap, robots, données structurées, manifest (§21).
+- Déjà fait : `noindex` des pages privées ; données structurées de la FAQ ; logo, favicon, icône Apple et manifest (`npm run icons`).
 
-### Lot 16 — Statistiques et audit
+### Lot 16 — Statistiques et audit · **entamé**
 
 - Tableaux de statistiques ; consultation du journal d’audit (§17.11-17.12).
+- Déjà fait : tendances sur 7, 30 ou 90 jours et dernières actions au tableau de bord.
 
 ---
 
@@ -175,8 +203,9 @@ Règle de fin de lot : lint, types, tests et build réussis ; recette visuelle �
 
 - Stripe en mode test : réservation de stock, webhook, réconciliation ; puis mode réel après validation (§10).
 
-### Lot 18 — Recette et mise en production
+### Lot 18 — Recette et mise en production · **entamé**
 
+- Déjà fait : CI GitHub Actions (lint, tests, types, build) ; tâche quotidienne protégée par un secret.
 - Recette HTTP et navigateur automatisées (§23).
 - Environnements, sauvegardes, tâches planifiées, surveillance (§24).
 - Critères d’ouverture commerciale (§24).

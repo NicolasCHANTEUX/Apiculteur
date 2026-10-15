@@ -1,6 +1,6 @@
 # Cahier des charges consolidé — Application web apiculteur
 
-Dernière mise à jour : 15 octobre 2026 (fin du lot 5 ; quelques cases des lots 3 à 10 restent à reporter, voir `docs/etat-v1.md`).
+Dernière mise à jour : 15 octobre 2026 (cases relues une à une contre le code, après les lots 0 à 10 et 13, la revue de sécurité et le logo). État de chaque lot : `ROADMAP.md` ; recette : `docs/etat-v1.md`.
 
 Ce document est **la liste de référence de tout ce qu’il y a à construire**. Il réunit trois sources :
 
@@ -8,7 +8,7 @@ Ce document est **la liste de référence de tout ce qu’il y a à construire**
 2. **Maquette** — la maquette Figma (6 écrans : accueil, nos essaims, à propos, avis, FAQ, contact).
 3. **Kayart** — le dépôt [NicolasCHANTEUX/Kayart](https://github.com/NicolasCHANTEUX/Kayart) (état au commit `e8deddb`, « amélioration facture pdf »). Il vend des pièces en carbone (kayak), mais ses fonctionnalités et ses garde-fous sont repris ici, transposés à l’apiculture.
 
-Le plan d’attaque (lots, ordre, estimation) sera établi **à partir de ce document** et remplacera `ROADMAP.md`.
+Le plan d’attaque (lots, ordre, état de chaque lot) est dans `ROADMAP.md`, établi **à partir de ce document**.
 
 ---
 
@@ -27,7 +27,7 @@ Le plan d’attaque (lots, ordre, estimation) sera établi **à partir de ce doc
 ### Règles de mise à jour
 
 - Cocher une ligne seulement quand le code est livré **et** testé.
-- Noter la recette réelle (vrai compte, vrai paiement, vrai email) dans `docs/etat-v1.md` (à créer, §25), pas ici.
+- Noter la recette réelle (vrai compte, vrai paiement, vrai email) dans `docs/etat-v1.md` (§25), pas ici.
 - Une décision prise au §26 se reporte dans la section concernée, puis on retire la question.
 
 ---
@@ -37,13 +37,13 @@ Le plan d’attaque (lots, ordre, estimation) sera établi **à partir de ce doc
 ### 1.1 Méthode
 
 - [ ] Lire le guide Next.js embarqué (`node_modules/next/dist/docs/`) avant d’écrire du code Next : la version 16 a des changements incompatibles (voir `AGENTS.md`).
-- [ ] « Implémenté » n’est pas « validé ». Tenir un état qui distingue code livré, recette faite et recette en attente. (Kayart)
+- [x] « Implémenté » n’est pas « validé ». Tenir un état qui distingue code livré, recette faite et recette en attente. — `docs/etat-v1.md`. (Kayart)
 - [x] Aucune donnée inventée en production : pas de faux avis, de faux tarifs, de fausse identité légale. Le mode démo n’existe qu’en développement. (Kayart)
 - [ ] Identité légale, SIRET, taux de TVA, mentions fiscales, tarifs de livraison, adresse de retrait : uniquement des valeurs **fournies et validées** par l’apiculteur ou son comptable. Aucune valeur par défaut « pour essayer ». (Kayart)
 - [ ] Le contenu de la maquette (Marc Dupont, 06 12 34 56 78, photos, « 200 colonies », « 8 races », réponses de FAQ) est provisoire. Il doit être signalé comme tel et remplacé avant ouverture. (Maquette)
 - [ ] Secrets uniquement dans les variables d’environnement : jamais dans Git, un rapport, une capture ou une conversation. (Kayart)
-- [ ] Ouverture progressive par interrupteurs désactivés par défaut : commandes, paiement, facturation, pages légales, indexation, ventes manuelles, tâches planifiées (annexe A). (Kayart)
-- [ ] Toute action destructrice demande une confirmation. Préférer archiver ou mettre à la corbeille plutôt que supprimer. (Kayart)
+- [ ] Ouverture progressive par interrupteurs désactivés par défaut : commandes, paiement, facturation, pages légales, indexation, ventes manuelles, tâches planifiées (annexe A). *(partiel : demandes de commande fermées par défaut, affichage des avis masqué par défaut, pages légales bloquées sans approbation, tâche quotidienne protégée par un secret ; ventes manuelles sans interrupteur, réservées à l’admin ; indexation (lot 15), facturation (lot 11) et paiement (lot 17) à venir)* (Kayart)
+- [x] Toute action destructrice demande une confirmation. Préférer archiver ou mettre à la corbeille plutôt que supprimer. — dialogues de confirmation dans l’admin ; produits archivés, demandes mises à la corbeille ; panier vidé après confirmation. (Kayart)
 - [ ] Textes en français, ton humain et rassurant, jamais froid ou technique. (CDC 21)
 
 ### 1.2 Architecture et données
@@ -52,10 +52,10 @@ Le plan d’attaque (lots, ordre, estimation) sera établi **à partir de ce doc
 - [x] Accès aux données isolé dans une couche serveur (`src/data`, `server-only`). Le public lit des vues minimales (`public_catalog_products`, `public_reviews`).
 - [x] RLS activée sur toutes les tables ; les écritures admin passent par `is_admin()`.
 - [ ] Aucun brouillon, stock interne ou token ne doit être sérialisé vers le navigateur (HTML ou réponse RSC). (Kayart)
-- [ ] Montants en centimes. Prix, paliers, remises, livraison et totaux **recalculés côté serveur**, jamais acceptés du navigateur. (Kayart, ROADMAP)
-- [ ] Toute écriture sur plusieurs tables passe par une transaction (client, commande, lignes, stock, historique). (Kayart)
-- [ ] Idempotence : clé de soumission unique par formulaire, clé de tentative et empreinte du contenu pour la commande. Un double clic ou un rechargement renvoie le même résultat. (Kayart)
-- [ ] Contrôle de conflit optimiste (`updated_at`) sur les modifications admin. En cas de conflit : « Cette demande a changé, rechargez la page ». (Kayart)
+- [ ] Montants en centimes. Prix, paliers, remises, livraison et totaux **recalculés côté serveur**, jamais acceptés du navigateur. *(partiel : tout est recalculé par le serveur à l’envoi d’une demande, et les calculs du code se font en centimes ; les prix restent stockés en euros à deux décimales en base)* (Kayart, ROADMAP)
+- [x] Toute écriture sur plusieurs tables passe par une transaction (client, commande, lignes, stock, historique). — fonctions SQL : `submit_order_request`, `admin_accept_order`, `admin_cancel_order`, propositions, ventes manuelles, `admin_forget_customer`. (Kayart)
+- [ ] Idempotence : clé de soumission unique par formulaire, clé de tentative et empreinte du contenu pour la commande. Un double clic ou un rechargement renvoie le même résultat. *(partiel : clé de soumission sur la commande, les demandes clients et les ventes manuelles ; pas d’empreinte du contenu)* (Kayart)
+- [x] Contrôle de conflit optimiste (`updated_at`) sur les modifications admin. En cas de conflit : « Cette demande a changé, rechargez la page ». — produits, commandes, propositions, demandes, avis. (Kayart)
 - [ ] Schéma modifié uniquement par migration, appliquée après sauvegarde et vérification de la cible. Jamais de modification manuelle en production, jamais de seed sur une base réelle. (Kayart)
 - [ ] Connexion applicative avec un rôle Postgres dédié, sans `BYPASSRLS` ; connexion de migration séparée. (Kayart)
 
@@ -68,15 +68,15 @@ Le plan d’attaque (lots, ordre, estimation) sera établi **à partir de ce doc
 
 ---
 
-## 2. État actuel du projet (3 octobre 2026)
+## 2. État actuel du projet (15 octobre 2026)
 
 | Domaine | État |
 | --- | --- |
-| Schéma de base | Catégories, produits, images, paliers de prix, clients, commandes, lignes, avis, paramètres (`app_settings`), administrateurs (`admin_users`). RLS et vues publiques durcies. |
-| Catalogue public | Liste et fiche branchées sur Supabase ; prix dégressifs ; modes d’affichage du stock ; tests des prix. |
-| Refonte maquette | Accueil, catalogue (recherche et filtres côté navigateur), à propos, avis (note moyenne, répartition), FAQ (réponses à valider), contact (ouvre la messagerie), fiche produit, 404, panier et pages légales en attente. |
+| Livré dans le code | Lots 0 à 10 et 13 : socle et sécurité, accès admin avec double authentification, catalogue géré par l’admin, panier, demande de commande, traitement des commandes (propositions, ventes manuelles), emails, demandes clients, avis, légal et fiches clients, livraison et distance, catalogue public avancé. Revue de sécurité du 15 octobre. Logo, icônes et manifest. |
+| Entamé | Lot 15 (`noindex` des pages privées, données structurées de la FAQ, manifest), lot 16 (tendances et dernières actions au tableau de bord), lot 18 (CI, tâche quotidienne). |
+| Pas commencé | Lots 11 (factures et devis), 12 (réservations et liste d’attente), 14 (contenus et paramètres modifiables), 17 (paiement en ligne). |
+| À valider en conditions réelles | Voir `docs/etat-v1.md` : fournisseur d’emails, informations légales, adresse de l’exploitation et tarifs, migration `20261021100000_order_terms.sql`, contenus réels. |
 | Mode démo | Données de la maquette en développement sans Supabase ; seed aligné. |
-| Absent | Panier, commande, administration, authentification, emails, factures, paiement, pages légales réelles, avis déposés par les clients. |
 
 ---
 
@@ -122,14 +122,14 @@ Le plan d’attaque (lots, ordre, estimation) sera établi **à partir de ce doc
 - [x] Pages Nos essaims, À propos, Avis clients, FAQ, Contact, fiche produit, 404. (Maquette, CDC 2)
 - [x] Pages Panier, Commande, Confirmation de commande. (CDC 2, Kayart)
 - [x] Pages Connexion, Mot de passe oublié, Nouveau mot de passe, Accès refusé. Pas d’inscription publique (H6 du plan). (Kayart)
-- [ ] Mentions légales, CGV, Confidentialité réelles (§19). *(partiel : pages d’attente)* (CDC 2)
+- [x] Mentions légales, CGV, Confidentialité réelles (§19). — générées depuis les informations légales, en 404 tant qu’aucune version n’est approuvée. (CDC 2)
 - [ ] Pages de services, selon décision (§12) : récupération d’essaim, devis professionnel, accompagnement. (Kayart, Apicole)
 - [ ] Journal ou actualités, selon décision (§18). (Kayart, CDC 24)
 - [x] Navigation principale avec page active et menu mobile. (Maquette)
-- [ ] Compteur d’articles du panier dans l’en-tête, synchronisé entre onglets. (Kayart)
+- [x] Compteur d’articles du panier dans l’en-tête, synchronisé entre onglets. — par l’événement `storage`. (Kayart)
 - [ ] Lien « Administration » visible uniquement pour un administrateur connecté. (Kayart)
 - [x] Pied de page : navigation, informations, contact, réseaux. (Maquette)
-- [ ] Liens légaux du pied de page affichés seulement quand les pages légales sont approuvées. (Kayart)
+- [x] Liens légaux du pied de page affichés seulement quand les pages légales sont approuvées. (Kayart)
 - [ ] Bandeau d’information administrable (ex. « Saison 2026 ouverte »). *(partiel : texte fixé dans `src/lib/site.ts`)* (CDC 16, Maquette)
 - [x] Carrousel des produits mis en avant sur l’accueil au-delà de 4 produits : boutons précédent/suivant, défilement automatique coupé si `prefers-reduced-motion`. — sans défilement automatique ; un seul produit est mis en valeur, une rangée incomplète se termine par l’accès au catalogue. (Kayart)
 - [ ] Indicateur de chargement entre pages et écran `loading` par route. *(partiel : écran de chargement de l’admin ; pas sur les pages publiques, qui doivent rester utilisables sans JavaScript, le catalogue compris)* (Kayart)
@@ -168,7 +168,7 @@ Le plan d’attaque (lots, ordre, estimation) sera établi **à partir de ce doc
 - [x] Aide sous le prix : TTC ou HT selon le régime, « prix dégressifs selon la quantité », « sur devis », « prix d’une pièce unique ». — mention de TVA tirée des informations légales publiées (franchise : art. 293 B du CGI ; assujetti : TTC), rien sans version publiée. (Kayart)
 - [ ] Matériel d’occasion ou de second choix : description des défauts, photos des défauts, lien vers le modèle neuf. *(partiel : défauts décrits ; photos dédiées et lien vers le modèle à venir)* (Kayart, Apicole)
 - [x] Visibilité vérifiée à chaque requête : jamais de cache d’un produit masqué ou épuisé. — catalogue et fiche rendus à chaque requête, sans mise en cache. (Kayart)
-- [ ] Référencement : titre, description, URL canonique, image de partage. (Kayart, CDC 24)
+- [ ] Référencement : titre, description, URL canonique, image de partage. *(partiel : titre et description SEO du produit ; URL canonique et image de partage au lot 15)* (Kayart, CDC 24)
 
 ---
 
@@ -190,7 +190,7 @@ Le plan d’attaque (lots, ordre, estimation) sera établi **à partir de ce doc
 - [ ] Indicateurs « réservable » et « personnalisable ». *(partiel : le mode d’achat couvre réservation et devis)* (Kayart)
 - [x] Unité de vente explicite (essaim, reine, pièce, lot de N), plutôt que déduite de la catégorie comme aujourd’hui. (Apicole)
 - [ ] Saisonnalité : période de disponibilité (ex. avril–juin) et date d’ouverture des réservations. *(partiel : période affichée ; date d’ouverture des réservations au lot 12)* (Apicole)
-- [ ] Quantité maximale commandable automatiquement ; au-delà, validation manuelle (§8.2). (CDC 8)
+- [ ] Quantité maximale commandable automatiquement ; au-delà, validation manuelle (§8.2). *(partiel : seuil de quantité global, réglable dans Livraison, au-delà duquel la demande est signalée « à étudier » ; pas de maximum par produit)* (CDC 8)
 - [x] Date de publication, pour le tri « nouveautés ». (Kayart)
 - [x] Archivage (masqué, historique conservé) ou suppression définitive, refusée s’il existe des commandes, réservations ou paiements en cours. — suppression réservée aux brouillons et produits archivés, refusée si le produit figure dans une commande (réservations et paiements : à vérifier quand leurs tables existeront). (Kayart)
 
@@ -207,15 +207,15 @@ Le plan d’attaque (lots, ordre, estimation) sera établi **à partir de ce doc
 - [x] Nom, slug, description, image, ordre, actif (en base). (CDC 4)
 - [x] Gestion admin : création, modification, ordre, activation, suppression seulement si la catégorie est vide. (Kayart, CDC 4)
 - [ ] Sous-catégories (catégorie parente), en option. (Kayart)
-- [ ] Catégories de départ : Essaims, Reines, Ruches, Matériel, puis Services et Formations si besoin. (CDC 4)
+- [ ] Catégories de départ : Essaims, Reines, Ruches, Matériel, puis Services et Formations si besoin. *(partiel : présentes dans le seed de développement ; à créer dans l’admin sur la base réelle)* (CDC 4)
 
 ### 6.4 Stock
 
 - [x] Ajustement rapide depuis la liste admin (+1, -1, saisie directe). (Kayart)
 - [ ] Stock limité à 1 pour une pièce unique (occasion, second choix). (Kayart)
-- [ ] Décrément atomique (mise à jour conditionnelle) à la confirmation de la commande. Réservation temporaire pendant un paiement en ligne. (Kayart)
-- [ ] Moment exact de la réservation et du décrément (demande, validation ou paiement) : voir §26. (ROADMAP)
-- [ ] Alerte de stock faible : tableau de bord et email à l’admin. *(partiel : tableau de bord ; email au lot 6)* (CDC 6)
+- [ ] Décrément atomique (mise à jour conditionnelle) à la confirmation de la commande. Réservation temporaire pendant un paiement en ligne. *(partiel : décompte atomique à l’acceptation par l’admin et à l’enregistrement d’une vente manuelle ; réservation pendant un paiement au lot 17)* (Kayart)
+- [ ] Moment exact de la réservation et du décrément (demande, validation ou paiement) : voir §26. *(partiel : hypothèse H3 appliquée, décompte à l’acceptation)* (ROADMAP)
+- [ ] Alerte de stock faible : tableau de bord et email à l’admin. *(partiel : tableau de bord ; pas encore d’email)* (CDC 6)
 - [ ] Filtre admin par niveau de stock : rupture, faible, disponible, sur commande, prestation. *(partiel : rupture, faible, disponible ; un produit sur réservation ou sur devis n’est jamais « en rupture »)* (Kayart)
 
 ---
@@ -223,14 +223,14 @@ Le plan d’attaque (lots, ordre, estimation) sera établi **à partir de ce doc
 ## 7. Panier
 
 - [x] Ajout au panier depuis la fiche, avec choix de la quantité et confirmation visuelle. — palier appliqué surligné, total en direct, barre d’achat fixe sur mobile. (Kayart, CDC 7)
-- [ ] Panier conservé dans le navigateur : **identifiants et quantités uniquement**, jamais de nom, d’email ou d’adresse. (Kayart)
-- [ ] Calcul du panier par le serveur à chaque changement : prix unitaire selon le palier, total par ligne, sous-total. (Kayart, CDC 5-7)
-- [ ] Problème signalé par ligne : produit indisponible, sur devis, stock insuffisant (avec « ramener au maximum »), produit retiré du catalogue (affiché sans révéler un produit privé). (Kayart)
-- [ ] Sous-total partiel clairement présenté ; passage en commande bloqué tant qu’un problème subsiste. (Kayart)
+- [x] Panier conservé dans le navigateur : **identifiants et quantités uniquement**, jamais de nom, d’email ou d’adresse. (Kayart)
+- [ ] Calcul du panier par le serveur à chaque changement : prix unitaire selon le palier, total par ligne, sous-total. *(partiel : prix et disponibilités relus par le serveur à chaque visite du panier, paliers calculés dans le navigateur avec les règles partagées ; recalcul complet par le serveur à l’envoi de la demande)* (Kayart, CDC 5-7)
+- [ ] Problème signalé par ligne : produit indisponible, sur devis, stock insuffisant (avec « ramener au maximum »), produit retiré du catalogue (affiché sans révéler un produit privé). *(partiel : produit retiré ou indisponible, prix à confirmer ; quantité plafonnée au stock affiché ; pas de « ramener au maximum »)* (Kayart)
+- [x] Sous-total partiel clairement présenté ; passage en commande bloqué tant qu’un problème subsiste. — produits au prix à confirmer comptés à part ; envoi bloqué tant qu’un produit est indisponible. (Kayart)
 - [x] Incitation aux paliers : « Encore 2 essaims pour passer à 150 € l’unité ». — sur la fiche et par ligne du panier, en un clic. (Apicole, CDC 5)
 - [ ] Estimation de réception : retrait gratuit sur rendez-vous, ou livraison selon pays, code postal et distance (§9). *(partiel : estimation sur la page de commande dès le code postal saisi, distance vérifiée à l’envoi ; pas encore dans le panier)* Choix gardé pour la session. (Kayart, CDC 7)
 - [ ] Message préventif quand le panier dépassera un seuil de validation manuelle. (CDC 8)
-- [ ] Par ligne : visuel, référence, état, lien vers la fiche, quantité modifiable, retrait. (Kayart, CDC 7)
+- [ ] Par ligne : visuel, référence, état, lien vers la fiche, quantité modifiable, retrait. *(partiel : tout sauf la référence et l’état)* (Kayart, CDC 7)
 - [x] Vider le panier (avec confirmation), actualiser, message si le stockage du navigateur est indisponible. — en attendant la commande (lot 4), « Envoyer ma demande » pré-remplit le contact avec le contenu du panier. (Kayart)
 
 ---
@@ -281,7 +281,7 @@ Le plan d’attaque (lots, ordre, estimation) sera établi **à partir de ce doc
 - [x] Aucun seuil de livraison gratuite sans décision explicite. (Kayart)
 - [ ] Contraintes du vivant à définir avec l’apiculteur : transport des essaims (ruchettes, délais, météo), éventuel envoi postal des reines. *(partiel : texte « Transport des essaims » réglable, affiché sur la page Livraison ; règles à définir)* (Apicole)
 - [ ] Livraisons groupées par tournée ou par région, selon décision. (Apicole)
-- [ ] Note admin liée à la livraison. (CDC 9)
+- [ ] Note admin liée à la livraison. *(partiel : note interne de la commande, sans note propre à la livraison)* (CDC 9)
 - [x] Statuts : à préparer, prête (retrait) ou expédiée (livraison), livrée ou terminée, annulée. — email « en route » à l’expédition. (CDC 9, Kayart)
 
 ---
@@ -289,7 +289,7 @@ Le plan d’attaque (lots, ordre, estimation) sera établi **à partir de ce doc
 ## 10. Paiement
 
 - [ ] Modes possibles, à arbitrer au §26 : après validation, virement, à la récupération, sur facture, carte en ligne. (CDC 12)
-- [ ] Paiement hors ligne enregistré par l’admin (« marquer payé », avec date et moyen de paiement). (Kayart, CDC 10)
+- [x] Paiement hors ligne enregistré par l’admin (« marquer payé », avec date et moyen de paiement). — fiche commande et ventes manuelles (lot 5). (Kayart, CDC 10)
 - [ ] Paiement en ligne par Stripe Checkout (page hébergée). Mode test seulement au départ ; **le code refuse les clés réelles** tant que le mode réel n’est pas développé et validé. (Kayart)
 - [ ] Lien de paiement envoyé après une validation manuelle. (CDC 12)
 - [ ] Réservation du stock pendant la session de paiement (1 h), libérée seulement sur expiration ou échec confirmés par Stripe. (Kayart)
@@ -361,7 +361,7 @@ Le plan d’attaque (lots, ordre, estimation) sera établi **à partir de ce doc
 ## 14. Emails et notifications
 
 - [ ] Choisir le fournisseur (Resend, Brevo, Postmark…) et authentifier le domaine d’envoi (SPF, DKIM, DMARC) ; expéditeur et adresse de réponse configurables. Non configuré dans Kayart. *(partiel : pilotes Brevo et Resend prêts, expéditeur, réponse et alertes réglables par variables d’environnement ; choix du fournisseur et authentification du domaine à faire)* (CDC 14)
-- [ ] Modèles (CDC 14) : création de commande, réception de demande, validation, refus, proposition alternative, devis, facture, paiement confirmé, livraison ou retrait, demande d’avis, remerciement, nouvelle commande (admin), nouvel avis (admin). *(partiel : réception de demande, acceptation (avec message de l’apiculteur), refus, annulation, commande prête, paiement reçu, nouvelle demande (admin), demande d’avis, remerciement, nouvel avis (admin), messages et réponses des demandes clients, proposition de modification, réponse à une proposition (admin), récapitulatif de vente manuelle ; devis et facture avec le lot 11)*
+- [ ] Modèles (CDC 14) : création de commande, réception de demande, validation, refus, proposition alternative, devis, facture, paiement confirmé, livraison ou retrait, demande d’avis, remerciement, nouvelle commande (admin), nouvel avis (admin). *(partiel : réception de demande, acceptation (avec message de l’apiculteur), refus, annulation, commande prête, commande expédiée, paiement reçu, nouvelle demande (admin), demande d’avis, remerciement, nouvel avis (admin), messages et réponses des demandes clients, proposition de modification, réponse à une proposition (admin), récapitulatif de vente manuelle ; devis et facture avec le lot 11)*
 - [ ] Modèles supplémentaires : réservation reçue, réservation acceptée, « c’est disponible » (liste d’attente), lien de paiement. (Apicole, Kayart)
 - [x] File d’envoi avec reprise en cas d’échec ; journal des emails (destinataire, modèle, date, statut), sans contenu sensible dans les logs. — table `email_outbox`, envoi après la réponse, nouvel essai automatique des échecs récents ou à la demande ; rubrique Emails avec aperçu ; sans fournisseur, emails ouverts tout rédigés dans la messagerie puis marqués envoyés. (CDC 14, Kayart)
 - [ ] Modèles modifiables par l’admin, avec variables. (CDC 14)
@@ -418,15 +418,15 @@ Le plan d’attaque (lots, ordre, estimation) sera établi **à partir de ce doc
 
 ### 17.1 Socle
 
-- [ ] Espace `/admin` protégé et non indexé. Navigation : Tableau de bord, Produits, Commandes, Demandes, Avis, Clients, Livraison et réglages, Factures, Contenus, Paramètres, « Voir le site ». *(partiel : espace et navigation en place, rubriques activées lot par lot)* (Kayart, CDC 15)
+- [ ] Espace `/admin` protégé et non indexé. Navigation : Tableau de bord, Produits, Commandes, Demandes, Avis, Clients, Livraison et réglages, Factures, Contenus, Paramètres, « Voir le site ». *(partiel : espace non indexé ; Tableau de bord, Commandes, Demandes, Produits, Catégories, Emails, Avis, Clients, Livraison, Informations légales et « Voir le site » ; Paramètres annoncé (lot 14) ; Factures (lot 11) et Contenus (lot 14) à venir)* (Kayart, CDC 15)
 - [x] Message de succès ou d’erreur après chaque action ; boutons « en cours » désactivés pendant l’envoi. — notifications ; une erreur prévue n’affiche plus la page d’erreur. (Kayart)
 - [x] Dialogues de confirmation pour les actions destructrices ; menus d’actions par ligne (clavier, Échap, clic extérieur). (Kayart)
 - [x] Administration utilisable sur téléphone : navigation compacte, tableaux transformés en cartes lisibles. — tiroir de navigation, liste produits en cartes, sans débordement à 320 et 390 px. (Kayart, CDC 25)
 
 ### 17.2 Tableau de bord
 
-- [ ] Compteurs : produits, commandes à traiter, commandes à valider, demandes nouvelles, avis en attente, produits en stock faible. *(partiel : tout sauf les demandes, lot 7)* (CDC 15, Kayart)
-- [ ] Dernières commandes, derniers avis, chiffre d’affaires estimé. *(partiel : dernières commandes, chiffre d’affaires sur 7, 30 ou 90 jours, note moyenne des avis ; derniers avis au lot 8)* (CDC 15, 26)
+- [x] Compteurs : produits, commandes à traiter, commandes à valider, demandes nouvelles, avis en attente, produits en stock faible. — dans le bandeau d’accueil, les tuiles et « À faire ». (CDC 15, Kayart)
+- [ ] Dernières commandes, derniers avis, chiffre d’affaires estimé. *(partiel : dernières commandes, chiffre d’affaires sur 7, 30 ou 90 jours, note moyenne et avis à modérer ; pas de liste des derniers avis)* (CDC 15, 26)
 - [x] État de la mise en service : configuration présente ou à faire, fonctions à venir avec leur lot. (Kayart)
 
 ### 17.3 Produits
@@ -441,7 +441,7 @@ Le plan d’attaque (lots, ordre, estimation) sera établi **à partir de ce doc
 ### 17.4 Commandes
 
 - [ ] Liste : numéro, date, type (en ligne, manuelle, test), client, nombre d’articles, total, statuts de commande, de paiement et de validation ; recherche par numéro, nom ou email ; filtres ; pagination. *(partiel : onglets par état, recherche, type « Vente manuelle » ; sans pagination ni commandes de test)* (Kayart, CDC 10)
-- [ ] Détail : *(partiel : tout sauf TVA, distance et facture)* (Kayart, CDC 10)
+- [ ] Détail : *(partiel : tout sauf la TVA et la facture, lot 11)* (Kayart, CDC 10)
   - lignes, montants (HT et TVA une fois facturée), paiement ;
   - client, adresses, livraison, distance, date souhaitée ;
   - note interne, facture, historique chronologique.
@@ -468,7 +468,7 @@ Le plan d’attaque (lots, ordre, estimation) sera établi **à partir de ce doc
 
 ### 17.9 Paramètres (CDC 19)
 
-- [ ] Seuils et règles (`app_settings`), coordonnées, réseaux sociaux, horaires ou périodes, ouverture des commandes, bannière, délai de demande d’avis. (CDC 19)
+- [ ] Seuils et règles (`app_settings`), coordonnées, réseaux sociaux, horaires ou périodes, ouverture des commandes, bannière, délai de demande d’avis. *(partiel : seuils dans Livraison, ouverture des demandes dans Commandes, délai de demande d’avis et affichage des avis dans Avis, durées de conservation réglables ; coordonnées, réseaux sociaux, horaires et bannière au lot 14)* (CDC 19)
 
 ### 17.10 Factures
 
@@ -524,13 +524,13 @@ Le plan d’attaque (lots, ordre, estimation) sera établi **à partir de ce doc
 - [x] Clé `service_role` utilisée uniquement côté serveur. (CDC 22)
 - [x] Vérification de l’origine : faite nativement par Next pour les Server Actions ; utilitaire `assertSameOriginRequest` pour les routes POST. (Kayart)
 - [ ] Validation serveur systématique : types, longueurs, formats, UUID, énumérations. (Kayart, CDC 22)
-- [ ] Limitation de débit persistante : connexion, inscription, récupération, formulaires, avis, commande. *(partiel : socle SQL et connexion/récupération ; formulaires, avis et commande à brancher)* (Kayart, ROADMAP)
+- [x] Limitation de débit persistante : connexion, inscription, récupération, formulaires, avis, commande. — connexion, double authentification, récupération, contact, commande, dépôt d’avis, réponse aux propositions ; pas d’inscription publique. (Kayart, ROADMAP)
 - [x] Taille des requêtes bornée, et limite de taille des actions serveur. — 16 Mo (actions et proxy) ; photos produit envoyées une par une. (Kayart)
 - [x] En-têtes : (Kayart)
   - CSP sans `unsafe-eval` en production, scripts autorisés par un nonce propre à chaque requête (plus de `unsafe-inline` pour les scripts) ;
   - HSTS, `X-Frame-Options: DENY`, `nosniff` ;
   - Referrer-Policy, Permissions-Policy, Cross-Origin-Opener-Policy.
-- [ ] Fichiers envoyés : décodés et réencodés ; type, extension et taille contrôlés ; buckets privés vérifiés avant tout envoi. (Kayart, CDC 22)
+- [x] Fichiers envoyés : décodés et réencodés ; type, extension et taille contrôlés ; buckets privés vérifiés avant tout envoi. — photos produit et photos des demandes réencodées en WebP ; bucket privé des demandes vérifié avant chaque envoi. (Kayart, CDC 22)
 - [ ] Accès aux factures et photos privées réservé à l’admin, via des routes contrôlées. *(partiel : photos des demandes, jamais mises en cache ; factures au lot 11)* (CDC 22, Kayart)
 - [ ] Aucun token ni donnée client dans le HTML, les logs ou les rapports. (Kayart)
 - [ ] Journal d’audit (§17.12). *(partiel : table et écriture ; dernières actions au tableau de bord ; consultation complète au lot 16)* (CDC 22)
@@ -543,8 +543,8 @@ Le plan d’attaque (lots, ordre, estimation) sera établi **à partir de ce doc
 
 - [ ] Indexation désactivée par défaut. Activation explicite par un interrupteur, un domaine HTTPS canonique et des données réelles ; les aperçus de déploiement restent exclus. (Kayart)
 - [ ] `robots.txt` et `sitemap.xml` soumis à cette activation. Sitemap : pages publiques et produits publiés (slug et date de modification) ; pages légales seulement si approuvées ; journal une fois validé. (Kayart, CDC 24)
-- [ ] `noindex` sur l’admin, la connexion, le panier, la commande et la confirmation. (Kayart)
-- [ ] Métadonnées par page et par produit (image de partage, URL canonique) ; URL du site normalisée. (Kayart, CDC 24)
+- [x] `noindex` sur l’admin, la connexion, le panier, la commande et la confirmation. — aussi les étapes de connexion, les confirmations et les liens personnels (avis, propositions). (Kayart)
+- [ ] Métadonnées par page et par produit (image de partage, URL canonique) ; URL du site normalisée. *(partiel : titre et description par page et par produit ; adresse du site normalisée (`NEXT_PUBLIC_SITE_URL`) ; image de partage et URL canonique à faire)* (Kayart, CDC 24)
 - [ ] Titres et descriptions SEO modifiables. *(partiel : champs SEO des produits en base)* (CDC 24)
 - [ ] Données structurées (Product, Offer, LocalBusiness ; AggregateRating seulement avec de vrais avis), produites à partir de données validées. *(partiel : FAQPage sur la FAQ, réponses encore à valider)* (Kayart)
 - [x] Images optimisées (`next/image`, WebP) et textes alternatifs. *(partiel : photos du site uniquement)* (CDC 24)
@@ -557,9 +557,9 @@ Le plan d’attaque (lots, ordre, estimation) sera établi **à partir de ce doc
 - [x] Site public responsive, vérifié à 390 et 1 440 px ; menu mobile. (CDC 25)
 - [x] Lien « Aller au contenu », focus placé sur le contenu principal. — site public et administration. (Kayart)
 - [x] Échap ferme le menu mobile et les dialogues, puis rend le focus. — site public et administration. (Kayart)
-- [ ] Respect de `prefers-reduced-motion`. (Kayart)
-- [ ] Formulaires : erreur affichée sous chaque champ (`aria-invalid`, `aria-describedby`), valeurs conservées après une erreur, bouton « envoi en cours ». (Kayart)
-- [ ] Champs d’au moins 16 px sur mobile (pas de zoom automatique sur iOS) ; cibles d’au moins 44 px. (Kayart)
+- [x] Respect de `prefers-reduced-motion`. — animations soumises à `motion-safe` ou `prefers-reduced-motion: no-preference`. (Kayart)
+- [ ] Formulaires : erreur affichée sous chaque champ (`aria-invalid`, `aria-describedby`), valeurs conservées après une erreur, bouton « envoi en cours ». *(partiel : formulaires de contact, de commande, d’avis, de produit, de vente manuelle et d’informations légales ; pas les formulaires de connexion)* (Kayart)
+- [ ] Champs d’au moins 16 px sur mobile (pas de zoom automatique sur iOS) ; cibles d’au moins 44 px. *(partiel : champs en 16 px sur mobile ; quelques boutons à 40 px, comme les − et + du panier)* (Kayart)
 - [ ] Recette à 320, 390, 768 et 1 440 px, en public comme en admin. (Kayart, CDC 25)
 - [x] Recherche et filtres utilisables sans JavaScript. — vérifié sur la compilation de production, JavaScript coupé ; l’écran de chargement du catalogue a été retiré, car il bloquait la page sans JavaScript. (Kayart)
 
@@ -569,7 +569,7 @@ Le plan d’attaque (lots, ordre, estimation) sera établi **à partir de ce doc
 
 - [x] Tests unitaires `node:test` (prix dégressifs, notes) ; lint ESLint ; vérification des types par le build.
 - [x] Scripts `typecheck` (avec `next typegen`) et `verify` (lint, tests, types, build). (Kayart)
-- [ ] Tests unitaires à ajouter : validation manuelle, zones de livraison, problèmes de panier, idempotence de commande, stock, factures (numérotation, éligibilité, PDF), avis par token, contrôle d’origine, limitation de débit, refus d’accès admin. (Kayart, CDC)
+- [ ] Tests unitaires à ajouter : validation manuelle, zones de livraison, problèmes de panier, idempotence de commande, stock, factures (numérotation, éligibilité, PDF), avis par token, contrôle d’origine, limitation de débit, refus d’accès admin. *(partiel : 24 fichiers, 134 tests, dont raisons d’attention, zones et frais, avis par lien, origine, clé de limitation, double authentification ; idempotence et stock vérifiés par des contrôles SQL sur PGlite, hors de la suite ; restent les problèmes de panier et les factures)* (Kayart, CDC)
 - [ ] Recette HTTP sur un build de production isolé, avec données fictives et faux service d’authentification local. (Kayart)
 - [ ] Recette navigateur automatisée (Chrome headless) des parcours publics, panier, commande et admin, à plusieurs largeurs. (Kayart)
 - [ ] CI GitHub Actions à chaque push et pull request : installation, lint, tests, types, recette du build. *(partiel : lint, tests, types, build ; recette HTTP au lot 18)* (Kayart)
@@ -580,10 +580,10 @@ Le plan d’attaque (lots, ordre, estimation) sera établi **à partir de ce doc
 ## 24. Exploitation et déploiement
 
 - [ ] Hébergement de l’application et projet Supabase de production (§26). Environnements séparés : développement, recette, production. La base de recette Stripe doit être isolée, car le mode test réserve du stock. (Kayart)
-- [ ] Toutes les variables documentées dans `.env.example` (annexe A). (Kayart)
+- [x] Toutes les variables documentées dans `.env.example` (annexe A). — toutes celles que lit le code actuel, commentées. (Kayart)
 - [ ] Migrations appliquées par la CLI après sauvegarde ; jamais de seed sur une base réelle. (Kayart)
-- [ ] Scripts de contrôle en lecture seule (`--check`) et d’application explicite (`--apply`) : buckets, accès admin, durcissement de la base, stockage des factures. (Kayart)
-- [ ] Tâches planifiées protégées par un secret : (Kayart, CDC 13)
+- [ ] Scripts de contrôle en lecture seule (`--check`) et d’application explicite (`--apply`) : buckets, accès admin, durcissement de la base, stockage des factures. *(partiel : `npm run admin -- check` pour l’accès admin)* (Kayart)
+- [ ] Tâches planifiées protégées par un secret : *(partiel : `/api/cron/quotidien`, protégée par `CRON_SECRET` : demandes d’avis et purges ; paiements et liste d’attente à venir)* (Kayart, CDC 13)
   - réconciliation des paiements ;
   - demandes d’avis ;
   - liste d’attente ;
@@ -608,8 +608,8 @@ Le plan d’attaque (lots, ordre, estimation) sera établi **à partir de ce doc
 
 - [x] `docs/etat-v1.md` : pour chaque domaine, code livré, recette faite, ce qui reste à valider. (Kayart)
 - [ ] Guides : architecture, base de données, sécurité, déploiement, paiement, facturation, emails, référencement, recette. (Kayart)
-- [ ] `.env.example` complet et commenté. (Kayart)
-- [ ] Ce cahier à jour (cases cochées, décisions reportées).
+- [x] `.env.example` complet et commenté. (Kayart)
+- [x] Ce cahier à jour (cases cochées, décisions reportées). — relu contre le code le 15 octobre 2026.
 - [x] `ROADMAP.md` remplacé par le plan d’attaque.
 
 ---
@@ -648,28 +648,28 @@ Le plan d’attaque (lots, ordre, estimation) sera établi **à partir de ce doc
 
 ## Annexe A — Variables d’environnement prévues
 
-Existantes : `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`.
+En place (documentées dans `.env.example`) : `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `NEXT_PUBLIC_SITE_URL`, `RATE_LIMIT_SECRET`, `TRUSTED_PROXY_HOPS`, `CRON_SECRET`, `EMAIL_PROVIDER`, `EMAIL_API_KEY`, `EMAIL_FROM`, `EMAIL_REPLY_TO`, `ADMIN_NOTIFICATION_EMAIL`.
 
-Proposées (noms à confirmer lors de l’implémentation) :
+Proposées au départ, et ce qu’elles sont devenues :
 
-| Variable | Rôle |
-| --- | --- |
-| `NEXT_PUBLIC_SITE_URL` | Origine HTTPS du site (canonique, emails, retours de paiement) |
-| `ORDERING_ENABLED` | Ouvre ou ferme les commandes (complète le réglage admin) |
-| `CHECKOUT_MODE` | `disabled`, `test` ou `live` (`live` refusé tant que non développé) |
-| `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` | Paiement en ligne |
-| `CRON_SECRET` | Protection des tâches planifiées |
-| `RATE_LIMIT_SECRET` | Hachage HMAC des identifiants de limitation de débit |
-| `IMAGE_RECEIPT_SECRET` | Signature des reçus d’envoi d’images |
-| `PRODUCT_IMAGES_BUCKET` | Bucket public des photos produit |
-| `REQUEST_IMAGES_BUCKET` | Bucket privé des photos de demandes |
-| `INVOICES_BUCKET` | Bucket privé des factures |
-| `INVOICING_ENABLED`, `INVOICE_*` | Facturation : SIRET, régime, numéro et taux de TVA, conditions de paiement, mentions |
-| `LEGAL_APPROVED`, `LEGAL_*` | Identité légale et textes, avec approbation explicite |
-| `INDEXING_ENABLED` | Ouverture aux moteurs de recherche |
-| `MANUAL_ORDERS_ENABLED` | Non retenu (lot 5) : les ventes manuelles sont réservées à l’admin, sans interrupteur |
-| `EMAIL_API_KEY`, `EMAIL_FROM`, `EMAIL_REPLY_TO`, `ADMIN_NOTIFICATION_EMAIL` | Emails |
-| `GEOCODING_API_KEY` | Calcul de distance, si un service externe est retenu |
+| Variable | Rôle | État |
+| --- | --- | --- |
+| `NEXT_PUBLIC_SITE_URL` | Origine HTTPS du site (canonique, emails, retours de paiement) | En place |
+| `ORDERING_ENABLED` | Ouvre ou ferme les commandes (complète le réglage admin) | Non retenu : interrupteur « demandes en ligne » dans l’admin |
+| `CHECKOUT_MODE` | `disabled`, `test` ou `live` (`live` refusé tant que non développé) | Lot 17 |
+| `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` | Paiement en ligne | Lot 17 |
+| `CRON_SECRET` | Protection des tâches planifiées | En place |
+| `RATE_LIMIT_SECRET` | Hachage HMAC des identifiants de limitation de débit | En place (à défaut, secret dérivé) |
+| `IMAGE_RECEIPT_SECRET` | Signature des reçus d’envoi d’images | Non retenu : photos envoyées par le serveur uniquement (§6.2) |
+| `PRODUCT_IMAGES_BUCKET` | Bucket public des photos produit | Non retenu : nom fixe (`product-images`) |
+| `REQUEST_IMAGES_BUCKET` | Bucket privé des photos de demandes | Non retenu : nom fixe (`request-photos`) |
+| `INVOICES_BUCKET` | Bucket privé des factures | Lot 11 |
+| `INVOICING_ENABLED`, `INVOICE_*` | Facturation : SIRET, régime, numéro et taux de TVA, conditions de paiement, mentions | Lot 11 |
+| `LEGAL_APPROVED`, `LEGAL_*` | Identité légale et textes, avec approbation explicite | Non retenu : informations légales saisies et approuvées dans l’admin (lot 9) |
+| `INDEXING_ENABLED` | Ouverture aux moteurs de recherche | Lot 15 |
+| `MANUAL_ORDERS_ENABLED` | Ventes manuelles | Non retenu (lot 5) : réservées à l’admin, sans interrupteur |
+| `EMAIL_API_KEY`, `EMAIL_FROM`, `EMAIL_REPLY_TO`, `ADMIN_NOTIFICATION_EMAIL` | Emails | En place, avec `EMAIL_PROVIDER` (`brevo` ou `resend`) |
+| `GEOCODING_API_KEY` | Calcul de distance, si un service externe est retenu | Non nécessaire : Géoplateforme de l’IGN, sans clé |
 
 Règle : ce qui est **sensible ou légal** va dans l’environnement ; ce qui est **métier et ajustable** (seuils, délais, bannière, ouverture saisonnière) va dans `app_settings`, modifiable depuis l’admin.
 
@@ -677,11 +677,11 @@ Règle : ce qui est **sensible ou légal** va dans l’environnement ; ce qui es
 
 | Objet | Statuts | En base aujourd’hui |
 | --- | --- | --- |
-| Produit | brouillon, publié, masqué, épuisé, archivé | sans « archivé » |
+| Produit | brouillon, publié, masqué, épuisé, archivé | oui (`archived` ajouté avec l’admin du catalogue) |
 | Commande (préparation) | en attente, en préparation, prête, expédiée, livrée ou terminée, annulée | oui (`pending` → `delivered`, `cancelled`) |
 | Validation | non requise, en attente, acceptée, refusée, modification proposée | oui (`proposed` depuis le lot 5) |
 | Paiement | non payé, en attente, payé, échec, remboursé, annulé | sans « échec » |
-| Demande | nouvelle, en cours, réponse envoyée, clôturée, plus la corbeille | table à créer |
+| Demande | nouvelle, en cours, réponse envoyée, clôturée, plus la corbeille | oui (`contact_requests` : `new` → `closed`, corbeille par `deleted_at`) |
 | Avis | en attente, affiché, masqué, refusé | oui |
 | Réservation | nouvelle, acceptée, refusée, expirée, convertie, annulée | table à créer |
 | Facture (archivage) | en cours, prête, échec | table à créer |
