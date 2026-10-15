@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { DM_Sans, Playfair_Display } from "next/font/google";
+import { connection } from "next/server";
 import { site } from "@/lib/site";
 import { isDemoMode } from "@/lib/supabase/env";
 import "./globals.css";
@@ -29,7 +30,10 @@ export const metadata: Metadata = {
 
 // En-tête et pied de page publics : app/(site)/layout.tsx.
 // Espace d'administration : app/admin/layout.tsx.
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  // CSP à nonce (src/proxy.ts) : chaque page est rendue à la requête, pour
+  // que Next.js marque ses scripts avec le nonce de cette requête.
+  await connection();
   return (
     <html
       lang="fr"

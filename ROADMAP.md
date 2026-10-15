@@ -22,6 +22,13 @@ Les décisions du §26 ne sont pas encore prises. En attendant, on suit les hypo
 | H10 | Contenus de la maquette conservés, signalés comme provisoires. | §26-14 |
 | H11 | Types de produits gérés par des catégories modifiables, plus un état générique : neuf, occasion, second choix. | §26-1, §26-2 |
 
+## Revue de sécurité du 15 octobre 2026 · **faite** (migration `20261020100000_security.sql` à appliquer ; double authentification à activer)
+
+- Next.js 16.4.1 et sharp 0.35.5 (déni de service des Server Actions ; exécution de code par l’optimisation d’images).
+- Demande de commande enregistrée d’un seul tenant (CGV, frais et livraison dans la même transaction).
+- Double authentification obligatoire pour l’admin, exigée par la base ; mots de passe de 12 caractères avec lettres et chiffres.
+- Adresse du site fixe en production ; IP du client lue sans faire confiance au client ; secret de limitation dérivé ; CSP à nonce ; envois limités à 16 Mo ; photos privées jamais en cache.
+
 ## Vue d’ensemble
 
 | Phase | Lots | But |

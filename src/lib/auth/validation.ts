@@ -1,6 +1,8 @@
 // Règles d'authentification sans dépendance à Next ni à Supabase (testables).
 
-export const MIN_PASSWORD_LENGTH = 10;
+// Aligné sur la politique de Supabase Auth (12 caractères, lettres et
+// chiffres) : supabase/config.toml en local, tableau de bord en ligne.
+export const MIN_PASSWORD_LENGTH = 12;
 // bcrypt (utilisé par Supabase Auth) ignore au-delà de 72 octets.
 export const MAX_PASSWORD_BYTES = 72;
 
@@ -44,6 +46,9 @@ export function validateNewPassword(
   }
   if (password.length < MIN_PASSWORD_LENGTH) {
     return `Le mot de passe doit contenir au moins ${MIN_PASSWORD_LENGTH} caractères.`;
+  }
+  if (!/\p{L}/u.test(password) || !/\d/.test(password)) {
+    return "Le mot de passe doit contenir au moins une lettre et un chiffre.";
   }
   if (new TextEncoder().encode(password).length > MAX_PASSWORD_BYTES) {
     return "Le mot de passe est trop long (72 octets au maximum).";

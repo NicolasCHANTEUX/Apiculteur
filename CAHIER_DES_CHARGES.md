@@ -406,7 +406,9 @@ Le plan d’attaque (lots, ordre, estimation) sera établi **à partir de ce doc
 - [x] Redirection après connexion limitée aux chemins internes. (Kayart)
 - [x] Mot de passe oublié et nouveau mot de passe (lien par email, route `/auth/confirm`). (Kayart, CDC 18)
 - [x] Limitation de débit : connexion (8 essais / 15 min par IP et email, 30 par IP), récupération (5 / heure). (Kayart)
-- [x] Script d’accès admin : vérification en lecture seule, création de compte, octroi et retrait des droits (`npm run admin`). (Kayart)
+- [x] Script d’accès admin : vérification en lecture seule, création de compte, octroi et retrait des droits (`npm run admin`). — plus `mfa-reset` (téléphone perdu). (Kayart)
+- [x] Double authentification obligatoire pour les administrateurs (code à usage unique, TOTP) : configurée à la première connexion, demandée à chaque connexion ; exigée par la base (`is_admin()` demande une session aal2), pas seulement par l’application. (Revue de sécurité du 15/10/2026)
+- [x] Mots de passe : 12 caractères au moins, avec lettres et chiffres (application et Supabase Auth). (Revue de sécurité du 15/10/2026)
 - [ ] Plusieurs rôles admin (gérant, aide), en option. (CDC 22)
 - [ ] Compte client (CDC 18), selon décision : inscription, connexion, tableau de bord, historique, factures, suivi, avis. En V1, recommandation : pas de compte, liens sécurisés envoyés par email.
 
@@ -523,17 +525,17 @@ Le plan d’attaque (lots, ordre, estimation) sera établi **à partir de ce doc
 - [x] Vérification de l’origine : faite nativement par Next pour les Server Actions ; utilitaire `assertSameOriginRequest` pour les routes POST. (Kayart)
 - [ ] Validation serveur systématique : types, longueurs, formats, UUID, énumérations. (Kayart, CDC 22)
 - [ ] Limitation de débit persistante : connexion, inscription, récupération, formulaires, avis, commande. *(partiel : socle SQL et connexion/récupération ; formulaires, avis et commande à brancher)* (Kayart, ROADMAP)
-- [ ] Taille des requêtes bornée, et limite de taille des actions serveur. (Kayart)
+- [x] Taille des requêtes bornée, et limite de taille des actions serveur. — 16 Mo (actions et proxy) ; photos produit envoyées une par une. (Kayart)
 - [x] En-têtes : (Kayart)
-  - CSP sans `unsafe-eval` en production (viser ensuite des nonces) ;
+  - CSP sans `unsafe-eval` en production, scripts autorisés par un nonce propre à chaque requête (plus de `unsafe-inline` pour les scripts) ;
   - HSTS, `X-Frame-Options: DENY`, `nosniff` ;
   - Referrer-Policy, Permissions-Policy, Cross-Origin-Opener-Policy.
 - [ ] Fichiers envoyés : décodés et réencodés ; type, extension et taille contrôlés ; buckets privés vérifiés avant tout envoi. (Kayart, CDC 22)
-- [ ] Accès aux factures et photos privées réservé à l’admin, via des routes contrôlées. (CDC 22, Kayart)
+- [ ] Accès aux factures et photos privées réservé à l’admin, via des routes contrôlées. *(partiel : photos des demandes, jamais mises en cache ; factures au lot 11)* (CDC 22, Kayart)
 - [ ] Aucun token ni donnée client dans le HTML, les logs ou les rapports. (Kayart)
 - [ ] Journal d’audit (§17.12). *(partiel : table et écriture ; dernières actions au tableau de bord ; consultation complète au lot 16)* (CDC 22)
 - [ ] Sauvegardes, et restauration testée. (CDC 22, Kayart)
-- [ ] Audit régulier des dépendances (`npm audit`, épinglage des versions sensibles). (Kayart)
+- [ ] Audit régulier des dépendances (`npm audit`, épinglage des versions sensibles). *(partiel : versions épinglées ; 15/10/2026 : Next 16.4.1 et sharp 0.35.5 (avis GHSA-p3m5-59mp-jv5r et GHSA-2464-fhr4-w9xw), aucune vulnérabilité en production ; reste un avis sur `braces`, outil de lint seulement ; audit à refaire régulièrement)* (Kayart)
 
 ---
 

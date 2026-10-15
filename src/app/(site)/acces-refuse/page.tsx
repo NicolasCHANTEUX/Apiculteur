@@ -4,6 +4,7 @@ import { logoutAction } from "@/app/(site)/connexion/actions";
 import { AuthCard } from "@/components/auth/auth-card";
 import { FormNotice } from "@/components/auth/auth-forms";
 import { getAdminAccess } from "@/data/auth";
+import { mfaPath } from "@/lib/auth/mfa";
 
 export const metadata: Metadata = {
   title: "Accès refusé",
@@ -14,6 +15,7 @@ export default async function AccessDeniedPage() {
   const access = await getAdminAccess();
   if (access.status === "admin") redirect("/admin");
   if (access.status === "anonymous") redirect("/connexion");
+  if (access.status === "mfa") redirect(mfaPath(access.mode, "/admin"));
 
   return (
     <AuthCard title="Accès refusé">

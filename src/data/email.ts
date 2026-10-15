@@ -253,9 +253,17 @@ async function scheduleEmails(
   queue: (siteUrl: string) => Promise<string[]>,
   queueNow: boolean,
 ): Promise<number | "failed" | null> {
-  // L'adresse du site dépend de la requête : lue maintenant.
-  const siteUrl = await getSiteUrl();
   const report = (error: unknown) => console.error(label, error instanceof Error ? error.message : error);
+  // Adresse du site lue maintenant (en développement, elle dépend de la
+  // requête). Sans adresse configurée en production, aucun email n'est
+  // préparé : l'action principale (commande, demande) n'est pas bloquée.
+  let siteUrl: string;
+  try {
+    siteUrl = await getSiteUrl();
+  } catch (error) {
+    report(error);
+    return queueNow ? "failed" : null;
+  }
 
   if (queueNow) {
     let ids: string[];

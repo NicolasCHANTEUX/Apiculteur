@@ -25,12 +25,25 @@ export function ImageUploadForm({ productId, remaining }: { productId: string; r
   const [dragging, setDragging] = useState(false);
 
   const [, submit, pending] = useActionState(async (previous: ActionResult, formData: FormData) => {
-    const result = await uploadProductImagesAction(previous, formData);
+    // Une photo par envoi : chaque requête reste sous la limite des actions
+    // serveur (next.config.ts), quel que soit le nombre de photos.
+    const photos = formData.getAll("photos").filter((value): value is File => typeof value !== "string");
+    let result = previous;
+    let sent = 0;
+    for (const photo of photos) {
+      const single = new FormData();
+      single.set("productId", productId);
+      single.append("photos", photo);
+      result = await uploadProductImagesAction(previous, single);
+      if (result.status !== "success") break;
+      sent += 1;
+    }
+    // Les photos envoyées quittent la liste ; les autres restent à renvoyer.
+    if (sent) startTransition(() => setFiles((current) => current.slice(sent)));
     if (result.status === "success") {
-      startTransition(() => setFiles([]));
-      toast.show("success", result.message);
+      toast.show("success", sent > 1 ? `${sent} photos ajoutées.` : "Photo ajoutée.");
     } else if (result.status === "error") {
-      toast.show("error", result.message);
+      toast.show("error", sent ? `${sent} photo${sent > 1 ? "s" : ""} ajoutée${sent > 1 ? "s" : ""}, puis : ${result.message}` : result.message);
     }
     return result;
   }, idleResult);

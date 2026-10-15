@@ -8,16 +8,23 @@ import { getPublicSupabaseConfig } from "./env";
  * (le fichier proxy.js/ts racine, anciennement middleware.js/ts avant
  * Next.js 16 — voir node_modules/next/dist/docs/.../proxy.md).
  */
-export async function updateSession(request: NextRequest) {
+export async function updateSession(request: NextRequest, extraHeaders: Record<string, string> = {}) {
   const config = getPublicSupabaseConfig();
+  // Requête transmise à la page, avec les en-têtes ajoutés par le proxy
+  // (nonce et CSP) et les cookies de session éventuellement renouvelés.
+  const forward = () => {
+    const headers = new Headers(request.headers);
+    for (const [name, value] of Object.entries(extraHeaders)) headers.set(name, value);
+    return NextResponse.next({ request: { headers } });
+  };
 
   // L'application reste consultable avant la configuration du projet local.
   // Les pages dependant de Supabase affichent alors un etat explicite.
   if (!config) {
-    return NextResponse.next({ request });
+    return forward();
   }
 
-  let supabaseResponse = NextResponse.next({ request });
+  let supabaseResponse = forward();
 
   const supabase = createServerClient(
     config.url,
@@ -31,7 +38,7 @@ export async function updateSession(request: NextRequest) {
           cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value),
           );
-          supabaseResponse = NextResponse.next({ request });
+          supabaseResponse = forward();
           cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, options),
           );

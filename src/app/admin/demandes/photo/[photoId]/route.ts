@@ -33,8 +33,9 @@ export async function GET(_request: NextRequest, ctx: RouteContext<"/admin/deman
     headers: {
       "content-type": "image/webp",
       "content-disposition": "inline",
-      // Gardée en mémoire du navigateur de l'admin seulement, jamais par un cache partagé.
-      "cache-control": "private, max-age=600",
+      // Photo privée d'un client : jamais conservée, ni par un cache partagé
+      // ni par le navigateur (revue de sécurité).
+      "cache-control": "private, no-store",
     },
   });
 }

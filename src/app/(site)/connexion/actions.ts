@@ -2,6 +2,8 @@
 
 import { redirect } from "next/navigation";
 import type { AuthError } from "@supabase/supabase-js";
+import { resolveAccessState } from "@/data/auth";
+import { mfaPath } from "@/lib/auth/mfa";
 import {
   isValidEmail,
   normalizeEmail,
@@ -41,7 +43,7 @@ function authErrorMessage(error: AuthError): string {
     case "same_password":
       return "Choisissez un mot de passe différent de l’ancien.";
     case "weak_password":
-      return "Ce mot de passe est trop faible. Choisissez-en un plus long.";
+      return "Ce mot de passe est trop faible : 12 caractères au moins, avec des lettres et des chiffres.";
     default:
       return UNAVAILABLE;
   }
@@ -92,15 +94,22 @@ export async function loginAction(
   const { error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) return failure(authErrorMessage(error), email);
 
-  const { data: isAdmin, error: roleError } = await supabase.rpc("is_admin");
-  if (roleError || isAdmin !== true) {
+  let state: Awaited<ReturnType<typeof resolveAccessState>>;
+  try {
+    state = await resolveAccessState(supabase);
+  } catch (error) {
+    console.error("Connexion : droits", error instanceof Error ? error.message : error);
+    await supabase.auth.signOut({ scope: "local" });
+    return failure(UNAVAILABLE, email);
+  }
+  if (state === "none") {
     // Seuls les administrateurs ont un usage de la connexion pour l'instant.
     await supabase.auth.signOut({ scope: "local" });
-    return failure(
-      roleError ? UNAVAILABLE : "Ce compte n’a pas accès à l’espace apiculteur.",
-      email,
-    );
+    return failure("Ce compte n’a pas accès à l’espace apiculteur.", email);
   }
+  // Mot de passe juste : il reste le code de l'application d'authentification
+  // (ou sa configuration, à la première connexion).
+  if (state !== "admin") redirect(mfaPath(state.mfa, target));
 
   redirect(target);
 }
@@ -130,7 +139,14 @@ export async function requestPasswordResetAction(
   if (limited) return limited;
 
   const supabase = await createClient();
-  const siteUrl = await getSiteUrl();
+  let siteUrl: string;
+  try {
+    siteUrl = await getSiteUrl();
+  } catch (error) {
+    // Jamais de lien construit sur l'hôte de la requête en production.
+    console.error("Réinitialisation du mot de passe", error instanceof Error ? error.message : error);
+    return failure(UNAVAILABLE, email);
+  }
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
     redirectTo: `${siteUrl}/auth/confirm?next=${encodeURIComponent("/nouveau-mot-de-passe")}`,
   });
@@ -175,6 +191,8 @@ export async function updatePasswordAction(
   }
 
   const { error } = await supabase.auth.updateUser({ password });
+  // Double authentification active : le code est demandé avant le changement.
+  if (error?.code === "insufficient_aal") redirect(mfaPath("verify", "/nouveau-mot-de-passe"));
   if (error) return failure(authErrorMessage(error));
 
   redirect("/admin?mot-de-passe=modifie");

@@ -305,6 +305,9 @@ export default async function AdminDashboardPage(props: PageProps<"/admin">) {
   return (
     <main className="space-y-8">
       {params["mot-de-passe"] === "modifie" ? <Notice tone="success">Votre mot de passe a été modifié.</Notice> : null}
+      {params["double-authentification"] === "activee" ? (
+        <Notice tone="success">Double authentification activée : un code de votre application vous sera demandé à chaque connexion.</Notice>
+      ) : null}
 
       {/* Bandeau d'accueil ------------------------------------------------ */}
       <section className="relative isolate overflow-hidden rounded-3xl bg-espresso text-white shadow-[0_30px_60px_-30px_rgb(61_43_26/0.8)] motion-safe:animate-[rise_.7s_cubic-bezier(.2,.7,.2,1)_both]">

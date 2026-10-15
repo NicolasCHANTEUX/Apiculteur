@@ -1,20 +1,20 @@
 import "server-only";
 
 import { headers } from "next/headers";
+import { configuredSiteOrigin } from "@/lib/security/site-origin";
 
 /**
  * Origine publique du site pour les liens absolus (emails, redirections
- * Supabase). NEXT_PUBLIC_SITE_URL prime ; à défaut, on reprend l'hôte de la
- * requête (développement local, aperçus).
+ * Supabase). En production, uniquement la configuration (voir
+ * configuredSiteOrigin) : sans adresse https, la fonction échoue plutôt que
+ * de reprendre un en-tête de la requête. En développement, l'hôte de la
+ * requête sert de repli (localhost, aperçus).
  */
 export async function getSiteUrl(): Promise<string> {
-  const configured = process.env.NEXT_PUBLIC_SITE_URL;
-  if (configured) {
-    try {
-      return new URL(configured).origin;
-    } catch {
-      // Valeur invalide : on retombe sur l'hôte de la requête.
-    }
+  const configured = configuredSiteOrigin(process.env);
+  if (configured) return configured;
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("Adresse du site manquante : renseignez NEXT_PUBLIC_SITE_URL (https) sur l’hébergement.");
   }
 
   const requestHeaders = await headers();

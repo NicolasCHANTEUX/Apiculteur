@@ -35,12 +35,14 @@ test("redirection limitée aux chemins internes", () => {
 
 test("politique de nouveau mot de passe", () => {
   assert.equal(validateNewPassword("correct-horse-1", "correct-horse-1"), null);
-  assert.match(validateNewPassword("court", "court") ?? "", /au moins 10/);
+  assert.match(validateNewPassword("court-1", "court-1") ?? "", /au moins 12/);
+  assert.match(validateNewPassword("sans-aucun-chiffre", "sans-aucun-chiffre") ?? "", /une lettre et un chiffre/);
+  assert.match(validateNewPassword("123456789012", "123456789012") ?? "", /une lettre et un chiffre/);
   assert.match(
     validateNewPassword("correct-horse-1", "correct-horse-2") ?? "",
     /ne correspondent pas/,
   );
-  assert.match(validateNewPassword(" espace-devant", " espace-devant") ?? "", /espace/);
-  assert.match(validateNewPassword("é".repeat(40), "é".repeat(40)) ?? "", /trop long/);
+  assert.match(validateNewPassword(" espace-devant-1", " espace-devant-1") ?? "", /espace/);
+  assert.match(validateNewPassword("é1".repeat(30), "é1".repeat(30)) ?? "", /trop long/);
   assert.notEqual(validateNewPassword(undefined, "x"), null);
 });

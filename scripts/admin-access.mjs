@@ -7,6 +7,10 @@
 //                                     ensuite son mot de passe via
 //                                     « Mot de passe oublié » sur le site
 //   npm run admin -- revoke <email>   retire les droits (le compte reste)
+//   npm run admin -- mfa-reset <email> supprime l'application de double
+//                                     authentification associée (téléphone
+//                                     perdu) : une nouvelle sera demandée à
+//                                     la prochaine connexion
 //
 // Lit NEXT_PUBLIC_SUPABASE_URL et SUPABASE_SERVICE_ROLE_KEY depuis
 // l'environnement (.env.local). N'affiche jamais de clé ni de mot de passe.
@@ -16,7 +20,7 @@ import { createClient } from "@supabase/supabase-js";
 
 const [command, rawEmail] = process.argv.slice(2);
 const email = (rawEmail ?? "").trim().toLowerCase();
-const commands = ["check", "grant", "create", "revoke"];
+const commands = ["check", "grant", "create", "revoke", "mfa-reset"];
 
 if (!commands.includes(command) || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
   console.error(`Usage : npm run admin -- <${commands.join("|")}> <email>`);
@@ -53,6 +57,13 @@ async function isAdmin(userId) {
     .maybeSingle();
   if (error) throw error;
   return Boolean(data);
+}
+
+/** Applications de double authentification (TOTP) du compte. */
+async function totpFactors(userId) {
+  const { data, error } = await supabase.auth.admin.mfa.listFactors({ userId });
+  if (error) throw error;
+  return data.factors.filter((factor) => factor.factor_type === "totp");
 }
 
 async function grant(userId) {
@@ -96,9 +107,22 @@ async function main() {
     console.log(`Compte : ${email} (${user.id})`);
     console.log(`Email confirmé : ${user.email_confirmed_at ? "oui" : "non"}`);
     console.log(`Accès administrateur : ${(await isAdmin(user.id)) ? "oui" : "non"}`);
+    const verified = (await totpFactors(user.id)).filter((factor) => factor.status === "verified");
+    console.log(`Double authentification : ${verified.length ? `activée (${verified.length} application${verified.length > 1 ? "s" : ""})` : "à configurer à la prochaine connexion"}`);
   } else if (command === "grant") {
     await grant(user.id);
     console.log(`Droits administrateur accordés à ${email}.`);
+  } else if (command === "mfa-reset") {
+    const factors = await totpFactors(user.id);
+    for (const factor of factors) {
+      const { error } = await supabase.auth.admin.mfa.deleteFactor({ id: factor.id, userId: user.id });
+      if (error) throw error;
+    }
+    console.log(
+      factors.length
+        ? `Double authentification réinitialisée pour ${email} : une nouvelle application sera demandée à la prochaine connexion.`
+        : `Aucune application de double authentification pour ${email}.`,
+    );
   } else if (command === "revoke") {
     const { error } = await supabase.from("admin_users").delete().eq("id", user.id);
     if (error) throw error;

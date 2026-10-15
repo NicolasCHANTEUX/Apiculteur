@@ -3,7 +3,7 @@ import "server-only";
 import { headers } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isSameOrigin } from "./origin";
-import { clientIpFrom, rateLimitKey } from "./rate-limit-key";
+import { clientIpFrom, rateLimitKey, rateLimitSecret } from "./rate-limit-key";
 
 export class ForbiddenOriginError extends Error {
   constructor() {
@@ -28,8 +28,12 @@ export function assertSameOriginRequest(request: Request) {
   if (!ok) throw new ForbiddenOriginError();
 }
 
+/** IP du client (voir clientIpFrom) ; TRUSTED_PROXY_HOPS : nombre de proxys de confiance hors Vercel. */
 export async function currentClientIp() {
-  return clientIpFrom(await headers());
+  return clientIpFrom(await headers(), {
+    vercel: process.env.VERCEL === "1",
+    trustedHops: Number(process.env.TRUSTED_PROXY_HOPS) || 1,
+  });
 }
 
 /**
@@ -42,8 +46,10 @@ export async function enforceRateLimit(options: {
   limit: number;
   windowSeconds: number;
 }) {
-  const secret =
-    process.env.RATE_LIMIT_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const secret = rateLimitSecret({
+    RATE_LIMIT_SECRET: process.env.RATE_LIMIT_SECRET,
+    SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
+  });
   if (!secret) {
     throw new Error(
       "Limitation de débit non configurée : renseignez RATE_LIMIT_SECRET.",

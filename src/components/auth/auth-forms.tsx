@@ -9,6 +9,7 @@ import {
   type AuthFormState,
 } from "@/app/(site)/connexion/actions";
 import { inputClass } from "@/components/ui";
+import { MIN_PASSWORD_LENGTH } from "@/lib/auth/validation";
 
 const initialState: AuthFormState = { status: "idle", message: "" };
 
@@ -159,13 +160,13 @@ export function NewPasswordForm() {
       {state.status === "error" ? (
         <FormNotice tone="error">{state.message}</FormNotice>
       ) : null}
-      <Field id="password" label="Nouveau mot de passe (10 caractères minimum)">
+      <Field id="password" label={`Nouveau mot de passe (${MIN_PASSWORD_LENGTH} caractères minimum, lettres et chiffres)`}>
         <input
           id="password"
           name="password"
           type="password"
           autoComplete="new-password"
-          minLength={10}
+          minLength={MIN_PASSWORD_LENGTH}
           required
           className={`${inputClass} h-11`}
         />
@@ -176,7 +177,7 @@ export function NewPasswordForm() {
           name="confirmation"
           type="password"
           autoComplete="new-password"
-          minLength={10}
+          minLength={MIN_PASSWORD_LENGTH}
           required
           className={`${inputClass} h-11`}
         />

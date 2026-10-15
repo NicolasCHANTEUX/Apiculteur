@@ -2,35 +2,10 @@ import type { NextConfig } from "next";
 
 const isDev = process.env.NODE_ENV === "development";
 
-// Origine Supabase autorisée pour les images (Storage) et les appels du
-// navigateur. A défaut de configuration, on autorise les projets hébergés.
-function supabaseOrigin() {
-  try {
-    return new URL(process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").origin;
-  } catch {
-    return "https://*.supabase.co";
-  }
-}
-
-// CSP sans nonce (cf. node_modules/next/dist/docs/01-app/02-guides/
-// content-security-policy.md, « Without Nonces ») : compatible avec les pages
-// statiques. 'unsafe-eval' uniquement en développement, pour React.
-const contentSecurityPolicy = [
-  "default-src 'self'",
-  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
-  "style-src 'self' 'unsafe-inline'",
-  `img-src 'self' blob: data: ${supabaseOrigin()}`,
-  "font-src 'self'",
-  `connect-src 'self' ${supabaseOrigin()}`,
-  "object-src 'none'",
-  "base-uri 'self'",
-  "form-action 'self'",
-  "frame-ancestors 'none'",
-  ...(isDev ? [] : ["upgrade-insecure-requests"]),
-].join("; ");
-
+// La politique de sécurité du contenu (CSP) part de src/proxy.ts, avec un
+// nonce propre à chaque requête (src/lib/security/csp.ts) : plus de
+// 'unsafe-inline' pour les scripts.
 const securityHeaders = [
-  { key: "Content-Security-Policy", value: contentSecurityPolicy },
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "X-Frame-Options", value: "DENY" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
@@ -53,14 +28,15 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   experimental: {
     serverActions: {
-      // Envoi de photos produit depuis l'admin (8 Mo par photo, réencodées
-      // ensuite en WebP). Par défaut : 1 Mo.
-      bodySizeLimit: "30mb",
+      // Plus gros envois : une photo produit (8 Mo, envoyées une par une) et
+      // les 3 photos d'une demande (5 Mo chacune au plus, réduites dans le
+      // navigateur). Par défaut : 1 Mo. Revue de sécurité : 30 Mo → 16 Mo.
+      bodySizeLimit: "16mb",
     },
     // Le proxy (proxy.ts, sur toutes les routes) garde en mémoire le corps
     // des requêtes, 10 Mo par défaut : au-delà, il serait tronqué. Même
-    // plafond que les actions (photos produit, photos des demandes).
-    proxyClientMaxBodySize: "30mb",
+    // plafond que les actions.
+    proxyClientMaxBodySize: "16mb",
   },
   async headers() {
     return [{ source: "/(.*)", headers: securityHeaders }];

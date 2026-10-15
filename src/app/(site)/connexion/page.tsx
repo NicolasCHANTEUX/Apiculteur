@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { AuthCard } from "@/components/auth/auth-card";
 import { FormNotice, LoginForm } from "@/components/auth/auth-forms";
 import { getAdminAccess } from "@/data/auth";
+import { mfaPath } from "@/lib/auth/mfa";
 import { sanitizeRedirectPath } from "@/lib/auth/validation";
 
 export const metadata: Metadata = {
@@ -17,6 +18,7 @@ export default async function LoginPage(props: PageProps<"/connexion">) {
   // Déjà connecté en administrateur : inutile de repasser par le formulaire.
   const access = await getAdminAccess();
   if (access.status === "admin") redirect(redirectTo);
+  if (access.status === "mfa") redirect(mfaPath(access.mode, redirectTo));
 
   return (
     <AuthCard

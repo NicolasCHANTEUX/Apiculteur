@@ -125,6 +125,14 @@ export async function submitOrderRequestAction(
         message: contact.message,
         subtotal: centsToDecimal(priced.subtotalCents),
         review_reasons: reviewReasons(priced, contact.deliveryMethod, settings.quantityThreshold, delivery?.reasons),
+        // Enregistrés dans la même transaction que la demande : CGV
+        // acceptées, livraison évaluée (frais confirmés à l'acceptation).
+        terms_version: legal?.version ?? null,
+        delivery_fee: centsToDecimal(feeCents),
+        delivery_distance_km: delivery?.distanceKm ?? null,
+        delivery_zone_id: delivery?.quote.kind === "zone" ? delivery.quote.zone.id : null,
+        delivery_latitude: delivery?.geocoded?.lat ?? null,
+        delivery_longitude: delivery?.geocoded?.lng ?? null,
         items: priced.lines.map((line) => ({
           product_id: line.product.id,
           name: line.product.name,
@@ -141,26 +149,6 @@ export async function submitOrderRequestAction(
     return failure(UNAVAILABLE);
   }
 
-  if (!data.already_submitted && (legal || delivery)) {
-    // Compléments de la demande : version des CGV, livraison évaluée.
-    const { error: updateError } = await createAdminClient()
-      .from("orders")
-      .update({
-        ...(legal ? { terms_version: legal.version } : {}),
-        ...(delivery
-          ? {
-              delivery_fee: centsToDecimal(feeCents),
-              total_amount: centsToDecimal(priced.subtotalCents + feeCents),
-              delivery_distance_km: delivery.distanceKm,
-              delivery_zone_id: delivery.quote.kind === "zone" ? delivery.quote.zone.id : null,
-              delivery_latitude: delivery.geocoded?.lat ?? null,
-              delivery_longitude: delivery.geocoded?.lng ?? null,
-            }
-          : {}),
-      })
-      .eq("id", data.order_id);
-    if (updateError) console.error("Demande de commande : compléments", updateError.code, updateError.message);
-  }
   if (!data.already_submitted) {
     // Accusé de réception au client et alerte à l'apiculteur, envoyés après
     // la réponse (une demande rejouée ne renvoie rien).

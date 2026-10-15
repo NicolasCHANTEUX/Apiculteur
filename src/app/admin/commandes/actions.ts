@@ -356,14 +356,21 @@ export async function proposeOrderAction(_previous: OrderFormState, formData: Fo
       .select("items, delivery_method, requested_date, subtotal, delivery_fee, total_amount")
       .eq("id", proposalId as string)
       .maybeSingle();
-    const queued = stored
-      ? await scheduleOrderEmails(id, ["order_proposal"], {
-          note: proposal.value.message || null,
-          queueNow: true,
-          dedupeSuffix: proposalId as string,
-          extra: proposalEmailExtra(readTerms(stored), `${await getSiteUrl()}/proposition/${token.token}`),
-        })
-      : "failed";
+    let siteUrl: string | null = null;
+    try {
+      siteUrl = await getSiteUrl();
+    } catch (error) {
+      console.error("Proposition : adresse du site", error instanceof Error ? error.message : error);
+    }
+    const queued =
+      stored && siteUrl
+        ? await scheduleOrderEmails(id, ["order_proposal"], {
+            note: proposal.value.message || null,
+            queueNow: true,
+            dedupeSuffix: proposalId as string,
+            extra: proposalEmailExtra(readTerms(stored), `${siteUrl}/proposition/${token.token}`),
+          })
+        : "failed";
     if (!queued || queued === "failed") {
       // Sans email, le lien serait perdu : la proposition est retirée.
       await supabase.rpc("admin_resolve_order_proposal", { p_proposal_id: proposalId, p_action: "withdraw", p_expected_updated_at: null });

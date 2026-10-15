@@ -44,12 +44,12 @@ export function getLaunchChecks({
     {
       label: "Secret de limitation de débit",
       state: process.env.RATE_LIMIT_SECRET ? "ok" : "todo",
-      detail: "RATE_LIMIT_SECRET dédié (sinon la clé serveur est utilisée).",
+      detail: "RATE_LIMIT_SECRET dédié (sinon une clé dérivée de la clé serveur).",
     },
     {
       label: "Adresse publique du site",
       state: isHttpsUrl(process.env.NEXT_PUBLIC_SITE_URL) ? "ok" : "todo",
-      detail: "NEXT_PUBLIC_SITE_URL en https, utilisée dans les emails.",
+      detail: "NEXT_PUBLIC_SITE_URL en https : obligatoire en production pour les liens des emails.",
     },
     {
       label: "Demandes de commande en ligne",

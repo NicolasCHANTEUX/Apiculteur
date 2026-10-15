@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import Link from "next/link";
 import { FaqBrowser } from "@/components/faq/faq-browser";
 import { MailIcon, MessageCircleIcon, PhoneIcon } from "@/components/icons";
@@ -29,9 +30,10 @@ export default async function FaqPage() {
   // Sans avis affichés sur le site, pas de lien vers leur page.
   const { reviewsPublic } = await getSiteSettings();
   const items = reviewsPublic ? faq : faq.map((item) => (item.link?.href === "/avis" ? { ...item, link: undefined } : item));
+  const nonce = (await headers()).get("x-nonce") ?? undefined;
   return (
     <main className={`${container} flex-1 pb-24`}>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: structuredData }} />
+      <script type="application/ld+json" nonce={nonce} dangerouslySetInnerHTML={{ __html: structuredData }} />
       <PageIntro
         eyebrow="Questions fréquentes"
         title="FAQ"
