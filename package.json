@@ -11,7 +11,8 @@
     "test": "node --test --experimental-strip-types \"src/**/*.test.ts\"",
     "typecheck": "next typegen && tsc --noEmit",
     "verify": "npm run lint && npm test && npm run typecheck && npm run build",
-    "admin": "node --env-file-if-exists=.env.local scripts/admin-access.mjs"
+    "admin": "node --env-file-if-exists=.env.local scripts/admin-access.mjs",
+    "icons": "node --experimental-strip-types scripts/generate-icons.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",

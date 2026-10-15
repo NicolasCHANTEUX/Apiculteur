@@ -8,14 +8,13 @@ import { AdminNav } from "@/components/admin/admin-nav";
 import { CommandPaletteProvider, CommandTrigger, type CommandProduct } from "@/components/admin/command-palette";
 import { ToastProvider } from "@/components/admin/toast";
 import { CloseIcon, ExternalLinkIcon, LogOutIcon, MenuIcon, SearchIcon } from "@/components/icons";
+import { LogoMark } from "@/components/ui";
 import { site } from "@/lib/site";
 
 function Brand() {
   return (
     <Link href="/admin" className="flex items-center gap-3 rounded-lg">
-      <span className="flex size-9 items-center justify-center rounded-xl bg-honey font-display text-[16px] font-semibold text-white shadow-[0_6px_16px_-6px_rgb(217_154_43/0.9)]">
-        {site.shortName.charAt(0)}
-      </span>
+      <LogoMark className="size-9" />
       <span className="leading-tight">
         <span className="block font-display text-[16px] font-semibold text-white">{site.shortName}</span>
         <span className="block text-[11.5px] text-white/55">Espace apiculteur</span>

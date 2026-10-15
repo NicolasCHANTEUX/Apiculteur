@@ -25,10 +25,11 @@ export async function proxy(request: NextRequest) {
 export const config = {
   matcher: [
     {
-      // Toutes les routes sauf les assets statiques, images optimisées et
-      // fichiers d'image courants, pour ne pas ralentir leur chargement ;
-      // ni les préchargements de liens, qui n'affichent pas de page.
-      source: "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+      // Toutes les routes sauf les assets statiques, images optimisées,
+      // fichiers d'image courants et manifest, pour ne pas ralentir leur
+      // chargement ; ni les préchargements de liens, qui n'affichent pas de
+      // page.
+      source: "/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
       missing: [
         { type: "header", key: "next-router-prefetch" },
         { type: "header", key: "purpose", value: "prefetch" },

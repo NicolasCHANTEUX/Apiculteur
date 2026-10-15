@@ -4,6 +4,8 @@ export const site = {
   name: "Ruchers de Normandie",
   shortName: "Ruchers",
   tagline: "de Normandie",
+  description:
+    "Essaims et reines élevés en Normandie, avec un suivi personnalisé à chaque étape.",
   owner: {
     firstName: "Marc",
     fullName: "Marc Dupont",

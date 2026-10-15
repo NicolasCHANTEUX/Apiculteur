@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { cellShape, logoMark } from "@/lib/logo";
 import { site } from "@/lib/site";
 
 export const container = "mx-auto w-full max-w-[1058px] px-6";
@@ -17,12 +18,32 @@ export const buttonStyles = {
   link: "inline-flex items-center gap-1.5 text-[13px] font-semibold text-honey transition hover:text-honey-dark",
 } as const;
 
+// Symbole du logo (rayon en construction, voir src/lib/logo.ts), décoratif :
+// le nom du site l'accompagne toujours.
+export function LogoMark({ className = "" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 64 64" aria-hidden="true" className={`shrink-0 ${className}`}>
+      {logoMark.cells.map((cell) => {
+        const { d, fill, stroke, strokeWidth } = cellShape(logoMark, cell);
+        return (
+          <path
+            key={`${cell.x}-${cell.y}`}
+            d={d}
+            fill={fill}
+            stroke={stroke}
+            strokeWidth={strokeWidth}
+            strokeLinejoin="round"
+          />
+        );
+      })}
+    </svg>
+  );
+}
+
 export function Logo({ tone = "dark" }: { tone?: "dark" | "light" }) {
   return (
     <Link href="/" className="flex items-center gap-2.5" aria-label={site.name}>
-      <span className="flex size-8 items-center justify-center rounded-full bg-honey font-display text-[14px] font-semibold text-white">
-        A
-      </span>
+      <LogoMark className="size-8" />
       <span className="flex flex-col leading-none">
         <span
           className={`font-display text-[16px] font-semibold ${tone === "light" ? "text-white" : "text-ink"}`}

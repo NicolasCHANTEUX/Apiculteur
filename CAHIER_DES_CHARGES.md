@@ -548,7 +548,7 @@ Le plan d’attaque (lots, ordre, estimation) sera établi **à partir de ce doc
 - [ ] Titres et descriptions SEO modifiables. *(partiel : champs SEO des produits en base)* (CDC 24)
 - [ ] Données structurées (Product, Offer, LocalBusiness ; AggregateRating seulement avec de vrais avis), produites à partir de données validées. *(partiel : FAQPage sur la FAQ, réponses encore à valider)* (Kayart)
 - [x] Images optimisées (`next/image`, WebP) et textes alternatifs. *(partiel : photos du site uniquement)* (CDC 24)
-- [ ] Manifest PWA : nom, icône, couleurs. (Kayart)
+- [x] Manifest PWA : nom, icône, couleurs. — `app/manifest.ts` ; logo « rayon en construction » (`src/lib/logo.ts`), favicon réduit à trois alvéoles, icône Apple et icônes du manifest produites par `npm run icons`. (Kayart)
 
 ---
 

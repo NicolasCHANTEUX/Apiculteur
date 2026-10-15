@@ -24,8 +24,7 @@ export const metadata: Metadata = {
     default: `${site.name} — Essaims élevés avec soin`,
     template: `%s | ${site.name}`,
   },
-  description:
-    "Essaims et reines élevés en Normandie, avec un suivi personnalisé à chaque étape.",
+  description: site.description,
 };
 
 // En-tête et pied de page publics : app/(site)/layout.tsx.
