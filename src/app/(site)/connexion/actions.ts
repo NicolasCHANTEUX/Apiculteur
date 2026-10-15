@@ -102,10 +102,11 @@ export async function loginAction(
     await supabase.auth.signOut({ scope: "local" });
     return failure(UNAVAILABLE, email);
   }
-  if (state === "none") {
+  if (state === "none" || state === "expired") {
     // Seuls les administrateurs ont un usage de la connexion pour l'instant.
+    // Une session refusée juste après la connexion : incident de Supabase.
     await supabase.auth.signOut({ scope: "local" });
-    return failure("Ce compte n’a pas accès à l’espace apiculteur.", email);
+    return failure(state === "expired" ? UNAVAILABLE : "Ce compte n’a pas accès à l’espace apiculteur.", email);
   }
   // Mot de passe juste : il reste le code de l'application d'authentification
   // (ou sa configuration, à la première connexion).

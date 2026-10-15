@@ -10,7 +10,8 @@ import { createClient } from "@/lib/supabase/server";
 
 export type AdminAccess =
   | { status: "unconfigured" }
-  | { status: "anonymous" }
+  /** `expired` : session invalidée par Supabase (double authentification activée ou réinitialisée ailleurs). */
+  | { status: "anonymous"; expired?: boolean }
   | { status: "forbidden"; email: string | null }
   /** Compte administrateur connecté par mot de passe : code à saisir ou application à configurer. */
   | { status: "mfa"; mode: MfaMode; email: string | null }
@@ -18,14 +19,30 @@ export type AdminAccess =
 
 type ServerClient = Awaited<ReturnType<typeof createClient>>;
 
+// Jeton encore lisible mais session refusée par Supabase : à l'activation de
+// la double authentification, Supabase invalide les autres sessions ouvertes
+// par mot de passe seul. Elles valent alors déconnexion, pas une erreur.
+const STALE_SESSION_CODES = new Set(["session_not_found", "session_expired", "refresh_token_not_found", "user_not_found", "bad_jwt", "PGRST301", "PGRST303"]);
+
+function isStaleSession(error: { code?: string; status?: number; name?: string } | null) {
+  if (!error) return false;
+  return (
+    STALE_SESSION_CODES.has(error.code ?? "") ||
+    error.name === "AuthSessionMissingError" ||
+    error.status === 401 ||
+    error.status === 403
+  );
+}
+
 /**
  * État d'accès d'un compte connecté, vérifié par la base : « admin »
  * seulement après la double authentification (jeton aal2, migration
  * 20261020100000_security.sql). Sans cette migration, la fonction
  * admin_access_state n'existe pas : retour à l'ancien contrôle is_admin().
  */
-export async function resolveAccessState(supabase: ServerClient): Promise<"admin" | "none" | { mfa: MfaMode }> {
+export async function resolveAccessState(supabase: ServerClient): Promise<"admin" | "none" | "expired" | { mfa: MfaMode }> {
   const { data, error } = await supabase.rpc("admin_access_state");
+  if (isStaleSession(error)) return "expired";
   if (error?.code === "PGRST202") {
     const { data: isAdmin, error: legacyError } = await supabase.rpc("is_admin");
     if (legacyError) throw new Error(`Vérification des droits impossible: ${legacyError.message}`);
@@ -36,6 +53,7 @@ export async function resolveAccessState(supabase: ServerClient): Promise<"admin
   if (data !== "mfa") return "none";
   // Code demandé si une application est déjà associée, sinon configuration.
   const { data: factors, error: factorsError } = await supabase.auth.mfa.listFactors();
+  if (isStaleSession(factorsError)) return "expired";
   if (factorsError) throw new Error(`Double authentification indisponible: ${factorsError.message}`);
   return { mfa: factors.totp.length > 0 ? "verify" : "enroll" };
 }
@@ -58,6 +76,7 @@ export const getAdminAccess = cache(async (): Promise<AdminAccess> => {
   const email = typeof claims.email === "string" ? claims.email : null;
 
   const state = await resolveAccessState(supabase);
+  if (state === "expired") return { status: "anonymous", expired: true };
   if (state === "admin") return { status: "admin", userId: claims.sub, email };
   if (state === "none") return { status: "forbidden", email };
   return { status: "mfa", mode: state.mfa, email };
@@ -77,7 +96,7 @@ export async function requireAdmin(path?: string) {
   const nextPath = path ?? (requested.startsWith("/admin") ? requested : "/admin");
 
   if (access.status === "anonymous") {
-    redirect(`/connexion?redirect=${encodeURIComponent(nextPath)}`);
+    redirect(`/connexion?redirect=${encodeURIComponent(nextPath)}${access.expired ? "&session=expiree" : ""}`);
   }
   if (access.status === "mfa") {
     redirect(mfaPath(access.mode, nextPath));

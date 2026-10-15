@@ -29,6 +29,12 @@ export default async function LoginPage(props: PageProps<"/connexion">) {
         {params.deconnecte ? (
           <FormNotice tone="info">Vous êtes déconnecté.</FormNotice>
         ) : null}
+        {params.session === "expiree" || (access.status === "anonymous" && access.expired) ? (
+          <FormNotice tone="info">
+            Votre session n’est plus valable (la double authentification a été activée ou réinitialisée) :
+            reconnectez-vous.
+          </FormNotice>
+        ) : null}
         {params.lien === "invalide" ? (
           <FormNotice tone="error">
             Ce lien n’est plus valide ou a déjà servi. Demandez un nouvel
