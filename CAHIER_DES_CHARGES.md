@@ -246,7 +246,7 @@ Le plan d’attaque (lots, ordre, estimation) sera établi **à partir de ce doc
   - retrait ou livraison, date souhaitée ;
   - message libre ;
   - récapitulatif.
-- [x] Accusé d’information sur les données et acceptation des CGV. — case obligatoire dès que les CGV sont publiées ; version acceptée enregistrée sur la commande. (Kayart, §19)
+- [x] Accusé d’information sur les données et acceptation des CGV. — case obligatoire dès que les CGV sont publiées ; version acceptée enregistrée sur la commande ; envoi bloqué si les CGV ne peuvent pas être lues, et refus par la base de toute demande sans la version en vigueur. (Kayart, §19)
 - [x] Recalcul complet par le serveur à l’envoi ; refus si le panier a changé dans un autre onglet. (Kayart)
 - [x] Création atomique du client, de la commande et des lignes, avec copie figée du nom, de la référence et du prix, plus une entrée d’historique. — fonction `submit_order_request` ; coordonnées figées dans la commande, fiche client jamais écrasée. (Kayart, ROADMAP)
 - [ ] Protection contre la double soumission : clé de tentative et empreinte. Une reprise renvoie la même commande. *(partiel : clé de tentative, sans empreinte du contenu)* (Kayart)

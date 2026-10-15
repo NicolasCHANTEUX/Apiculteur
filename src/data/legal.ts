@@ -4,6 +4,7 @@ import { cache } from "react";
 import { getEmailConfig } from "@/data/email";
 import { emailProviders } from "@/lib/email/driver";
 import { normalizeLegalConfig, type LegalConfig } from "@/lib/legal/config";
+import type { TermsState } from "@/lib/legal/terms";
 import type { LegalContext } from "@/lib/legal/documents";
 import { infoNav, site, type NavLink } from "@/lib/site";
 import { getPublicSupabaseConfig } from "@/lib/supabase/env";
@@ -15,8 +16,15 @@ import { createPublicClient } from "@/lib/supabase/public";
 
 export type PublishedLegal = { version: number; approvedAt: string; config: LegalConfig };
 
-export const getPublishedLegal = cache(async (): Promise<PublishedLegal | null> => {
-  if (!getPublicSupabaseConfig()) return null;
+export type LegalReading = { status: "published"; legal: PublishedLegal } | { status: "none" } | { status: "unavailable" };
+
+/**
+ * Lecture stricte : distingue « aucune version publiée » d'une lecture
+ * impossible (panne, réseau). Utilisée là où l'acceptation des CGV compte
+ * (demande de commande).
+ */
+export const readPublishedLegal = cache(async (): Promise<LegalReading> => {
+  if (!getPublicSupabaseConfig()) return { status: "none" };
   const { data, error } = await createPublicClient()
     .from("legal_versions")
     .select("version, config, approved_at")
@@ -24,12 +32,27 @@ export const getPublishedLegal = cache(async (): Promise<PublishedLegal | null> 
     .limit(1);
   if (error) {
     // Table absente tant que la migration du lot 9 n'est pas appliquée.
-    if (error.code !== "PGRST205" && error.code !== "42P01") console.error("Informations légales", error.code, error.message);
-    return null;
+    if (error.code === "PGRST205" || error.code === "42P01") return { status: "none" };
+    console.error("Informations légales", error.code, error.message);
+    return { status: "unavailable" };
   }
   const row = data?.[0];
-  if (!row) return null;
-  return { version: row.version as number, approvedAt: row.approved_at as string, config: normalizeLegalConfig(row.config) };
+  if (!row) return { status: "none" };
+  return {
+    status: "published",
+    legal: { version: row.version as number, approvedAt: row.approved_at as string, config: normalizeLegalConfig(row.config) },
+  };
+});
+
+/** État des CGV pour une demande de commande (voir checkTermsAcceptance). */
+export function termsState(reading: LegalReading): TermsState {
+  return reading.status === "published" ? { status: "published", version: reading.legal.version } : reading;
+}
+
+/** Version publiée, pour l'affichage ; null si aucune ou si la lecture échoue. */
+export const getPublishedLegal = cache(async (): Promise<PublishedLegal | null> => {
+  const reading = await readPublishedLegal();
+  return reading.status === "published" ? reading.legal : null;
 });
 
 const LEGAL_PAGES = ["/cgv", "/mentions-legales", "/confidentialite"];

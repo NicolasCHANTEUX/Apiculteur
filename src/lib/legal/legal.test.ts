@@ -86,3 +86,15 @@ test("documents générés depuis la configuration", () => {
   assert.ok(privacy.sections.find((section) => section.heading === "Durées de conservation")?.list?.[1].includes("36 mois"));
   assert.equal(versionLine(context), "Version 2, en vigueur depuis le 14 octobre 2026.");
 });
+
+test("CGV à la commande : lecture impossible = envoi bloqué", async () => {
+  const { checkTermsAcceptance } = await import("./terms.ts");
+  const accepted = { termsVersion: "3", accepted: true };
+  assert.deepEqual(checkTermsAcceptance({ status: "unavailable" }, accepted), { ok: false, reason: "unavailable" });
+  assert.deepEqual(checkTermsAcceptance({ status: "none" }, { termsVersion: null, accepted: false }), { ok: true, version: null });
+  assert.deepEqual(checkTermsAcceptance({ status: "published", version: 3 }, accepted), { ok: true, version: 3 });
+  assert.deepEqual(checkTermsAcceptance({ status: "published", version: 3 }, { termsVersion: "3", accepted: false }), { ok: false, reason: "not-accepted" });
+  // Nouvelle version, ou page affichée sans les CGV : rechargement.
+  assert.deepEqual(checkTermsAcceptance({ status: "published", version: 4 }, accepted), { ok: false, reason: "changed" });
+  assert.deepEqual(checkTermsAcceptance({ status: "published", version: 3 }, { termsVersion: null, accepted: true }), { ok: false, reason: "changed" });
+});

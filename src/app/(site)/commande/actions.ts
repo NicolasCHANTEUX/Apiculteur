@@ -5,9 +5,10 @@ import { redirect } from "next/navigation";
 import { getPublicCatalog } from "@/data/catalog";
 import { assessDelivery, type DeliveryAssessment } from "@/data/delivery";
 import { scheduleOrderEmails } from "@/data/email";
-import { getPublishedLegal } from "@/data/legal";
+import { readPublishedLegal, termsState } from "@/data/legal";
 import { getOrderSettings } from "@/data/settings";
 import { parisDay } from "@/lib/admin/series";
+import { checkTermsAcceptance } from "@/lib/legal/terms";
 import { parseCart } from "@/lib/cart/storage";
 import { centsToDecimal } from "@/lib/catalog/product-form";
 import { parseOrderContact, priceRequest, reviewReasons } from "@/lib/orders/request";
@@ -45,18 +46,24 @@ export async function submitOrderRequestAction(
     return failure("La réception des demandes en ligne est fermée pour le moment. Écrivez-moi depuis la page contact.");
   }
 
-  // CGV publiées : acceptation obligatoire, de la version en vigueur.
-  const legal = await getPublishedLegal();
-  const termsAccepted = !legal || formData.get("terms") === "on";
-  const parsed = parseOrderContact(formData, parisDay(new Date()));
-  if (!parsed.ok || !termsAccepted) {
-    const errors = { ...(parsed.ok ? {} : parsed.errors), ...(termsAccepted ? {} : { terms: "Acceptez les conditions générales de vente pour envoyer votre demande." }) };
-    return failure("Certains champs sont à corriger.", { errors });
+  // CGV publiées : acceptation obligatoire, de la version en vigueur. Si
+  // on ne peut pas savoir lesquelles sont publiées, l'envoi attend.
+  const terms = checkTermsAcceptance(termsState(await readPublishedLegal()), {
+    termsVersion: formData.get("termsVersion"),
+    accepted: formData.get("terms") === "on",
+  });
+  if (!terms.ok && terms.reason === "unavailable") {
+    return failure("Les conditions générales de vente ne peuvent pas être vérifiées pour le moment : réessayez dans un instant. Votre panier est conservé.");
   }
-  if (legal && formData.get("termsVersion") !== String(legal.version)) {
-    // La page se recharge avec la nouvelle version des CGV.
+  if (!terms.ok && terms.reason === "changed") {
+    // La page se recharge avec la version en vigueur des CGV.
     refresh();
-    return failure("Les conditions générales de vente viennent d’être mises à jour : relisez-les, puis renvoyez votre demande.", { errors: { terms: "Nouvelle version des CGV." } });
+    return failure("Les conditions générales de vente ont été mises à jour : relisez-les, cochez la case, puis renvoyez votre demande.", { errors: { terms: "Nouvelle version des CGV." } });
+  }
+  const parsed = parseOrderContact(formData, parisDay(new Date()));
+  if (!parsed.ok || !terms.ok) {
+    const errors = { ...(parsed.ok ? {} : parsed.errors), ...(terms.ok ? {} : { terms: "Acceptez les conditions générales de vente pour envoyer votre demande." }) };
+    return failure("Certains champs sont à corriger.", { errors });
   }
   const contact = parsed.value;
 
@@ -127,7 +134,7 @@ export async function submitOrderRequestAction(
         review_reasons: reviewReasons(priced, contact.deliveryMethod, settings.quantityThreshold, delivery?.reasons),
         // Enregistrés dans la même transaction que la demande : CGV
         // acceptées, livraison évaluée (frais confirmés à l'acceptation).
-        terms_version: legal?.version ?? null,
+        terms_version: terms.version,
         delivery_fee: centsToDecimal(feeCents),
         delivery_distance_km: delivery?.distanceKm ?? null,
         delivery_zone_id: delivery?.quote.kind === "zone" ? delivery.quote.zone.id : null,
@@ -145,6 +152,12 @@ export async function submitOrderRequestAction(
     .single<{ order_id: string; order_number: string; already_submitted: boolean }>();
 
   if (error || !data) {
+    // CGV publiées entre-temps : la base refuse la demande (voir la
+    // migration 20261021100000_order_terms.sql) ; la page se recharge.
+    if (error?.code === "22023" && error.message.includes("CGV")) {
+      refresh();
+      return failure("Les conditions générales de vente ont été mises à jour : relisez-les, cochez la case, puis renvoyez votre demande.", { errors: { terms: "Nouvelle version des CGV." } });
+    }
     console.error("Demande de commande", error?.code, error?.message);
     return failure(UNAVAILABLE);
   }
