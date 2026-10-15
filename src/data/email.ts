@@ -63,6 +63,7 @@ type OrderRow = {
   customer_message: string | null;
   payment_status: string;
   payment_method: string | null;
+  fulfillment_status: string;
   review_reasons: string[] | null;
   customers: { full_name: string; email: string; phone: string | null } | null;
   order_items: { product_name_snapshot: string; quantity: number; unit_price: number | string; line_total: number | string }[] | null;
@@ -72,7 +73,7 @@ async function loadOrderContext(orderId: string, note: string | null): Promise<O
   const { data, error } = await createAdminClient()
     .from("orders")
     .select(
-      "id, order_number, contact_name, contact_email, contact_phone, company_name, total_amount, delivery_fee, delivery_method, delivery_address_line1, delivery_postal_code, delivery_city, requested_date, customer_message, payment_status, payment_method, review_reasons, customers(full_name, email, phone), order_items(product_name_snapshot, quantity, unit_price, line_total)",
+      "id, order_number, contact_name, contact_email, contact_phone, company_name, total_amount, delivery_fee, delivery_method, delivery_address_line1, delivery_postal_code, delivery_city, requested_date, customer_message, payment_status, payment_method, fulfillment_status, review_reasons, customers(full_name, email, phone), order_items(product_name_snapshot, quantity, unit_price, line_total)",
     )
     .eq("id", orderId)
     .maybeSingle<OrderRow>();
@@ -103,37 +104,43 @@ async function loadOrderContext(orderId: string, note: string | null): Promise<O
     note: note?.trim() || null,
     paymentMethod: data.payment_method,
     paid: data.payment_status === "paid",
+    fulfillmentStatus: data.fulfillment_status,
     reviewReasons: data.review_reasons ?? [],
     deliveryFeeCents: eurosToCents(data.delivery_fee ?? 0),
     pickupAddress: { public: pickupAddress(delivery, "site"), afterAcceptance: pickupAddress(delivery, "accepted") },
   };
 }
 
+/** Compléments d'un email de commande (proposition : lignes proposées, lien). */
+export type OrderEmailExtra = Partial<Omit<OrderEmailContext, "id" | "number" | "email">>;
+
 /**
  * Met en file les emails d'une étape de commande. Un même email (modèle +
- * commande) n'est jamais mis deux fois en file. Renvoie les identifiants
+ * commande, plus `dedupeSuffix` quand une étape peut se répéter, comme une
+ * proposition) n'est jamais mis deux fois en file. Renvoie les identifiants
  * ajoutés.
  */
 export async function queueOrderEmails(
   orderId: string,
   templates: OrderEmailTemplate[],
-  options: { note?: string | null; siteUrl?: string } = {},
+  options: { note?: string | null; siteUrl?: string; dedupeSuffix?: string; extra?: OrderEmailExtra } = {},
 ): Promise<string[]> {
-  const order = await loadOrderContext(orderId, options.note ?? null);
-  if (!order) return [];
+  const loaded = await loadOrderContext(orderId, options.note ?? null);
+  if (!loaded) return [];
+  const order: OrderEmailContext = { ...loaded, ...options.extra };
   const config = getEmailConfig();
   const identity = await emailIdentity(options.siteUrl);
 
   const rows = templates.flatMap((template) => {
-    const forAdmin = template === "order_new_admin";
-    // L'alerte « nouvelle demande » n'a de sens que si elle part toute seule :
-    // la demande est déjà visible dans l'admin.
+    const forAdmin = template === "order_new_admin" || template === "order_proposal_admin";
+    // Les alertes n'ont de sens que si elles partent toutes seules : la
+    // demande est déjà visible dans l'admin.
     if (forAdmin && !(config.provider && config.adminEmail)) return [];
     const rendered = renderOrderEmail(template, order, identity);
     return [
       {
         template,
-        dedupe_key: orderEmailKey(template, order.id),
+        dedupe_key: `${orderEmailKey(template, order.id)}${options.dedupeSuffix ? `:${options.dedupeSuffix}` : ""}`.slice(0, 200),
         to_email: forAdmin ? config.adminEmail! : order.email,
         to_name: forAdmin ? null : order.customerName.slice(0, 120),
         // Répondre à l'alerte écrit directement au client.
@@ -276,9 +283,14 @@ async function scheduleEmails(
 export async function scheduleOrderEmails(
   orderId: string,
   templates: OrderEmailTemplate[],
-  { note = null, queueNow = false }: { note?: string | null; queueNow?: boolean } = {},
+  {
+    note = null,
+    queueNow = false,
+    dedupeSuffix,
+    extra,
+  }: { note?: string | null; queueNow?: boolean; dedupeSuffix?: string; extra?: OrderEmailExtra } = {},
 ) {
-  return scheduleEmails("Emails de commande", (siteUrl) => queueOrderEmails(orderId, templates, { note, siteUrl }), queueNow);
+  return scheduleEmails("Emails de commande", (siteUrl) => queueOrderEmails(orderId, templates, { note, siteUrl, dedupeSuffix, extra }), queueNow);
 }
 
 type RequestRow = {

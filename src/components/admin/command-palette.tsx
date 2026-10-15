@@ -52,6 +52,7 @@ type Command = {
 const baseCommands: Command[] = [
   { id: "dashboard", group: "Aller à", label: "Tableau de bord", href: "/admin", icon: DashboardIcon, keywords: "accueil" },
   { id: "orders", group: "Aller à", label: "Commandes", href: "/admin/commandes", icon: ShoppingBagIcon, keywords: "demandes de commande clients" },
+  { id: "new-sale", group: "Aller à", label: "Nouvelle vente", hint: "Marché, téléphone, virement", href: "/admin/commandes/nouvelle", icon: PlusIcon, keywords: "vente manuelle comptoir marche saisir commande" },
   { id: "requests", group: "Aller à", label: "Demandes", hint: "Contact, devis, essaims", href: "/admin/demandes", icon: InboxIcon, keywords: "messages contact devis essaim boite reception" },
   { id: "products", group: "Aller à", label: "Produits", href: "/admin/produits", icon: PackageIcon, keywords: "catalogue liste" },
   { id: "new", group: "Aller à", label: "Nouveau produit", hint: "Créer une fiche", href: "/admin/produits/nouveau", icon: PlusIcon, keywords: "ajouter creer" },

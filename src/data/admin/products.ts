@@ -3,6 +3,8 @@ import "server-only";
 import { requireAdmin } from "@/data/auth";
 import { isStockFilter, stockFilters, stockLevel, type StockLevel } from "@/lib/admin/product-health";
 import { productStatuses } from "@/lib/catalog/product-form";
+import { eurosToCents } from "@/lib/domain/pricing";
+import type { SaleProduct } from "@/lib/orders/admin-lines";
 import { createClient } from "@/lib/supabase/server";
 
 export type AdminCategory = {
@@ -254,4 +256,49 @@ export async function getAdminProduct(id: string): Promise<AdminProduct | null> 
         storagePath: image.storage_path,
       })),
   };
+}
+
+type SaleRow = {
+  id: string;
+  name: string;
+  sku: string | null;
+  status: string;
+  purchase_mode: SaleProduct["purchaseMode"];
+  sale_unit: string | null;
+  base_price: number | string;
+  stock_quantity: number;
+  pricing_tiers: { min_quantity: number; max_quantity: number | null; unit_price: number | string }[] | null;
+};
+
+/**
+ * Produits proposés dans une vente manuelle ou une proposition au client :
+ * tous sauf les archivés, avec paliers et stock. `include` : produits à
+ * garder même archivés (lignes d'une demande existante).
+ */
+export async function listSaleProducts({ include = [] }: { include?: string[] } = {}): Promise<SaleProduct[]> {
+  await requireAdmin("/admin/commandes");
+  const supabase = await createClient();
+  const ids = include.filter((id) => /^[0-9a-f-]{36}$/i.test(id));
+  let query = supabase
+    .from("products")
+    .select("id, name, sku, status, purchase_mode, sale_unit, base_price, stock_quantity, pricing_tiers(min_quantity, max_quantity, unit_price)")
+    .order("name")
+    .limit(500);
+  query = ids.length ? query.or(`status.neq.archived,id.in.(${ids.join(",")})`) : query.neq("status", "archived");
+  const { data, error } = await query;
+  fail("Produits à vendre", error);
+
+  return ((data ?? []) as SaleRow[]).map((row) => ({
+    id: row.id,
+    name: row.name,
+    sku: row.sku,
+    status: row.status,
+    purchaseMode: row.purchase_mode,
+    saleUnit: row.sale_unit,
+    basePriceCents: eurosToCents(row.base_price),
+    tiers: (row.pricing_tiers ?? [])
+      .map((tier) => ({ min: tier.min_quantity, max: tier.max_quantity, priceCents: eurosToCents(tier.unit_price) }))
+      .sort((a, b) => a.min - b.min),
+    stock: row.purchase_mode === "standard" ? row.stock_quantity : null,
+  }));
 }

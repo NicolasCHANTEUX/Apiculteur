@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useId, useRef, useState } from "react";
 import {
   acceptOrderAction,
@@ -7,14 +8,16 @@ import {
   cancelOrderAction,
   markOrderPaidAction,
   requestReviewAction,
+  resolveProposalAction,
   setDeliveryFeeAction,
   saveOrderNoteAction,
   setOrdersOpenAction,
 } from "@/app/admin/commandes/actions";
-import { Spinner, useAdminAction } from "@/components/admin/action-button";
+import { ActionButton, Spinner, useAdminAction } from "@/components/admin/action-button";
 import { adminButton, adminInput } from "@/components/admin/admin-ui";
 import { SettingSwitch } from "@/components/admin/setting-switch";
-import { CheckIcon, CloseIcon, CoinsIcon, PackageIcon } from "@/components/icons";
+import { CheckIcon, CloseIcon, CoinsIcon, PackageIcon, PencilIcon } from "@/components/icons";
+import { paymentMethods } from "@/lib/orders/admin-lines";
 import type { OrderStateKey, PaymentStatus } from "@/lib/orders/labels";
 
 // Interrupteur « Demandes en ligne ». Ouvrir demande confirmation : les
@@ -40,6 +43,7 @@ export function OrdersOpenSwitch({ open }: { open: boolean }) {
 
 const stateStyles: Record<OrderStateKey, string> = {
   to_validate: "bg-honey/15 text-honey-dark ring-honey/30",
+  proposed: "bg-sky-50 text-sky-800 ring-sky-200",
   preparing: "bg-blue-50 text-blue-800 ring-blue-200",
   ready: "bg-teal-50 text-teal-800 ring-teal-200",
   shipped: "bg-teal-50 text-teal-800 ring-teal-200",
@@ -173,8 +177,6 @@ function NoteDialog({
   );
 }
 
-const paymentMethods = ["Virement", "Espèces", "Chèque", "Carte bancaire", "Autre"];
-
 // Actions possibles selon l'état de la commande : décider, faire avancer,
 // encaisser, annuler.
 export function OrderActions({
@@ -183,6 +185,7 @@ export function OrderActions({
   paymentStatus,
   canNotify,
   deliveryMethod,
+  proposalId = null,
 }: {
   order: OrderRef;
   state: OrderStateKey;
@@ -191,29 +194,66 @@ export function OrderActions({
   canNotify: boolean;
   /** Livraison : étape « expédiée » au lieu de « prête ». */
   deliveryMethod: "pickup" | "delivery";
+  /** Proposition de modification en attente de réponse. */
+  proposalId?: string | null;
 }) {
   const { run, pending } = useAdminAction();
-  const [dialog, setDialog] = useState<"accept" | "refuse" | "cancel" | null>(null);
-  const [method, setMethod] = useState(paymentMethods[0]);
+  const [dialog, setDialog] = useState<"accept" | "refuse" | "cancel" | "apply" | null>(null);
+  const [method, setMethod] = useState<string>(paymentMethods[0]);
   // Pour « prête » et « payée », qui n'ouvrent pas de dialogue.
   const [notify, setNotify] = useState(true);
   const fields = { id: order.id, version: order.version, number: order.number, notify: String(canNotify && notify) };
   const decide = (note: string, emailing: boolean) => ({ ...fields, note, notify: String(emailing) });
   const finished = state === "done" || state === "refused" || state === "cancelled";
+  // Demande pas encore décidée : ni paiement, ni préparation, ni annulation.
+  const deciding = state === "to_validate" || state === "proposed";
 
   return (
     <div className="space-y-3" data-pending={pending ? "" : undefined}>
       {state === "to_validate" ? (
-        <div className="flex flex-col gap-2 sm:flex-row">
-          <button type="button" disabled={pending} onClick={() => setDialog("accept")} className={`${adminButton.primary} flex-1`}>
+        <>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <button type="button" disabled={pending} onClick={() => setDialog("accept")} className={`${adminButton.primary} flex-1`}>
+              {pending ? <Spinner /> : <CheckIcon className="size-4" />}
+              Accepter la demande
+            </button>
+            <button type="button" disabled={pending} onClick={() => setDialog("refuse")} className={`${adminButton.danger} flex-1`}>
+              <CloseIcon className="size-4" />
+              Refuser
+            </button>
+          </div>
+          <Link href={`/admin/commandes/${order.id}/proposition`} className={`${adminButton.secondary} w-full`}>
+            <PencilIcon className="size-4" />
+            Proposer une modification
+          </Link>
+        </>
+      ) : null}
+
+      {state === "proposed" && proposalId ? (
+        <>
+          <button type="button" disabled={pending} onClick={() => setDialog("apply")} className={`${adminButton.primary} w-full`}>
             {pending ? <Spinner /> : <CheckIcon className="size-4" />}
-            Accepter la demande
+            Le client accepte : appliquer
           </button>
-          <button type="button" disabled={pending} onClick={() => setDialog("refuse")} className={`${adminButton.danger} flex-1`}>
-            <CloseIcon className="size-4" />
-            Refuser
-          </button>
-        </div>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <ActionButton
+              action={resolveProposalAction}
+              fields={{ ...fields, proposal: proposalId, decision: "withdraw" }}
+              confirm={{
+                title: "Retirer la proposition ?",
+                description: "Le lien envoyé au client ne fonctionnera plus et la demande redeviendra « à valider », telle qu’elle était.",
+                confirmLabel: "Retirer la proposition",
+              }}
+              className={`${adminButton.secondary} flex-1`}
+            >
+              Retirer la proposition
+            </ActionButton>
+            <button type="button" disabled={pending} onClick={() => setDialog("refuse")} className={`${adminButton.danger} flex-1`}>
+              <CloseIcon className="size-4" />
+              Refuser
+            </button>
+          </div>
+        </>
       ) : null}
 
       {state === "preparing" ? (
@@ -239,7 +279,7 @@ export function OrderActions({
         </div>
       ) : null}
 
-      {!finished && state !== "to_validate" && paymentStatus !== "paid" ? (
+      {!finished && !deciding && paymentStatus !== "paid" ? (
         <div className="flex gap-2">
           <label className="sr-only" htmlFor="payment-method">
             Moyen de paiement
@@ -256,13 +296,13 @@ export function OrderActions({
         </div>
       ) : null}
 
-      {!finished && state !== "to_validate" ? (
+      {!finished && !deciding ? (
         <button type="button" disabled={pending} onClick={() => setDialog("cancel")} className="text-[13px] text-muted transition hover:text-red-700">
           Annuler la commande…
         </button>
       ) : null}
 
-      {canNotify && !finished && state !== "to_validate" ? (
+      {canNotify && !finished && !deciding ? (
         <div className="border-t border-line/60 pt-3">
           <NotifyCheckbox checked={notify} onChange={setNotify} />
           <p className="mt-1 pl-6.5 text-[12px] text-muted">
@@ -283,6 +323,20 @@ export function OrderActions({
         onConfirm={(note, emailing) => {
           setDialog(null);
           run(acceptOrderAction, decide(note, emailing));
+        }}
+      />
+      <NoteDialog
+        open={dialog === "apply"}
+        title="Appliquer la proposition ?"
+        description="Quand le client a donné son accord autrement que par le lien (téléphone, email) : la commande est modifiée comme proposé, puis acceptée, et le stock est décompté."
+        confirmLabel="Appliquer et accepter"
+        tone="primary"
+        placeholder="Ex. merci pour votre accord au téléphone"
+        canNotify={canNotify}
+        onCancel={() => setDialog(null)}
+        onConfirm={(note, emailing) => {
+          setDialog(null);
+          if (proposalId) run(resolveProposalAction, { ...decide(note, emailing), proposal: proposalId, decision: "apply" });
         }}
       />
       <NoteDialog

@@ -82,6 +82,17 @@ export function describeAuditAction(action: string, metadata: Record<string, unk
       return typeof meta.method === "string" && meta.method ? `Paiement enregistré (${meta.method})` : "Paiement enregistré";
     case "order.note_updated":
       return "Note interne modifiée";
+    case "order.proposed":
+      return meta.link === true ? "Modification proposée au client (lien envoyé)" : "Modification proposée au client";
+    case "order.proposal_accepted":
+      if (meta.stock_short === true) return "Proposition acceptée, stock à vérifier";
+      return meta.by === "admin" ? "Proposition appliquée (accord du client)" : "Proposition acceptée par le client";
+    case "order.proposal_declined":
+      return "Proposition déclinée par le client";
+    case "order.proposal_withdrawn":
+      return "Proposition retirée";
+    case "order.manual_created":
+      return meta.paid === true ? "Vente manuelle enregistrée (payée)" : "Vente manuelle enregistrée";
     case "settings.orders_open":
       return meta.open === true ? "Demandes en ligne ouvertes" : "Demandes en ligne fermées";
     case "delivery.origin_saved":

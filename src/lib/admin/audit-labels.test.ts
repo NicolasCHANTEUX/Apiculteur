@@ -18,6 +18,10 @@ test("métadonnées absentes ou inattendues : libellé générique", () => {
 test("commandes et réglages", () => {
   assert.equal(describeAuditAction("order.status_changed", { status: "ready" }), "Passée en « prête »");
   assert.equal(describeAuditAction("order.paid", { method: "Virement" }), "Paiement enregistré (Virement)");
+  assert.equal(describeAuditAction("order.proposed", { link: true }), "Modification proposée au client (lien envoyé)");
+  assert.equal(describeAuditAction("order.proposal_accepted", { by: "customer" }), "Proposition acceptée par le client");
+  assert.equal(describeAuditAction("order.proposal_accepted", { by: "admin", stock_short: true }), "Proposition acceptée, stock à vérifier");
+  assert.equal(describeAuditAction("order.manual_created", { paid: true }), "Vente manuelle enregistrée (payée)");
   assert.equal(describeAuditAction("settings.orders_open", { open: true }), "Demandes en ligne ouvertes");
 });
 

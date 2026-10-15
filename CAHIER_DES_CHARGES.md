@@ -1,6 +1,6 @@
 # Cahier des charges consolidé — Application web apiculteur
 
-Dernière mise à jour : 3 octobre 2026 (lots 0 à 2).
+Dernière mise à jour : 15 octobre 2026 (fin du lot 5 ; quelques cases des lots 3 à 10 restent à reporter, voir `docs/etat-v1.md`).
 
 Ce document est **la liste de référence de tout ce qu’il y a à construire**. Il réunit trois sources :
 
@@ -263,9 +263,9 @@ Le plan d’attaque (lots, ordre, estimation) sera établi **à partir de ce doc
   - produits « retrait obligatoire » ou « livraison impossible automatiquement » ;
   - message personnalisé par règle.
 - [x] Calcul de la distance entre l’adresse du client et l’adresse de départ. Service de géocodage à choisir (§26). — Géoplateforme de l’IGN (Base Adresse Nationale), ancienne API en secours, repli sur la commune ; distance à vol d’oiseau (H5). (CDC 8-9)
-- [ ] Statuts de validation : non requise, en attente, acceptée, refusée, modification proposée. *(partiel : 4 statuts en base, sans « modification proposée »)* (CDC 8)
+- [x] Statuts de validation : non requise, en attente, acceptée, refusée, modification proposée. — `proposed` ajouté au lot 5. (CDC 8)
 - [x] Message client préventif et pédagogique, sans blocage brutal : la commande devient une « demande à valider ». — toute commande est une demande étudiée (H2). (CDC 8)
-- [ ] Admin : accepter, refuser, proposer une alternative (quantité, date, retrait), message personnalisé, email au client, historique de la décision. *(partiel : accepter, refuser, note, historique, brouillon d’email au client ; alternative et email automatique à venir)* (CDC 8)
+- [x] Admin : accepter, refuser, proposer une alternative (quantité, date, retrait), message personnalisé, email au client, historique de la décision. — proposition de modification (produits, quantités, prix, retrait ou livraison, date, message) ; le client accepte ou décline par un lien sécurisé ; l’admin peut l’appliquer après un accord par téléphone, ou la retirer ; emails et historique. (CDC 8)
 - [x] Aucun paiement demandé avant la validation. (CDC 12)
 
 ---
@@ -361,7 +361,7 @@ Le plan d’attaque (lots, ordre, estimation) sera établi **à partir de ce doc
 ## 14. Emails et notifications
 
 - [ ] Choisir le fournisseur (Resend, Brevo, Postmark…) et authentifier le domaine d’envoi (SPF, DKIM, DMARC) ; expéditeur et adresse de réponse configurables. Non configuré dans Kayart. *(partiel : pilotes Brevo et Resend prêts, expéditeur, réponse et alertes réglables par variables d’environnement ; choix du fournisseur et authentification du domaine à faire)* (CDC 14)
-- [ ] Modèles (CDC 14) : création de commande, réception de demande, validation, refus, proposition alternative, devis, facture, paiement confirmé, livraison ou retrait, demande d’avis, remerciement, nouvelle commande (admin), nouvel avis (admin). *(partiel : réception de demande, acceptation (avec message de l’apiculteur), refus, annulation, commande prête, paiement reçu, nouvelle demande (admin), demande d’avis, remerciement, nouvel avis (admin), messages et réponses des demandes clients ; les autres arrivent avec leurs lots)*
+- [ ] Modèles (CDC 14) : création de commande, réception de demande, validation, refus, proposition alternative, devis, facture, paiement confirmé, livraison ou retrait, demande d’avis, remerciement, nouvelle commande (admin), nouvel avis (admin). *(partiel : réception de demande, acceptation (avec message de l’apiculteur), refus, annulation, commande prête, paiement reçu, nouvelle demande (admin), demande d’avis, remerciement, nouvel avis (admin), messages et réponses des demandes clients, proposition de modification, réponse à une proposition (admin), récapitulatif de vente manuelle ; devis et facture avec le lot 11)*
 - [ ] Modèles supplémentaires : réservation reçue, réservation acceptée, « c’est disponible » (liste d’attente), lien de paiement. (Apicole, Kayart)
 - [x] File d’envoi avec reprise en cas d’échec ; journal des emails (destinataire, modèle, date, statut), sans contenu sensible dans les logs. — table `email_outbox`, envoi après la réponse, nouvel essai automatique des échecs récents ou à la demande ; rubrique Emails avec aperçu ; sans fournisseur, emails ouverts tout rédigés dans la messagerie puis marqués envoyés. (CDC 14, Kayart)
 - [ ] Modèles modifiables par l’admin, avec variables. (CDC 14)
@@ -438,18 +438,18 @@ Le plan d’attaque (lots, ordre, estimation) sera établi **à partir de ce doc
 
 ### 17.4 Commandes
 
-- [ ] Liste : numéro, date, type (en ligne, manuelle, test), client, nombre d’articles, total, statuts de commande, de paiement et de validation ; recherche par numéro, nom ou email ; filtres ; pagination. *(partiel : sans type ni pagination ; onglets par état et recherche)* (Kayart, CDC 10)
+- [ ] Liste : numéro, date, type (en ligne, manuelle, test), client, nombre d’articles, total, statuts de commande, de paiement et de validation ; recherche par numéro, nom ou email ; filtres ; pagination. *(partiel : onglets par état, recherche, type « Vente manuelle » ; sans pagination ni commandes de test)* (Kayart, CDC 10)
 - [ ] Détail : *(partiel : tout sauf TVA, distance et facture)* (Kayart, CDC 10)
   - lignes, montants (HT et TVA une fois facturée), paiement ;
   - client, adresses, livraison, distance, date souhaitée ;
   - note interne, facture, historique chronologique.
-- [ ] Actions : *(partiel : valider (stock décompté), refuser, marquer payée, préparation, annuler (stock rendu), contacter le client ; à venir : alternative, modification avant paiement, facture, demande d’avis)* (CDC 10, Kayart)
+- [ ] Actions : *(partiel : valider (stock décompté), refuser, proposer une modification, marquer payée, préparation, annuler (stock rendu), contacter le client, demande d’avis ; à venir : facture ; modification d’une commande déjà acceptée, avant paiement)* (CDC 10, Kayart)
   - valider, refuser ou proposer une alternative (§8.2) ;
   - avant paiement : modifier quantité, prix, remise ;
   - marquer payée, faire avancer la préparation ;
   - annuler (la commande reste dans l’historique) ;
   - émettre la facture, contacter le client, déclencher la demande d’avis.
-- [ ] Ventes manuelles hors ligne (marché, retrait, virement) : produits, quantités, client, adresse de facturation, identifiant pro, note ; « marquer payée » ; annuler. Derrière un interrupteur ; effet sur le stock à décider (§26). (Kayart)
+- [x] Ventes manuelles hors ligne (marché, retrait, virement) : produits, quantités, client, adresse de facturation, identifiant pro, note ; « marquer payée » ; annuler. Derrière un interrupteur ; effet sur le stock à décider (§26). — page « Nouvelle vente » : client existant ou de passage, identifiant pro, produits, sur place ou livraison, étape, payée ou non, note, récapitulatif par email. Stock décompté à l’enregistrement (comme H3) ; sans interrupteur, la page étant réservée à l’admin. Adresse de facturation distincte avec les factures (lot 11), comme au §8.1. (Kayart)
 
 ### 17.5 Avis — §13
 
@@ -665,7 +665,7 @@ Proposées (noms à confirmer lors de l’implémentation) :
 | `INVOICING_ENABLED`, `INVOICE_*` | Facturation : SIRET, régime, numéro et taux de TVA, conditions de paiement, mentions |
 | `LEGAL_APPROVED`, `LEGAL_*` | Identité légale et textes, avec approbation explicite |
 | `INDEXING_ENABLED` | Ouverture aux moteurs de recherche |
-| `MANUAL_ORDERS_ENABLED` | Ventes manuelles depuis l’admin |
+| `MANUAL_ORDERS_ENABLED` | Non retenu (lot 5) : les ventes manuelles sont réservées à l’admin, sans interrupteur |
 | `EMAIL_API_KEY`, `EMAIL_FROM`, `EMAIL_REPLY_TO`, `ADMIN_NOTIFICATION_EMAIL` | Emails |
 | `GEOCODING_API_KEY` | Calcul de distance, si un service externe est retenu |
 
@@ -677,7 +677,7 @@ Règle : ce qui est **sensible ou légal** va dans l’environnement ; ce qui es
 | --- | --- | --- |
 | Produit | brouillon, publié, masqué, épuisé, archivé | sans « archivé » |
 | Commande (préparation) | en attente, en préparation, prête, expédiée, livrée ou terminée, annulée | oui (`pending` → `delivered`, `cancelled`) |
-| Validation | non requise, en attente, acceptée, refusée, modification proposée | sans « modification proposée » |
+| Validation | non requise, en attente, acceptée, refusée, modification proposée | oui (`proposed` depuis le lot 5) |
 | Paiement | non payé, en attente, payé, échec, remboursé, annulé | sans « échec » |
 | Demande | nouvelle, en cours, réponse envoyée, clôturée, plus la corbeille | table à créer |
 | Avis | en attente, affiché, masqué, refusé | oui |

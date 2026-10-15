@@ -12,6 +12,9 @@ export const emailTemplates = {
   order_ready: "Commande prête",
   order_paid: "Paiement reçu",
   order_shipped: "Commande en route",
+  order_proposal: "Proposition de modification",
+  order_proposal_admin: "Réponse à une proposition (pour vous)",
+  order_confirmed: "Récapitulatif de vente",
   request_received: "Message reçu",
   request_new_admin: "Nouvelle demande client (pour vous)",
   request_reply: "Votre réponse",
@@ -57,6 +60,14 @@ export type OrderEmailContext = {
   /** Adresse de retrait : publique, ou communiquée à l'acceptation. */
   pickupAddress: { public: string | null; afterAcceptance: string | null };
   reviewReasons: string[];
+  /** Étape de préparation (récapitulatif d'une vente manuelle). */
+  fulfillmentStatus?: string;
+  /** Lien personnel de réponse à une proposition. */
+  link?: string | null;
+  linkDays?: number;
+  /** Réponse du client à une proposition (alerte pour l'apiculteur). */
+  proposalOutcome?: "accepted" | "accepted_stock_short" | "declined";
+  proposalReply?: string | null;
 };
 
 export type EmailIdentity = {
@@ -114,7 +125,7 @@ function multiline(value: string) {
 type Block =
   | { kind: "paragraph"; text: string }
   | { kind: "quote"; label: string; text: string }
-  | { kind: "summary"; order: OrderEmailContext; pickupAddress: string | null }
+  | { kind: "summary"; order: OrderEmailContext; pickupAddress: string | null; title?: string; reception?: boolean }
   | { kind: "details"; rows: [string, string][] }
   | { kind: "button"; label: string; href: string };
 
@@ -165,14 +176,14 @@ function renderHtmlBlock(block: Block): string {
           ? `<tr><td style="padding:10px 0;border-bottom:1px solid ${colors.line};font-size:14px;color:${colors.ink}">Livraison</td>`
             + `<td align="right" style="padding:10px 0 10px 12px;border-bottom:1px solid ${colors.line};font-size:14px;color:${colors.ink};white-space:nowrap">${escapeHtml(deliveryAmount(order))}</td></tr>`
           : "");
-      return `<p style="margin:8px 0 6px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:${colors.muted}">Demande ${escapeHtml(order.number)}</p>`
+      return `<p style="margin:8px 0 6px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:${colors.muted}">${escapeHtml(block.title ?? `Demande ${order.number}`)}</p>`
         + `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin:0 0 6px">${rows}`
         + `<tr><td style="padding:12px 0 0;font-size:15px;font-weight:bold;color:${colors.ink}">Total</td>`
         + `<td align="right" style="padding:12px 0 0 12px;font-size:15px;font-weight:bold;color:${colors.ink};white-space:nowrap">${escapeHtml(formatEuros(order.totalCents))}</td></tr></table>`
         + (order.lines.some((line) => line.lineTotalCents === 0)
           ? `<p style="margin:0 0 6px;font-size:13px;color:${colors.muted}">Certains prix seront confirmés avec vous.</p>`
           : "")
-        + renderHtmlBlock({ kind: "details", rows: receptionRows(order, block.pickupAddress) });
+        + (block.reception === false ? "" : renderHtmlBlock({ kind: "details", rows: receptionRows(order, block.pickupAddress) }));
     }
     case "details":
       return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin:10px 0 18px">${block.rows
@@ -199,13 +210,12 @@ function renderTextBlock(block: Block): string {
     case "summary": {
       const { order } = block;
       return [
-        `Demande ${order.number}`,
+        block.title ?? `Demande ${order.number}`,
         ...order.lines.map((line) => `- ${lineLabel(line)} : ${lineAmount(line)}`),
         ...(order.deliveryMethod === "delivery" ? [`- Livraison : ${deliveryAmount(order)}`] : []),
         `Total : ${formatEuros(order.totalCents)}`,
         ...(order.lines.some((line) => line.lineTotalCents === 0) ? ["Certains prix seront confirmés avec vous."] : []),
-        "",
-        renderTextBlock({ kind: "details", rows: receptionRows(order, block.pickupAddress) }),
+        ...(block.reception === false ? [] : ["", renderTextBlock({ kind: "details", rows: receptionRows(order, block.pickupAddress) })]),
       ].join("\n");
     }
     case "details":
@@ -243,7 +253,7 @@ export function renderOrderEmail(template: OrderTemplate, order: OrderEmailConte
   const note = (label: string): Block[] => (order.note ? [{ kind: "quote", label, text: order.note }] : []);
   const isPickup = order.deliveryMethod === "pickup";
   // L'adresse de retrait non publique n'apparaît qu'une fois la commande acceptée.
-  const pickup = template === "order_accepted" || template === "order_ready" ? order.pickupAddress.afterAcceptance : order.pickupAddress.public;
+  const pickup = template === "order_accepted" || template === "order_ready" || template === "order_confirmed" ? order.pickupAddress.afterAcceptance : order.pickupAddress.public;
 
   switch (template) {
     case "order_received": {
@@ -341,6 +351,73 @@ export function renderOrderEmail(template: OrderTemplate, order: OrderEmailConte
           paragraph(contactLine(identity)),
         ], true),
       };
+    case "order_proposal":
+      return {
+        subject: `Une proposition pour votre demande ${order.number}`,
+        ...layout(identity, "Je vous propose un ajustement : un clic suffit pour répondre.", [
+          hello,
+          paragraph("Merci pour votre demande. Je ne peux pas y répondre tout à fait telle quelle, alors je vous propose l’ajustement ci-dessous."),
+          ...note(`Un mot de ${identity.ownerFirstName}`),
+          { kind: "summary", order, pickupAddress: pickup, title: `Ma proposition · demande ${order.number}` },
+          ...(order.link ? [{ kind: "button", label: "Voir la proposition et répondre", href: order.link } satisfies Block] : []),
+          paragraph(
+            order.link
+              ? `Ce lien est personnel et valable ${order.linkDays ?? 14} jours. Si la proposition vous convient, votre commande est confirmée ; sinon, votre demande reste à l’étude. Aucun paiement ne vous est demandé à cette étape.`
+              : "Dites-moi simplement si elle vous convient, en répondant à cet email.",
+          ),
+          paragraph(contactLine(identity)),
+        ], true),
+      };
+    case "order_proposal_admin": {
+      const outcome = order.proposalOutcome ?? "accepted";
+      const subject =
+        outcome === "declined"
+          ? `Proposition déclinée — ${order.number}`
+          : outcome === "accepted_stock_short"
+            ? `Proposition acceptée, stock à vérifier — ${order.number}`
+            : `Proposition acceptée — ${order.number}`;
+      const text =
+        outcome === "declined"
+          ? `${order.customerName} a décliné votre proposition pour la demande ${order.number}. La demande est de nouveau « à valider » : refusez-la ou proposez autre chose.`
+          : outcome === "accepted_stock_short"
+            ? `${order.customerName} a accepté votre proposition pour la demande ${order.number}, mais le stock ne suffit plus : la commande modifiée est « à valider ».`
+            : `${order.customerName} a accepté votre proposition : la commande ${order.number} est confirmée et le stock a été décompté.`;
+      return {
+        subject,
+        ...layout(identity, text.slice(0, 120), [
+          paragraph(text),
+          ...(order.proposalReply ? [{ kind: "quote", label: "Message du client", text: order.proposalReply } satisfies Block] : []),
+          { kind: "button", label: "Voir la commande", href: `${identity.siteUrl}/admin/commandes/${order.id}` },
+          { kind: "summary", order, pickupAddress: pickup, title: `Commande ${order.number}` },
+        ], false),
+      };
+    }
+    case "order_confirmed": {
+      const delivered = order.fulfillmentStatus === "delivered";
+      const opening = delivered
+        ? "Merci pour votre achat ! Voici le récapitulatif, pour vos dossiers."
+        : order.fulfillmentStatus === "ready"
+          ? isPickup
+            ? "Merci pour votre commande ! Elle est prête : vous pouvez venir la retirer au moment convenu ensemble."
+            : "Merci pour votre commande ! Elle est prête : je vous contacte pour fixer le moment de la livraison."
+          : isPickup
+            ? "Merci pour votre commande ! Je la prépare, et nous convenons ensemble du moment du retrait."
+            : "Merci pour votre commande ! Je la prépare et reviens vers vous pour organiser la livraison.";
+      return {
+        subject: delivered ? `Merci pour votre achat — ${order.number}` : `Votre commande ${order.number} est confirmée`,
+        ...layout(identity, "Le récapitulatif de votre commande.", [
+          hello,
+          paragraph(opening),
+          { kind: "summary", order, pickupAddress: pickup, title: `Commande ${order.number}`, reception: !delivered },
+          paragraph(
+            order.paid
+              ? `Règlement reçu${order.paymentMethod ? ` (${order.paymentMethod.toLowerCase()})` : ""}, merci ! Ce message ne remplace pas une facture.`
+              : "Le règlement se fait selon les modalités que nous avons convenues.",
+          ),
+          paragraph(contactLine(identity)),
+        ], true),
+      };
+    }
     case "order_paid":
       return {
         subject: `Paiement reçu — commande ${order.number}`,

@@ -630,10 +630,10 @@ export default async function AdminDashboardPage(props: PageProps<"/admin">) {
                   <div className="flex items-center gap-3">
                     <span
                       className={`rounded-full px-2.5 py-0.5 text-[12px] font-medium ${
-                        order.validationStatus === "pending" ? "bg-honey/15 text-honey-dark" : "bg-sand text-brown"
+                        order.validationStatus === "pending" || order.validationStatus === "proposed" ? "bg-honey/15 text-honey-dark" : "bg-sand text-brown"
                       }`}
                     >
-                      {order.validationStatus === "pending" ? validationLabels.pending : fulfillmentLabels[order.fulfillmentStatus]}
+                      {order.validationStatus === "pending" || order.validationStatus === "proposed" ? validationLabels[order.validationStatus] : fulfillmentLabels[order.fulfillmentStatus]}
                     </span>
                     <span className="font-semibold text-ink tabular-nums">{formatPrice(order.totalAmount)}</span>
                   </div>

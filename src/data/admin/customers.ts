@@ -192,7 +192,7 @@ export async function exportCustomerData(id: string) {
     admin
       .from("orders")
       .select(
-        "id, order_number, created_at, contact_name, contact_email, contact_phone, company_name, professional_id, delivery_method, delivery_address_line1, delivery_postal_code, delivery_city, requested_date, customer_message, subtotal, delivery_fee, total_amount, validation_status, fulfillment_status, payment_status, payment_method, terms_version, order_items(product_name_snapshot, unit_price, quantity, line_total)",
+        "id, order_number, created_at, contact_name, contact_email, contact_phone, company_name, professional_id, delivery_method, delivery_address_line1, delivery_postal_code, delivery_city, requested_date, customer_message, subtotal, delivery_fee, total_amount, validation_status, fulfillment_status, payment_status, payment_method, terms_version, order_items(product_name_snapshot, unit_price, quantity, line_total), order_proposals(status, message, customer_reply, created_at, responded_at)",
       )
       .eq("customer_id", id)
       .order("created_at"),
@@ -214,4 +214,37 @@ export async function exportCustomerData(id: string) {
     contactRequests: requests.data ?? [],
     reviews: reviews.data ?? [],
   };
+}
+
+export type CustomerChoice = {
+  id: string;
+  name: string;
+  email: string;
+  phone: string | null;
+  addressLine1: string | null;
+  postalCode: string | null;
+  city: string | null;
+};
+
+/** Clients existants, pour pré-remplir une vente manuelle (hors clients anonymisés). */
+export async function listCustomerChoices(): Promise<CustomerChoice[]> {
+  await requireAdmin("/admin/commandes");
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("customers")
+    .select("id, full_name, email, phone, address_line1, postal_code, city")
+    .order("full_name")
+    .limit(2000);
+  if (error) throw new Error(`Clients: ${error.message}`);
+  return (data ?? [])
+    .filter((row) => !isAnonymized(row.email as string))
+    .map((row) => ({
+      id: row.id as string,
+      name: row.full_name as string,
+      email: row.email as string,
+      phone: (row.phone as string | null) ?? null,
+      addressLine1: (row.address_line1 as string | null) ?? null,
+      postalCode: (row.postal_code as string | null) ?? null,
+      city: (row.city as string | null) ?? null,
+    }));
 }

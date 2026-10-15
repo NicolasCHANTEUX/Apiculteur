@@ -114,7 +114,7 @@ export async function getDashboardData(days: string[] = lastDays(SERIES_DAYS)): 
       supabase
         .from("orders")
         .select(
-          "id, order_number, created_at, total_amount, fulfillment_status, validation_status, payment_status, customers(full_name)",
+          "id, order_number, created_at, total_amount, fulfillment_status, validation_status, payment_status, contact_name, customers(full_name)",
         )
         .order("created_at", { ascending: false })
         .limit(5),
@@ -227,7 +227,7 @@ export async function getDashboardData(days: string[] = lastDays(SERIES_DAYS)): 
         id: row.id,
         orderNumber: row.order_number,
         createdAt: row.created_at,
-        customerName: customer?.full_name ?? null,
+        customerName: (row.contact_name as string | null) ?? customer?.full_name ?? null,
         totalAmount: Number(row.total_amount),
         fulfillmentStatus: row.fulfillment_status,
         validationStatus: row.validation_status,

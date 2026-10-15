@@ -2,7 +2,7 @@
 
 Plan de réalisation de [CAHIER_DES_CHARGES.md](CAHIER_DES_CHARGES.md). Le cahier dit **quoi** construire ; ce plan dit **dans quel ordre**. Les numéros entre parenthèses (§) renvoient aux sections du cahier.
 
-Mis à jour le 14 octobre 2026.
+Mis à jour le 15 octobre 2026.
 
 ## Hypothèses provisoires
 
@@ -89,35 +89,35 @@ Règle de fin de lot : lint, types, tests et build réussis ; recette visuelle �
 - Page de confirmation ; panier vidé (§8.1).
 - Interrupteur « commandes ouvertes / fermées » (§8.1).
 
-### Lot 5 — Traitement des commandes par l’admin · **en grande partie** (reste : alternative, ventes manuelles)
+### Lot 5 — Traitement des commandes par l’admin · **fait** (migration `20261019100000_order_changes.sql` à appliquer en ligne)
 
 - Liste filtrable et fiche détaillée avec historique (§17.4).
 - Accepter (avec décrément du stock, H3), refuser ou proposer une alternative, avec message (§8.2).
 - Marquer payée (moyen et date) ; suivi de préparation ; annulation ; note interne (§10, §9).
 - Ventes manuelles (§17.4).
 
-### Lot 6 — Emails · **fait** (migration `20261014120000_email_outbox.sql` à appliquer en ligne ; fournisseur et domaine à choisir, §26-12)
+### Lot 6 — Emails · **fait** (fournisseur et domaine à choisir, §26-12)
 
 - File d’attente et pilote d’envoi interchangeable (H7) ; journal dans l’admin (§14).
-- Modèles : demande reçue (client et admin), acceptée, refusée, alternative proposée, paiement reçu, commande prête ou expédiée (§14). Reste « alternative proposée », avec la fin du lot 5.
+- Modèles : demande reçue (client et admin), acceptée, refusée, alternative proposée, paiement reçu, commande prête ou expédiée (§14).
 
 ---
 
 ## Phase C — Relation client
 
-### Lot 7 — Demandes clients · **fait** (migration `20261015100000_contact_requests.sql` à appliquer en ligne)
+### Lot 7 — Demandes clients · **fait**
 
 - Contact, devis grande quantité, signalement d’essaim : enregistrés en base (§12.1).
 - Photos privées ; protections anti-abus (§12.1).
 - Boîte de réception admin : statuts, corbeille, réponse par email (§12.2).
 
-### Lot 8 — Avis clients · **fait** (migration `20261016100000_review_requests.sql` à appliquer en ligne ; `CRON_SECRET` à créer sur Vercel)
+### Lot 8 — Avis clients · **fait** (`CRON_SECRET` à créer sur Vercel)
 
 - Demande d’avis automatique après retrait ou livraison (§13).
 - Page de dépôt par lien sécurisé (§13).
 - Modération, réponse publique, mise en avant (§13).
 
-### Lot 9 — Légal, données personnelles, clients · **fait** (migration `20261017100000_legal_customers.sql` à appliquer en ligne ; informations légales à remplir et approuver)
+### Lot 9 — Légal, données personnelles, clients · **fait** (informations légales à remplir et approuver)
 
 - Configuration légale et pages générées, bloquées sans approbation (§19).
 - Fiches clients, anonymisation, durées de conservation (§17.6, §19).
@@ -126,7 +126,7 @@ Règle de fin de lot : lint, types, tests et build réussis ; recette visuelle �
 
 ## Phase D — Métier avancé
 
-### Lot 10 — Livraison et distance · **fait** (migration `20261018100000_delivery.sql` à appliquer en ligne ; adresse de l’exploitation et zones à régler)
+### Lot 10 — Livraison et distance · **fait** (adresse de l’exploitation et zones à régler)
 
 - Zones administrables ; géocodage et distance (H5) ; frais ; règles de distance (§9, §8.2).
 

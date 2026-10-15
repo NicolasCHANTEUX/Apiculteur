@@ -6,6 +6,7 @@ import { Badge, Notice, PageHeader, Panel, adminButton } from "@/components/admi
 import { EmailActions } from "@/components/admin/emails/email-controls";
 import { EmailStatusPill, isQueued } from "@/components/admin/emails/email-status";
 import { DeliveryFeeEditor, OrderActions, OrderNote, OrderStatePill, RequestReviewButton } from "@/components/admin/orders/order-controls";
+import { ProposalTermsCard } from "@/components/admin/orders/proposal-terms";
 import { Stars } from "@/components/ui";
 import { formatPrice } from "@/components/catalog/product-display";
 import {
@@ -32,7 +33,7 @@ export const metadata: Metadata = { title: "Commande" };
 const longDate = new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
 
 const progress: { key: OrderStateKey[]; label: string }[] = [
-  { key: ["to_validate", "preparing", "ready", "shipped", "done"], label: "Reçue" },
+  { key: ["to_validate", "proposed", "preparing", "ready", "shipped", "done"], label: "Reçue" },
   { key: ["preparing", "ready", "shipped", "done"], label: "Acceptée" },
   { key: ["ready", "shipped", "done"], label: "Prête" },
   { key: ["done"], label: "Terminée" },
@@ -47,8 +48,16 @@ function Info({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
+const proposalNotices: Record<string, string> = {
+  envoyee: "Proposition envoyée au client : il l’accepte ou la décline depuis le lien reçu par email. Vous serez prévenu de sa réponse.",
+  preparee: "Proposition enregistrée : l’email avec le lien de réponse est prêt dans le panneau Emails, à envoyer depuis votre messagerie.",
+  enregistree: "Proposition enregistrée, sans email : appliquez-la quand le client vous a donné son accord.",
+};
+
 export default async function AdminOrderPage(props: PageProps<"/admin/commandes/[id]">) {
   const { id } = await props.params;
+  const query = await props.searchParams;
+  const proposalNotice = typeof query.proposition === "string" ? proposalNotices[query.proposition] : undefined;
   await requireAdmin(`/admin/commandes/${id}`);
   const [order, emails, orderReview] = await Promise.all([getAdminOrder(id), listOrderEmails(id), getOrderReview(id)]);
   if (!order) notFound();
@@ -77,8 +86,9 @@ export default async function AdminOrderPage(props: PageProps<"/admin/commandes/
         meta={
           <>
             <OrderStatePill state={order.state} />
+            {order.source === "manual" ? <Badge tone="honey">Vente manuelle</Badge> : null}
             <span className="text-[13px] text-muted">{paymentLabels[order.paymentStatus]}{order.paymentMethod ? ` (${order.paymentMethod})` : ""}</span>
-            <span className="text-[13px] text-muted">· reçue le {formatOrderDate(order.createdAt)}</span>
+            <span className="text-[13px] text-muted">· {order.source === "manual" ? "saisie" : "reçue"} le {formatOrderDate(order.createdAt)}</span>
           </>
         }
         actions={
@@ -90,6 +100,9 @@ export default async function AdminOrderPage(props: PageProps<"/admin/commandes/
           ) : null
         }
       />
+
+      {query.vente === "enregistree" ? <Notice tone="success">Vente enregistrée : le stock a été mis à jour.</Notice> : null}
+      {proposalNotice ? <Notice tone="success">{proposalNotice}</Notice> : null}
 
       {stopped ? (
         <Notice tone={order.state.key === "refused" ? "error" : "info"}>
@@ -117,8 +130,29 @@ export default async function AdminOrderPage(props: PageProps<"/admin/commandes/
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start">
         <div className="min-w-0 space-y-6">
+          {order.proposal ? (
+            <Panel
+              title="Proposition envoyée"
+              description={
+                order.proposal.linkSent
+                  ? Date.parse(order.proposal.expiresAt) > now.getTime()
+                    ? `Le ${formatOrderDate(order.proposal.createdAt)}, avec un lien de réponse valable jusqu’au ${formatOrderDate(order.proposal.expiresAt)}.`
+                    : `Le ${formatOrderDate(order.proposal.createdAt)} ; le lien a expiré sans réponse : appliquez-la, retirez-la ou refusez la demande.`
+                  : `Le ${formatOrderDate(order.proposal.createdAt)}, sans lien : appliquez-la quand le client a donné son accord.`
+              }
+            >
+              {order.proposal.message ? (
+                <blockquote className="mb-4 border-l-2 border-honey/50 pl-4 text-[14px] leading-[1.6] whitespace-pre-line text-body">{order.proposal.message}</blockquote>
+              ) : null}
+              <div className="grid gap-3 sm:grid-cols-2">
+                <ProposalTermsCard title="Demande d’origine" terms={order.proposal.previous} />
+                <ProposalTermsCard title="Proposition" terms={order.proposal.proposed} highlight />
+              </div>
+            </Panel>
+          ) : null}
+
           <Panel
-            title="Produits demandés"
+            title={order.source === "manual" ? "Produits vendus" : order.proposal ? "Produits demandés (en attendant la réponse)" : "Produits demandés"}
             actions={
               order.reviewReasons.length ? (
                 <span className="flex flex-wrap gap-1">
@@ -163,7 +197,7 @@ export default async function AdminOrderPage(props: PageProps<"/admin/commandes/
               <div className="flex justify-between gap-4 text-body">
                 <dt>{order.deliveryMethod === "delivery" ? "Livraison" : "Retrait"}</dt>
                 <dd>
-                  {order.deliveryMethod === "delivery" && order.paymentStatus !== "paid" && !(order.state.key === "done" || stopped) ? (
+                  {order.deliveryMethod === "delivery" && order.paymentStatus !== "paid" && !(order.state.key === "done" || stopped) && !order.proposal ? (
                     <DeliveryFeeEditor order={ref} fee={order.deliveryFee} />
                   ) : order.deliveryMethod === "pickup" ? (
                     "gratuit"
@@ -292,6 +326,7 @@ export default async function AdminOrderPage(props: PageProps<"/admin/commandes/
                 paymentStatus={order.paymentStatus}
                 canNotify={Boolean(order.customer.email)}
                 deliveryMethod={order.deliveryMethod}
+                proposalId={order.proposal?.id ?? null}
               />
             </Panel>
           ) : null}
@@ -327,9 +362,11 @@ export default async function AdminOrderPage(props: PageProps<"/admin/commandes/
               ) : null}
             </dl>
             <p className="mt-4 border-t border-line/60 pt-3 text-[12.5px] text-muted">
-              {order.customer.otherOrders > 0
-                ? `${order.customer.otherOrders} autre${order.customer.otherOrders > 1 ? "s" : ""} commande${order.customer.otherOrders > 1 ? "s" : ""} pour ce client`
-                : "Première commande de ce client"}
+              {!order.customer.id
+                ? "Client de passage : pas de fiche client."
+                : order.customer.otherOrders > 0
+                  ? `${order.customer.otherOrders} autre${order.customer.otherOrders > 1 ? "s" : ""} commande${order.customer.otherOrders > 1 ? "s" : ""} pour ce client`
+                  : "Première commande de ce client"}
             </p>
           </Panel>
 
@@ -391,7 +428,7 @@ export default async function AdminOrderPage(props: PageProps<"/admin/commandes/
             <OrderNote key={order.internalNote ?? ""} order={ref} initial={order.internalNote ?? ""} />
           </Panel>
 
-          {order.state.key === "to_validate" && !order.customer.email ? (
+          {(order.state.key === "to_validate" || order.state.key === "proposed") && !order.customer.email ? (
             <p className="flex items-center gap-2 text-[12.5px] text-orange-800">
               <AlertTriangleIcon className="size-4" /> Aucun email pour ce client.
             </p>

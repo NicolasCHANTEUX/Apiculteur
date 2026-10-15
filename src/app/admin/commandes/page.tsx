@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Badge, EmptyState, PageHeader, adminButton, adminInput, panelClass } from "@/components/admin/admin-ui";
 import { OrderStatePill, OrdersOpenSwitch } from "@/components/admin/orders/order-controls";
-import { ChevronRightIcon, MapPinIcon, SearchIcon, ShoppingBagIcon, TruckIcon } from "@/components/icons";
+import { ChevronRightIcon, MapPinIcon, PlusIcon, SearchIcon, ShoppingBagIcon, TruckIcon } from "@/components/icons";
 import { formatPrice } from "@/components/catalog/product-display";
 import { isOrderTab, listAdminOrders, orderTabs, type OrderTab } from "@/data/admin/orders";
 import { LinkPending } from "@/components/admin/link-pending";
@@ -29,8 +29,16 @@ export default async function AdminOrdersPage(props: PageProps<"/admin/commandes
     <main className="space-y-6">
       <PageHeader
         title="Commandes"
-        description="Les demandes envoyées depuis le site : acceptez-les ou refusez-les, puis suivez leur préparation."
-        actions={<OrdersOpenSwitch open={settings.ordersOpen} />}
+        description="Les demandes envoyées depuis le site : acceptez-les, refusez-les ou proposez une modification, puis suivez leur préparation. Les ventes conclues ailleurs s’ajoutent avec « Nouvelle vente »."
+        actions={
+          <>
+            <OrdersOpenSwitch open={settings.ordersOpen} />
+            <Link href="/admin/commandes/nouvelle" className={adminButton.primary}>
+              <PlusIcon className="size-4" />
+              Nouvelle vente
+            </Link>
+          </>
+        }
       />
 
       <section className={panelClass} aria-label="Liste des commandes">
@@ -129,6 +137,7 @@ export default async function AdminOrdersPage(props: PageProps<"/admin/commandes
                       <p className="flex flex-wrap items-center gap-x-2 gap-y-1">
                         <span className="font-medium text-ink group-hover:text-honey-dark">{order.customerName}</span>
                         {order.companyName ? <span className="text-[12.5px] text-muted">· {order.companyName}</span> : null}
+                        {order.source === "manual" ? <Badge tone="honey">Vente manuelle</Badge> : null}
                       </p>
                       <p className="mt-0.5 text-[12.5px] text-muted">
                         <span className="font-medium text-body tabular-nums">{order.orderNumber}</span> ·{" "}

@@ -1,15 +1,22 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { after } from "next/server";
+import { listSaleProducts } from "@/data/admin/products";
 import { recordAudit } from "@/data/audit";
 import { requireAdmin } from "@/data/auth";
 import { deliverEmails, getEmailConfig, scheduleOrderEmails, type OrderEmailTemplate } from "@/data/email";
+import { proposalEmailExtra, readTerms } from "@/data/order-proposals";
 import { getReviewSettings } from "@/data/settings";
 import { scheduleReviewInvitation, sendReviewInvitation } from "@/data/review-invitations";
 import { failure, success, type ActionResult } from "@/lib/admin/action-result";
+import { parisDay } from "@/lib/admin/series";
 import { centsToDecimal, parseEurosToCents } from "@/lib/catalog/product-form";
 import { eurosToCents } from "@/lib/domain/pricing";
+import { PROPOSAL_LINK_DAYS, linesPayload, parseLines, parseManualSale, parseProposal } from "@/lib/orders/admin-lines";
+import { createLinkToken } from "@/lib/security/link-token";
+import { getSiteUrl } from "@/lib/site-url";
 import { createClient } from "@/lib/supabase/server";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -168,6 +175,9 @@ export async function setDeliveryFeeAction(formData: FormData): Promise<ActionRe
   if (order.payment_status === "paid" || ["delivered", "cancelled"].includes(order.fulfillment_status as string) || order.validation_status === "refused") {
     return failure("Les frais ne se modifient plus une fois la commande payée ou terminée.");
   }
+  if (order.validation_status === "proposed") {
+    return failure("Une proposition attend la réponse du client : retirez-la avant de modifier les frais.");
+  }
   const { data, error } = await supabase
     .from("orders")
     .update({ delivery_fee: centsToDecimal(fee), total_amount: centsToDecimal(eurosToCents(order.subtotal as number | string) + fee) })
@@ -196,6 +206,7 @@ export async function markOrderPaidAction(formData: FormData): Promise<ActionRes
     .update({ payment_status: "paid", payment_method: method || null })
     .eq("id", id)
     .eq("updated_at", field(formData, "version"))
+    .in("validation_status", ["accepted", "not_required"])
     .select("id");
   if (error) return rpcFailure(error);
   if (!data?.length) {
@@ -269,4 +280,184 @@ export async function requestReviewAction(formData: FormData): Promise<ActionRes
     default:
       return failure("La demande d’avis n’a pas pu être préparée. Réessayez.");
   }
+}
+
+export type OrderFormState = { status: "idle" | "error"; message: string; errors: Record<string, string> };
+
+function formFailure(message: string, errors: Record<string, string> = {}): OrderFormState {
+  return { status: "error", message, errors };
+}
+
+const DAY = 86_400_000;
+
+/**
+ * Proposition de modification au client (CAHIER §8.2) : quantités, prix,
+ * produits, réception et date. Avec un email, le client reçoit un lien pour
+ * accepter ou décliner ; sinon l'apiculteur applique la proposition une fois
+ * l'accord obtenu (par téléphone).
+ */
+export async function proposeOrderAction(_previous: OrderFormState, formData: FormData): Promise<OrderFormState> {
+  await requireAdmin("/admin/commandes");
+  const id = field(formData, "id");
+  if (!UUID.test(id)) return formFailure("Commande invalide.");
+
+  const supabase = await createClient();
+  const { data: order, error: readError } = await supabase
+    .from("orders")
+    .select("id, validation_status, delivery_postal_code, contact_email, customers(email), order_items(product_id)")
+    .eq("id", id)
+    .maybeSingle<{
+      id: string;
+      validation_status: string;
+      delivery_postal_code: string | null;
+      contact_email: string | null;
+      customers: { email: string } | null;
+      order_items: { product_id: string }[] | null;
+    }>();
+  if (readError || !order) return formFailure("Commande introuvable.");
+  if (order.validation_status !== "pending") return formFailure("Cette demande n’est plus à valider : rechargez la page.");
+
+  const products = await listSaleProducts({ include: (order.order_items ?? []).map((item) => item.product_id) });
+  const lines = parseLines(formData.get("lines"), new Map(products.map((product) => [product.id, product])));
+  const proposal = parseProposal(formData, parisDay(new Date()), { canDeliver: Boolean(order.delivery_postal_code) });
+  if (!proposal.ok || !lines.ok) {
+    return formFailure("Certains champs sont à corriger.", { ...(proposal.ok ? {} : proposal.errors), ...(lines.ok ? {} : { lines: lines.error }) });
+  }
+
+  const email = order.contact_email ?? order.customers?.email ?? null;
+  const token = email && formData.get("notify") === "on" ? createLinkToken() : null;
+  const { data: proposalId, error } = await supabase.rpc("admin_propose_order", {
+    p_order_id: id,
+    p_expected_updated_at: field(formData, "version") || null,
+    p_proposal: {
+      delivery_method: proposal.value.deliveryMethod,
+      requested_date: proposal.value.requestedDate,
+      delivery_fee: centsToDecimal(proposal.value.deliveryFeeCents),
+      message: proposal.value.message,
+      items: linesPayload(lines.lines),
+    },
+    p_token_hash: token?.hash ?? null,
+    p_expires_at: new Date(Date.now() + PROPOSAL_LINK_DAYS * DAY).toISOString(),
+  });
+  if (error) {
+    revalidateOrder(id);
+    if (error.code === "40001") return formFailure("Cette demande a changé entre-temps (autre onglet ?). Rechargez la page pour repartir de sa dernière version.");
+    if (error.code === "55000") return formFailure("Cette demande n’est plus à valider : rechargez la page.");
+    if (error.code === "22023") return formFailure("Certains champs sont à corriger.", { lines: "Vérifiez les produits, les quantités et les prix." });
+    console.error("Proposition", error.code, error.message);
+    return formFailure("La proposition n’a pas pu être enregistrée. Réessayez.");
+  }
+
+  let outcome = "enregistree";
+  if (token) {
+    // Montants relus en base (calculés par la fonction SQL) pour l'email.
+    const { data: stored } = await supabase
+      .from("order_proposals")
+      .select("items, delivery_method, requested_date, subtotal, delivery_fee, total_amount")
+      .eq("id", proposalId as string)
+      .maybeSingle();
+    const queued = stored
+      ? await scheduleOrderEmails(id, ["order_proposal"], {
+          note: proposal.value.message || null,
+          queueNow: true,
+          dedupeSuffix: proposalId as string,
+          extra: proposalEmailExtra(readTerms(stored), `${await getSiteUrl()}/proposition/${token.token}`),
+        })
+      : "failed";
+    if (!queued || queued === "failed") {
+      // Sans email, le lien serait perdu : la proposition est retirée.
+      await supabase.rpc("admin_resolve_order_proposal", { p_proposal_id: proposalId, p_action: "withdraw", p_expected_updated_at: null });
+      revalidateOrder(id);
+      return formFailure("L’email de proposition n’a pas pu être préparé : rien n’a été envoyé au client. Réessayez dans un instant.");
+    }
+    revalidatePath("/admin/emails");
+    outcome = getEmailConfig().provider ? "envoyee" : "preparee";
+  }
+  revalidateOrder(id);
+  redirect(`/admin/commandes/${id}?proposition=${outcome}`);
+}
+
+/** Accord du client obtenu autrement que par le lien (« appliquer »), ou proposition retirée. */
+export async function resolveProposalAction(formData: FormData): Promise<ActionResult> {
+  await requireAdmin("/admin/commandes");
+  const id = field(formData, "id");
+  const proposalId = field(formData, "proposal");
+  const decision = field(formData, "decision");
+  if (!UUID.test(id) || !UUID.test(proposalId) || (decision !== "apply" && decision !== "withdraw")) return failure("Action invalide.");
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("admin_resolve_order_proposal", {
+    p_proposal_id: proposalId,
+    p_action: decision,
+    p_expected_updated_at: field(formData, "version") || null,
+  });
+  revalidateOrder(id);
+  if (error) return rpcFailure(error);
+  if (data === "withdrawn") return success("Proposition retirée : la demande est de nouveau à valider ; un lien déjà envoyé au client ne fonctionne plus.");
+  if (data === "accepted_stock_short") {
+    return failure("Proposition appliquée, mais le stock ne suffit plus : la commande modifiée est de nouveau à valider. Ajustez le stock, puis acceptez-la.");
+  }
+  const notice = await notifyCustomer(formData, id, "order_accepted", field(formData, "note"));
+  return success(`Proposition appliquée : commande acceptée, stock mis à jour.${notice}`);
+}
+
+/**
+ * Vente manuelle (CAHIER §17.4) : marché, téléphone, virement. Acceptée
+ * d'emblée, stock décompté ; récapitulatif par email si le client en a un.
+ */
+export async function createManualOrderAction(_previous: OrderFormState, formData: FormData): Promise<OrderFormState> {
+  await requireAdmin("/admin/commandes");
+  const key = field(formData, "submissionKey");
+  if (!UUID.test(key)) return formFailure("Rechargez la page, puis recommencez.");
+
+  const products = await listSaleProducts();
+  const lines = parseLines(formData.get("lines"), new Map(products.map((product) => [product.id, product])));
+  const sale = parseManualSale(formData, parisDay(new Date()));
+  if (!sale.ok || !lines.ok) {
+    return formFailure("Certains champs sont à corriger.", { ...(sale.ok ? {} : sale.errors), ...(lines.ok ? {} : { lines: lines.error }) });
+  }
+  const value = sale.value;
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .rpc("admin_create_manual_order", {
+      p_order: {
+        submission_key: key,
+        name: value.name,
+        email: value.email,
+        phone: value.phone,
+        company_name: value.companyName,
+        professional_id: value.professionalId,
+        delivery_method: value.deliveryMethod,
+        address_line1: value.addressLine1,
+        postal_code: value.postalCode,
+        city: value.city,
+        delivery_fee: centsToDecimal(value.deliveryFeeCents),
+        fulfillment_status: value.step,
+        requested_date: value.requestedDate,
+        paid: value.paid,
+        payment_method: value.paymentMethod,
+        note: value.note,
+        items: linesPayload(lines.lines),
+      },
+    })
+    .single<{ order_id: string; order_number: string; already_created: boolean }>();
+  if (error || !data) {
+    if (error?.code === "P0001" && error.message.startsWith("Stock insuffisant")) {
+      return formFailure("Le stock ne suffit pas.", { lines: `${error.message.replace("Stock insuffisant :", "Stock insuffisant pour")}. Corrigez la quantité, ou le stock du produit.` });
+    }
+    if (error?.code === "22023" || error?.code === "23514") return formFailure("Certains champs sont à corriger.");
+    console.error("Vente manuelle", error?.code, error?.message);
+    return formFailure("La vente n’a pas pu être enregistrée. Réessayez.");
+  }
+
+  if (!data.already_created && value.email) {
+    if (formData.get("notify") === "on") await scheduleOrderEmails(data.order_id, ["order_confirmed"], { queueNow: true });
+    // Vente déjà remise : la demande d'avis part après le délai réglé.
+    if (value.step === "delivered") await scheduleReviewInvitation(data.order_id);
+  }
+  revalidateOrder(data.order_id);
+  revalidatePath("/admin/clients");
+  revalidatePath("/admin/emails");
+  redirect(`/admin/commandes/${data.order_id}?vente=enregistree`);
 }

@@ -1,10 +1,12 @@
 import "server-only";
 
 import { requireAdmin } from "@/data/auth";
+import { readTerms, type ProposalTerms } from "@/data/order-proposals";
 import { describeAuditAction } from "@/lib/admin/audit-labels";
 import {
   orderState,
   type FulfillmentStatus,
+  type OrderSource,
   type OrderStateKey,
   type PaymentStatus,
   type ValidationStatus,
@@ -22,7 +24,7 @@ export const orderTabs = {
 export type OrderTab = keyof typeof orderTabs;
 
 const tabStates: Record<OrderTab, OrderStateKey[] | null> = {
-  "a-valider": ["to_validate"],
+  "a-valider": ["to_validate", "proposed"],
   "en-cours": ["preparing", "ready", "shipped"],
   terminees: ["done"],
   annulees: ["refused", "cancelled"],
@@ -48,6 +50,7 @@ export type AdminOrderRow = {
   state: { key: OrderStateKey; label: string };
   paymentStatus: PaymentStatus;
   reviewReasons: string[];
+  source: OrderSource;
 };
 
 type OrderRow = {
@@ -64,6 +67,7 @@ type OrderRow = {
   fulfillment_status: FulfillmentStatus;
   payment_status: PaymentStatus;
   review_reasons: string[] | null;
+  source: OrderSource | null;
   customers: { full_name: string; email: string } | { full_name: string; email: string }[] | null;
   order_items: { quantity: number }[] | null;
 };
@@ -80,7 +84,7 @@ export async function listAdminOrders(filters: { tab: OrderTab; q: string }) {
   const { data, error } = await supabase
     .from("orders")
     .select(
-      "id, order_number, created_at, contact_name, contact_email, company_name, total_amount, delivery_method, requested_date, validation_status, fulfillment_status, payment_status, review_reasons, customers(full_name, email), order_items(quantity)",
+      "id, order_number, created_at, contact_name, contact_email, company_name, total_amount, delivery_method, requested_date, validation_status, fulfillment_status, payment_status, review_reasons, source, customers(full_name, email), order_items(quantity)",
     )
     .order("created_at", { ascending: false })
     .limit(500);
@@ -104,6 +108,7 @@ export async function listAdminOrders(filters: { tab: OrderTab; q: string }) {
       state: orderState(row.validation_status, row.fulfillment_status),
       paymentStatus: row.payment_status,
       reviewReasons: row.review_reasons ?? [],
+      source: row.source ?? "online",
     };
   });
 
@@ -161,6 +166,17 @@ export type AdminOrderLine = {
 
 export type AdminOrderEvent = { id: string; createdAt: string; label: string; detail: string | null };
 
+/** Proposition de modification en attente de la réponse du client. */
+export type AdminProposal = {
+  id: string;
+  createdAt: string;
+  expiresAt: string;
+  linkSent: boolean;
+  message: string | null;
+  proposed: ProposalTerms;
+  previous: ProposalTerms;
+};
+
 export type AdminOrder = {
   id: string;
   orderNumber: string;
@@ -172,6 +188,7 @@ export type AdminOrder = {
   fulfillmentStatus: FulfillmentStatus;
   paymentStatus: PaymentStatus;
   paymentMethod: string | null;
+  source: OrderSource;
   customer: {
     id: string;
     name: string;
@@ -195,6 +212,9 @@ export type AdminOrder = {
   stockReserved: boolean;
   /** Livraison évaluée à la demande (lot 10). */
   delivery: { distanceKm: number | null; zoneName: string | null; lat: number | null; lng: number | null };
+  /** La demande a une adresse : une livraison peut être proposée. */
+  canDeliver: boolean;
+  proposal: AdminProposal | null;
   lines: AdminOrderLine[];
   history: AdminOrderEvent[];
 };
@@ -252,6 +272,28 @@ export async function getAdminOrder(id: string): Promise<AdminOrder | null> {
   const validation = row.validation_status as ValidationStatus;
   const fulfillment = row.fulfillment_status as FulfillmentStatus;
 
+  let proposal: AdminProposal | null = null;
+  if (validation === "proposed") {
+    const { data: pending, error: proposalError } = await supabase
+      .from("order_proposals")
+      .select("id, created_at, expires_at, link_sent, message, items, delivery_method, requested_date, subtotal, delivery_fee, total_amount, previous")
+      .eq("order_id", id)
+      .eq("status", "pending")
+      .maybeSingle();
+    if (proposalError) console.error("Proposition de commande", proposalError.message);
+    if (pending) {
+      proposal = {
+        id: pending.id as string,
+        createdAt: pending.created_at as string,
+        expiresAt: pending.expires_at as string,
+        linkSent: Boolean(pending.link_sent),
+        message: (pending.message as string | null) ?? null,
+        proposed: readTerms(pending),
+        previous: readTerms(pending.previous),
+      };
+    }
+  }
+
   return {
     id: row.id as string,
     orderNumber: row.order_number as string,
@@ -263,6 +305,7 @@ export async function getAdminOrder(id: string): Promise<AdminOrder | null> {
     fulfillmentStatus: fulfillment,
     paymentStatus: row.payment_status as PaymentStatus,
     paymentMethod: text("payment_method"),
+    source: row.source === "manual" ? "manual" : "online",
     customer: {
       id: row.customers?.id ?? "",
       name: text("contact_name") ?? row.customers?.full_name ?? "Client",
@@ -293,6 +336,8 @@ export async function getAdminOrder(id: string): Promise<AdminOrder | null> {
       lat: typeof row.delivery_latitude === "number" ? row.delivery_latitude : null,
       lng: typeof row.delivery_longitude === "number" ? row.delivery_longitude : null,
     },
+    canDeliver: Boolean(text("delivery_postal_code")),
+    proposal,
     lines: (row.order_items ?? []).map((item) => ({
       id: item.id,
       productId: item.product_id,

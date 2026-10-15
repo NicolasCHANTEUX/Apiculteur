@@ -183,3 +183,35 @@ test("avis : demande, alerte et remerciement", () => {
   assert.ok(renderReviewEmail("review_thanks", { ...review, consent: false }, identity).text.includes("il ne sera pas publié"));
 });
 
+
+test("proposition : lignes proposées, lien personnel, message de l'apiculteur", () => {
+  const email = renderOrderEmail("order_proposal", { ...order, note: "Je n’en ai que 6 en avril.", link: "https://ruchers.test/proposition/xyz", linkDays: 14 }, identity);
+  assert.equal(email.subject, "Une proposition pour votre demande CMD-000042");
+  assert.ok(email.text.includes("Ma proposition · demande CMD-000042"));
+  assert.ok(email.text.includes("Voir la proposition et répondre : https://ruchers.test/proposition/xyz"));
+  assert.ok(email.text.includes("valable 14 jours"));
+  assert.ok(email.text.includes("Je n’en ai que 6 en avril."));
+  const withoutLink = renderOrderEmail("order_proposal", order, identity);
+  assert.ok(withoutLink.text.includes("en répondant à cet email"));
+});
+
+test("réponse à une proposition : alerte selon l'issue, message du client", () => {
+  const accepted = renderOrderEmail("order_proposal_admin", { ...order, proposalOutcome: "accepted" }, identity);
+  assert.equal(accepted.subject, "Proposition acceptée — CMD-000042");
+  assert.ok(accepted.text.includes("Voir la commande : https://ruchers.test/admin/commandes/"));
+  const declined = renderOrderEmail("order_proposal_admin", { ...order, proposalOutcome: "declined", proposalReply: "Il me faut <10> essaims." }, identity);
+  assert.equal(declined.subject, "Proposition déclinée — CMD-000042");
+  assert.ok(declined.text.includes("Il me faut <10> essaims."));
+  assert.doesNotMatch(declined.html, /<10>/);
+  assert.match(renderOrderEmail("order_proposal_admin", { ...order, proposalOutcome: "accepted_stock_short" }, identity).subject, /stock à vérifier/);
+});
+
+test("récapitulatif de vente manuelle : remise ou à retirer, règlement", () => {
+  const delivered = renderOrderEmail("order_confirmed", { ...order, fulfillmentStatus: "delivered", paid: true, paymentMethod: "Espèces" }, identity);
+  assert.equal(delivered.subject, "Merci pour votre achat — CMD-000042");
+  assert.ok(delivered.text.includes("Règlement reçu (espèces)"));
+  assert.ok(!delivered.text.includes("Date souhaitée"), "pas de réception pour une vente déjà remise");
+  const toCollect = renderOrderEmail("order_confirmed", { ...order, fulfillmentStatus: "ready" }, identity);
+  assert.equal(toCollect.subject, "Votre commande CMD-000042 est confirmée");
+  assert.ok(toCollect.text.includes("4 chemin des Abeilles"), "adresse de retrait communiquée");
+});

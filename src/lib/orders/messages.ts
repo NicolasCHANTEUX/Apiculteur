@@ -14,6 +14,7 @@ export type DraftInput = {
 
 const openings: Record<OrderStateKey, { subject: string; text: string }> = {
   to_validate: { subject: "Votre demande", text: "J’ai bien reçu votre demande et je reviens vers vous à son sujet." },
+  proposed: { subject: "Ma proposition pour votre demande", text: "Je vous ai envoyé une proposition pour votre demande : dites-moi si elle vous convient." },
   preparing: { subject: "Votre demande est acceptée", text: "Bonne nouvelle : votre demande est acceptée. Convenons ensemble du retrait ou de la livraison." },
   ready: { subject: "Votre commande est prête", text: "Votre commande est prête. Convenons ensemble du moment du retrait ou de la livraison." },
   shipped: { subject: "Votre commande est en route", text: "Votre commande est en route." },
