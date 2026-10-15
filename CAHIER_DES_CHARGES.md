@@ -132,7 +132,7 @@ Le plan d’attaque (lots, ordre, estimation) sera établi **à partir de ce doc
 - [ ] Liens légaux du pied de page affichés seulement quand les pages légales sont approuvées. (Kayart)
 - [ ] Bandeau d’information administrable (ex. « Saison 2026 ouverte »). *(partiel : texte fixé dans `src/lib/site.ts`)* (CDC 16, Maquette)
 - [x] Carrousel des produits mis en avant sur l’accueil au-delà de 4 produits : boutons précédent/suivant, défilement automatique coupé si `prefers-reduced-motion`. — sans défilement automatique ; un seul produit est mis en valeur, une rangée incomplète se termine par l’accès au catalogue. (Kayart)
-- [ ] Indicateur de chargement entre pages et écran `loading` par route. (Kayart)
+- [ ] Indicateur de chargement entre pages et écran `loading` par route. *(partiel : écran de chargement de l’admin ; pas sur les pages publiques, qui doivent rester utilisables sans JavaScript, le catalogue compris)* (Kayart)
 - [x] Page d’erreur globale avec bouton « Réessayer » (public et admin). (Kayart)
 - [ ] Remplacer tous les contenus provisoires de la maquette par les vrais (§1.1). (Maquette)
 
@@ -144,7 +144,7 @@ Le plan d’attaque (lots, ordre, estimation) sera établi **à partir de ce doc
 
 - [x] Produits publiés lus depuis la vue publique, cartes de la maquette : badge, pastille de disponibilité, « à partir de », unité, note moyenne. (Maquette)
 - [x] Recherche et filtres par catégorie et disponibilité, côté navigateur. (Maquette)
-- [ ] Recherche, filtres et tri **côté serveur, portés par l’URL** : formulaire GET partageable qui fonctionne sans JavaScript. *(partiel : critères portés par l’URL et partageables, recherche multi-mots sans accents (caractéristiques comprises), tri prix et nouveautés, « Tout effacer » ; appliqués dans le navigateur, sans pagination)* (Kayart)
+- [x] Recherche, filtres et tri **côté serveur, portés par l’URL** : formulaire GET partageable qui fonctionne sans JavaScript. — calculés par le serveur à chaque requête (quelques dizaines de produits, en mémoire) ; avec JavaScript, recherche pendant la frappe et tri immédiat sans rechargement ; tri par nom ajouté ; « type de produit » = catégories et accès rapides (H11). (Kayart)
   - recherche multi-mots, insensible à la casse et aux accents, sur nom, référence, descriptions, catégorie et caractéristiques ;
   - filtres : catégorie, type de produit, « disponible maintenant » ;
   - tri : nouveautés, prix croissant, prix décroissant, nom ;
@@ -159,15 +159,15 @@ Le plan d’attaque (lots, ordre, estimation) sera établi **à partir de ce doc
 
 - [x] Photo, pastille de disponibilité, prix et paliers, descriptions, avis du produit. (CDC 3)
 - [x] Fil d’Ariane Accueil / Nos essaims / Produit. — avec la catégorie. (Kayart)
-- [ ] Galerie multi-photos : miniatures, précédent/suivant, flèches du clavier, plein écran, zoom (pincement, double-clic), réinitialisation du zoom. *(partiel : tout sauf le zoom au pincement ; zoom au clic qui suit le pointeur)* (Kayart)
-- [ ] Badges : type, disponibilité, stock affiché, remise « -X % ». (Kayart)
-- [ ] Bloc d’informations : référence, type, disponibilité, stock (selon le mode d’affichage), mode de transport. *(partiel : référence, transport, disponibilité, état ; pas encore le stock affiché)* (Kayart)
+- [x] Galerie multi-photos : miniatures, précédent/suivant, flèches du clavier, plein écran, zoom (pincement, double-clic), réinitialisation du zoom. — plus double tap, molette, boutons + et −, touches + − 0, déplacement de la photo agrandie. (Kayart)
+- [x] Badges : type, disponibilité, stock affiché, remise « -X % ». — deux badges sur la photo (état, mise en avant, rareté, saison), pastille de disponibilité ou de stock, remise à côté du prix, catégorie. (Kayart)
+- [x] Bloc d’informations : référence, type, disponibilité, stock (selon le mode d’affichage), mode de transport. — type (catégorie et état), stock quand le mode « exact » est choisi. (Kayart)
 - [x] Caractéristiques structurées (§6). (Kayart, CDC 3)
-- [ ] Action principale adaptée au cas : Ajouter au panier, Réserver, Demander un devis, Demander la disponibilité, Me prévenir. *(partiel : ajouter au panier, demander un devis, me prévenir du retour ; la réservation passe par le panier)* (Kayart)
+- [x] Action principale adaptée au cas : Ajouter au panier, Réserver, Demander un devis, Demander la disponibilité, Me prévenir. — « Réserver » pour les produits de saison (par le panier, en attendant le lot 12), « Me prévenir de l’ouverture » ou « du retour », « Poser une question » pour la disponibilité. (Kayart)
 - [x] « Poser une question » ouvre le contact pré-rempli avec le produit et sa référence. (Kayart)
-- [ ] Aide sous le prix : TTC ou HT selon le régime, « prix dégressifs selon la quantité », « sur devis », « prix d’une pièce unique ». (Kayart)
+- [x] Aide sous le prix : TTC ou HT selon le régime, « prix dégressifs selon la quantité », « sur devis », « prix d’une pièce unique ». — mention de TVA tirée des informations légales publiées (franchise : art. 293 B du CGI ; assujetti : TTC), rien sans version publiée. (Kayart)
 - [ ] Matériel d’occasion ou de second choix : description des défauts, photos des défauts, lien vers le modèle neuf. *(partiel : défauts décrits ; photos dédiées et lien vers le modèle à venir)* (Kayart, Apicole)
-- [ ] Visibilité vérifiée à chaque requête : jamais de cache d’un produit masqué ou épuisé. (Kayart)
+- [x] Visibilité vérifiée à chaque requête : jamais de cache d’un produit masqué ou épuisé. — catalogue et fiche rendus à chaque requête, sans mise en cache. (Kayart)
 - [ ] Référencement : titre, description, URL canonique, image de partage. (Kayart, CDC 24)
 
 ---
@@ -559,7 +559,7 @@ Le plan d’attaque (lots, ordre, estimation) sera établi **à partir de ce doc
 - [ ] Formulaires : erreur affichée sous chaque champ (`aria-invalid`, `aria-describedby`), valeurs conservées après une erreur, bouton « envoi en cours ». (Kayart)
 - [ ] Champs d’au moins 16 px sur mobile (pas de zoom automatique sur iOS) ; cibles d’au moins 44 px. (Kayart)
 - [ ] Recette à 320, 390, 768 et 1 440 px, en public comme en admin. (Kayart, CDC 25)
-- [ ] Recherche et filtres utilisables sans JavaScript. (Kayart)
+- [x] Recherche et filtres utilisables sans JavaScript. — vérifié sur la compilation de production, JavaScript coupé ; l’écran de chargement du catalogue a été retiré, car il bloquait la page sans JavaScript. (Kayart)
 
 ---
 

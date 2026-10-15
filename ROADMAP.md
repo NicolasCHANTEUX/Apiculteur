@@ -139,7 +139,7 @@ Règle de fin de lot : lint, types, tests et build réussis ; recette visuelle �
 
 - Réservations, conversion en commande, « Prévenez-moi » (§11).
 
-### Lot 13 — Catalogue public avancé
+### Lot 13 — Catalogue public avancé · **fait**
 
 - Recherche, filtres, tri et pagination côté serveur (§5.1).
 - Galerie avec zoom, fil d’Ariane, actions adaptées, carrousel (§5.2, §4).

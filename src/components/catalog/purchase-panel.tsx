@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { PriceTag } from "@/components/catalog/product-card";
-import { formatPrice } from "@/components/catalog/product-display";
+import { formatPrice, getPriceHelp } from "@/components/catalog/product-display";
 import { CartIcon, CircleCheckIcon, MessageCircleIcon, MinusIcon, PlusIcon, SparklesIcon } from "@/components/icons";
 import type { PublicProduct } from "@/data/catalog";
 import { addToCart, cartSnapshot, parseCart, subscribeCart } from "@/lib/cart/storage";
@@ -16,7 +16,7 @@ function unitLabel(unit: string, count: number) {
   return `${unit}s`;
 }
 
-export function PurchasePanel({ product }: { product: PublicProduct }) {
+export function PurchasePanel({ product, vatMode }: { product: PublicProduct; vatMode: "franchise" | "assujetti" | null }) {
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState<number | null>(null);
   const [notSaved, setNotSaved] = useState(false);
@@ -35,6 +35,9 @@ export function PurchasePanel({ product }: { product: PublicProduct }) {
     product.stockStatusLabel === "coming_soon" ||
     product.displayedStockQuantity === 0;
   const quote = product.purchaseMode === "quote";
+  // Réservation de saison : passe par le panier, comme une demande (lot 12 à venir).
+  const reservation = product.purchaseMode === "reservation" || product.stockStatusLabel === "reservation_open";
+  const help = getPriceHelp(product, vatMode);
   const line = priced ? calculatePricedLine(product.basePrice, product.pricingTiers, quantity) : null;
   const incentive = priced ? nextTierIncentive(product.basePrice, product.pricingTiers, quantity) : null;
   const activeTier = product.pricingTiers.findIndex(
@@ -67,10 +70,16 @@ export function PurchasePanel({ product }: { product: PublicProduct }) {
 
   const mainAction = unavailable ? (
     <Link
-      href={contactHref("Question sur un essaim", `Bonjour,\n\nPouvez-vous me prévenir lorsque « ${product.name} » sera de nouveau disponible ?\n\n`, { product: product.slug })}
+      href={contactHref(
+        "Question sur un essaim",
+        product.stockStatusLabel === "coming_soon"
+          ? `Bonjour,\n\nPouvez-vous me prévenir dès que « ${product.name} » sera disponible ?\n\n`
+          : `Bonjour,\n\nPouvez-vous me prévenir lorsque « ${product.name} » sera de nouveau disponible ?\n\n`,
+        { product: product.slug },
+      )}
       className="inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-espresso px-5 text-[15px] font-semibold text-white transition hover:bg-brown"
     >
-      Me prévenir du retour
+      {product.stockStatusLabel === "coming_soon" ? "Me prévenir de l’ouverture" : "Me prévenir du retour"}
     </Link>
   ) : quote ? (
     <Link
@@ -88,7 +97,7 @@ export function PurchasePanel({ product }: { product: PublicProduct }) {
       }`}
     >
       {added !== null ? <CircleCheckIcon className="size-5 motion-safe:animate-[pop_.35s_ease-out]" /> : <CartIcon className="size-5" />}
-      {added !== null ? "Ajouté au panier" : "Ajouter au panier"}
+      {added !== null ? (reservation ? "Réservation ajoutée" : "Ajouté au panier") : reservation ? "Réserver" : "Ajouter au panier"}
     </button>
   );
 
@@ -96,7 +105,16 @@ export function PurchasePanel({ product }: { product: PublicProduct }) {
     <>
       <div className="rounded-2xl border border-line bg-white p-5 shadow-[0_1px_3px_rgb(61_43_26/0.06)] sm:p-6">
         <div className="flex flex-wrap items-end justify-between gap-3">
-          <PriceTag product={product} />
+          <div>
+            <PriceTag product={product} />
+            {help.length ? (
+              <ul className="mt-1.5 space-y-0.5 text-[12px] leading-[1.45] text-muted">
+                {help.map((text) => (
+                  <li key={text}>{text}</li>
+                ))}
+              </ul>
+            ) : null}
+          </div>
           {line && quantity > 1 ? (
             <p className="text-right text-[13px] text-muted">
               {quantity} × {formatEuros(line.unitPriceCents)} ={" "}
@@ -198,7 +216,7 @@ export function PurchasePanel({ product }: { product: PublicProduct }) {
           {added !== null ? (
             <p className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-green-50 px-3.5 py-2.5 text-[13px] text-green-900 motion-safe:animate-[fade-in_.3s_ease-out]">
               <span>
-                {added} {unitLabel(unit, added)} ajouté{added > 1 ? "s" : ""} · {inCart} dans votre panier
+                {added} {unitLabel(unit, added)} {reservation ? "réservé" : "ajouté"}{added > 1 ? "s" : ""} · {inCart} dans votre panier
               </span>
               <Link href="/panier" className="font-semibold underline-offset-2 hover:underline">
                 Voir le panier →
@@ -215,8 +233,10 @@ export function PurchasePanel({ product }: { product: PublicProduct }) {
         </div>
 
         <p className="mt-4 border-t border-sand pt-4 text-[12.5px] leading-[1.55] text-muted">
-          La commande en ligne arrive bientôt. En attendant, votre panier vous permet d’envoyer une demande : je vous réponds
-          personnellement pour confirmer la disponibilité, le retrait ou la livraison.
+          {reservation
+            ? "Votre réservation part avec votre panier, sous forme de demande : je vous réponds personnellement pour confirmer la saison, le retrait ou la livraison."
+            : "Votre panier vous permet d’envoyer une demande : je vous réponds personnellement pour confirmer la disponibilité, le retrait ou la livraison."}{" "}
+          Aucun paiement n’est demandé en ligne.
         </p>
       </div>
 

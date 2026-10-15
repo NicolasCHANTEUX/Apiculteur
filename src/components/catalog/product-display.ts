@@ -58,20 +58,7 @@ export function getAvailability(
   }
 }
 
-// Badge posé sur la photo de la carte produit.
-export function getImageBadge(product: PublicProduct): string | null {
-  if (product.featured) return "Populaire";
-  if (product.condition === "used") return "Occasion";
-  if (product.condition === "second_choice") return "Second choix";
-  if (product.stockStatusLabel === "limited") return "Dernières unités";
-  if (
-    product.purchaseMode === "reservation" ||
-    product.stockStatusLabel === "reservation_open"
-  ) {
-    return "Nouvelle saison";
-  }
-  return null;
-}
+export { getImageBadges, getPriceHelp } from "@/lib/catalog/presentation";
 
 export type PriceDisplay =
   | {

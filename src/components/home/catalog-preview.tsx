@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { AvailabilityPill, PriceTag, ProductCard } from "@/components/catalog/product-card";
-import { formatPrice, getImageBadge } from "@/components/catalog/product-display";
+import { ImageBadges } from "@/components/catalog/product-card";
+import { formatPrice, getImageBadges } from "@/components/catalog/product-display";
 import { ArrowRightIcon, MessageCircleIcon } from "@/components/icons";
 import { ProductCarousel } from "@/components/home/product-carousel";
 import { SectionHeading, buttonStyles, container } from "@/components/ui";
@@ -10,7 +11,7 @@ import { contactHref, productQuestionMessage } from "@/lib/cart/request";
 /** Un seul produit : mis en valeur sur toute la largeur. */
 function Spotlight({ product }: { product: PublicProduct }) {
   const image = product.images[0];
-  const badge = getImageBadge(product);
+  const badges = getImageBadges(product);
   const bestTier = product.priceVisibility === "visible" && product.pricingTiers.length > 1
     ? product.pricingTiers.reduce((best, tier) => (tier.unitPrice < best.unitPrice ? tier : best))
     : null;
@@ -26,11 +27,7 @@ function Spotlight({ product }: { product: PublicProduct }) {
             className="absolute inset-0 size-full object-cover transition duration-700 group-hover:scale-105"
           />
         ) : null}
-        {badge ? (
-          <span className="absolute top-4 left-4 rounded-full bg-honey px-3 py-1 text-[12px] font-semibold text-white shadow-sm">
-            {badge}
-          </span>
-        ) : null}
+        <ImageBadges badges={badges} size="large" />
       </Link>
       <div className="flex flex-col p-6 sm:p-8 md:p-10">
         <div>

@@ -4,13 +4,14 @@ import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
 import { CatalogUnconfigured } from "@/components/catalog/catalog-unconfigured";
 import { AvailabilityPill, ProductCard } from "@/components/catalog/product-card";
-import { getImageBadge } from "@/components/catalog/product-display";
+import { getImageBadges } from "@/components/catalog/product-display";
 import { ProductGallery } from "@/components/catalog/product-gallery";
 import { PurchasePanel } from "@/components/catalog/purchase-panel";
-import { ArrowRightIcon, ChevronRightIcon, ClockIcon, PackageIcon, TagIcon, TruckIcon } from "@/components/icons";
+import { ArrowRightIcon, ChevronRightIcon, ClipboardListIcon, ClockIcon, LeafIcon, PackageIcon, TagIcon, TruckIcon } from "@/components/icons";
 import { ReviewCard } from "@/components/reviews/review-card";
 import { Eyebrow, Stars, container } from "@/components/ui";
 import { getPublicCatalog, getPublicProductBySlug } from "@/data/catalog";
+import { getPublishedLegal } from "@/data/legal";
 import { getPublicReviews } from "@/data/reviews";
 import { conditionLabels, deliveryModeLabels } from "@/lib/catalog/labels";
 import { averageByProduct, formatAverage, summarizeRatings } from "@/lib/domain/ratings";
@@ -48,7 +49,9 @@ export default async function ProductPage(
   props: PageProps<"/produits/[slug]">,
 ) {
   const { slug } = await props.params;
-  const [result, catalog, reviewsResponse] = await Promise.all([
+  // Rendue à chaque requête : un produit masqué ou épuisé l'est aussitôt sur
+  // la fiche (aucune mise en cache).
+  const [result, catalog, reviewsResponse, legal] = await Promise.all([
     getPublicProductBySlug(slug),
     getPublicCatalog().catch((error: unknown) => {
       console.error("Fiche produit : catalogue indisponible", error);
@@ -58,6 +61,7 @@ export default async function ProductPage(
       (value) => ({ value, error: null }),
       (error: unknown) => ({ value: null, error }),
     ),
+    getPublishedLegal(),
   ]);
   if (reviewsResponse.error) console.error("Fiche produit : avis indisponibles", reviewsResponse.error);
   const reviewsResult = reviewsResponse.value;
@@ -110,7 +114,7 @@ export default async function ProductPage(
 
         <article className="mt-6 grid items-start gap-10 md:grid-cols-2 md:gap-12">
           <div className="md:sticky md:top-[calc(var(--header-height)+1.5rem)]">
-            <ProductGallery images={product.images} name={product.name} badge={getImageBadge(product)} />
+            <ProductGallery images={product.images} name={product.name} badges={getImageBadges(product)} />
           </div>
 
           <div className="min-w-0">
@@ -137,10 +141,23 @@ export default async function ProductPage(
             ) : null}
 
             <div className="mt-6">
-              <PurchasePanel product={product} />
+              <PurchasePanel product={product} vatMode={legal?.config.vatMode ?? null} />
             </div>
 
             <dl className="mt-6 grid gap-3 sm:grid-cols-2">
+              {product.category ? (
+                <Fact icon={<LeafIcon className="size-[18px]" />} label="Type">
+                  {product.category.name}
+                  {product.condition !== "new" ? ` · ${conditionLabels[product.condition].toLowerCase()}` : ""}
+                </Fact>
+              ) : null}
+              {product.stockDisplayMode === "exact" && product.displayedStockQuantity !== null ? (
+                <Fact icon={<ClipboardListIcon className="size-[18px]" />} label="Stock">
+                  {product.displayedStockQuantity > 0
+                    ? `${product.displayedStockQuantity} disponible${product.displayedStockQuantity > 1 ? "s" : ""}`
+                    : "Épuisé pour le moment"}
+                </Fact>
+              ) : null}
               <Fact icon={<TruckIcon className="size-[18px]" />} label="Retrait / transport">
                 {deliveryModeLabels[product.deliveryMode]}
               </Fact>
@@ -150,7 +167,7 @@ export default async function ProductPage(
               {product.sku ? (
                 <Fact icon={<TagIcon className="size-[18px]" />} label="Référence">{product.sku}</Fact>
               ) : null}
-              {product.condition !== "new" ? (
+              {product.condition !== "new" && !product.category ? (
                 <Fact icon={<PackageIcon className="size-[18px]" />} label="État">{conditionLabels[product.condition]}</Fact>
               ) : null}
             </dl>

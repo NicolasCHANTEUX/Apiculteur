@@ -3,7 +3,7 @@ import type { PublicProduct } from "@/data/catalog";
 import {
   availabilityToneStyles,
   getAvailability,
-  getImageBadge,
+  getImageBadges,
   getPriceDisplay,
 } from "@/components/catalog/product-display";
 import { Stars } from "@/components/ui";
@@ -20,6 +20,25 @@ export function AvailabilityPill({ product }: { product: PublicProduct }) {
     >
       <span className={`size-1.5 shrink-0 rounded-full ${styles.dot}`} aria-hidden />
       {availability.label}
+    </span>
+  );
+}
+
+/** Badges posés sur une photo (voir getImageBadges). */
+export function ImageBadges({ badges, size = "small" }: { badges: string[]; size?: "small" | "large" }) {
+  if (!badges.length) return null;
+  return (
+    <span className={`pointer-events-none absolute flex flex-wrap gap-1.5 ${size === "large" ? "top-4 left-4" : "top-3 left-3"}`}>
+      {badges.map((badge, index) => (
+        <span
+          key={badge}
+          className={`rounded-full font-semibold shadow-sm ${size === "large" ? "px-3 py-1 text-[12px]" : "px-2.5 py-1 text-[11px]"} ${
+            index === 0 ? "bg-honey text-white" : "bg-white/95 text-honey-dark"
+          }`}
+        >
+          {badge}
+        </span>
+      ))}
     </span>
   );
 }
@@ -65,7 +84,7 @@ export function ProductCard({
   rating?: RatingSummary;
 }) {
   const image = product.images[0];
-  const badge = getImageBadge(product);
+  const badges = getImageBadges(product);
 
   return (
     <Link
@@ -82,11 +101,7 @@ export function ProductCard({
             className="size-full object-cover transition duration-500 group-hover:scale-105"
           />
         ) : null}
-        {badge ? (
-          <span className="absolute top-3 left-3 rounded-full bg-honey px-2.5 py-1 text-[11px] font-semibold text-white shadow-sm">
-            {badge}
-          </span>
-        ) : null}
+        <ImageBadges badges={badges} />
       </div>
 
       <div className="flex flex-1 flex-col p-4">
