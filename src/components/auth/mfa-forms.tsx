@@ -12,6 +12,7 @@ import {
 import { FormNotice } from "@/components/auth/auth-forms";
 import { inputClass } from "@/components/ui";
 import { formatTotpSecret } from "@/lib/auth/mfa";
+import { site } from "@/lib/site";
 
 const initialState: MfaFormState = { status: "idle", message: "" };
 const button =
@@ -33,9 +34,26 @@ function CodeField() {
         maxLength={7}
         required
         autoFocus
+        aria-describedby="code-hint"
         className={`${inputClass} h-12 text-center font-mono text-[22px] tracking-[0.35em]`}
       />
+      <p id="code-hint" className="mt-2 text-[12.5px] leading-[1.5] text-muted">
+        Affiché par l’application d’authentification de votre téléphone, sous « {site.name} ». Il change toutes les 30 secondes : saisissez celui du moment.
+      </p>
     </div>
+  );
+}
+
+/** Étapes de la configuration, visibles avant et pendant l'affichage du QR code. */
+function EnrollSteps({ scanning }: { scanning: boolean }) {
+  return (
+    <ol className="list-decimal space-y-2 pl-5 text-[14px] leading-[1.6] text-body">
+      <li>Installez sur votre téléphone une application d’authentification (gratuite) : Google Authenticator, Microsoft Authenticator ou 2FAS.</li>
+      <li>
+        Dans l’application, appuyez sur « + », puis « Scanner un code QR », et visez {scanning ? "le QR code ci-dessous" : "le QR code qui va s’afficher"}.
+      </li>
+      <li>Saisissez le code à 6 chiffres que l’application affiche alors sous « {site.name} ».</li>
+    </ol>
   );
 }
 
@@ -77,19 +95,17 @@ export function MfaEnrollForm({ target }: { target: string }) {
   const [starting, startTransition] = useTransition();
   const [state, action, pending] = useActionState(confirmMfaEnrollmentAction, initialState);
 
+  const start = () => startTransition(async () => setEnrollment(await startMfaEnrollmentAction()));
+
   if (enrollment?.status !== "ready") {
     return (
       <div className="space-y-5">
         {enrollment?.status === "error" ? <FormNotice tone="error">{enrollment.message}</FormNotice> : null}
-        <ol className="list-decimal space-y-2 pl-5 text-[14px] leading-[1.6] text-body">
-          <li>Installez sur votre téléphone une application d’authentification : Google Authenticator, Microsoft Authenticator ou 2FAS.</li>
-          <li>Affichez le QR code ci-dessous et scannez-le avec l’application.</li>
-          <li>Saisissez le code à 6 chiffres qu’elle affiche.</li>
-        </ol>
+        <EnrollSteps scanning={false} />
         <button
           type="button"
           disabled={starting}
-          onClick={() => startTransition(async () => setEnrollment(await startMfaEnrollmentAction()))}
+          onClick={start}
           className={button}
         >
           {starting ? "Préparation…" : "Afficher le QR code"}
@@ -101,6 +117,7 @@ export function MfaEnrollForm({ target }: { target: string }) {
 
   return (
     <div className="space-y-5">
+      <EnrollSteps scanning />
       <div className="flex flex-col items-center gap-3 rounded-xl border border-line bg-white p-4">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={enrollment.qrCode} alt="QR code à scanner avec l’application d’authentification" width={200} height={200} className="size-[200px]" />
@@ -109,7 +126,11 @@ export function MfaEnrollForm({ target }: { target: string }) {
           <span className="mt-1 block font-mono text-[13.5px] font-medium tracking-wide break-all text-ink select-all">
             {formatTotpSecret(enrollment.secret)}
           </span>
+          <span className="mt-1 block">(type « basé sur l’heure ») · Ne partagez jamais ce QR code ni cette clé.</span>
         </p>
+        <button type="button" onClick={start} disabled={starting} className="text-[12.5px] font-medium text-honey-dark hover:underline disabled:opacity-60">
+          {starting ? "Préparation…" : "Générer un autre QR code"}
+        </button>
       </div>
       <form action={action} className="space-y-5" noValidate>
         {state.status === "error" ? <FormNotice tone="error">{state.message}</FormNotice> : null}
