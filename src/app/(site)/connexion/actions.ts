@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import type { AuthError } from "@supabase/supabase-js";
-import { resolveAccessState } from "@/data/auth";
+import { passwordChangeAccess, resolveAccessState } from "@/data/auth";
 import { mfaPath } from "@/lib/auth/mfa";
 import {
   isValidEmail,
@@ -44,6 +44,10 @@ function authErrorMessage(error: AuthError): string {
       return "Choisissez un mot de passe différent de l’ancien.";
     case "weak_password":
       return "Ce mot de passe est trop faible : 12 caractères au moins, avec des lettres et des chiffres.";
+    // Changement sécurisé (secure_password_change) : session de plus de
+    // 24 heures. Un nouveau lien ouvre une session récente.
+    case "reauthentication_needed":
+      return "Pour changer le mot de passe, demandez un nouveau lien de réinitialisation : cette session est trop ancienne.";
     default:
       return UNAVAILABLE;
   }
@@ -176,14 +180,15 @@ export async function updatePasswordAction(
   }
 
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
+  // Lien de réinitialisation (session aal1) : avec une application
+  // d'authentification associée, le code est exigé avant le changement.
+  const access = await passwordChangeAccess(supabase);
+  if (access === "anonymous") {
     return failure(
       "Le lien a expiré. Recommencez la demande de réinitialisation du mot de passe.",
     );
   }
+  if (access === "mfa") redirect(mfaPath("verify", "/nouveau-mot-de-passe"));
 
   const password = formData.get("password");
   const problem = validateNewPassword(password, formData.get("confirmation"));
@@ -192,7 +197,7 @@ export async function updatePasswordAction(
   }
 
   const { error } = await supabase.auth.updateUser({ password });
-  // Double authentification active : le code est demandé avant le changement.
+  // Même règle côté Supabase Auth.
   if (error?.code === "insufficient_aal") redirect(mfaPath("verify", "/nouveau-mot-de-passe"));
   if (error) return failure(authErrorMessage(error));
 

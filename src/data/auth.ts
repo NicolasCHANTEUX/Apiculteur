@@ -3,7 +3,7 @@ import "server-only";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { cache } from "react";
-import { mfaPath, type MfaMode } from "@/lib/auth/mfa";
+import { mfaPath, needsSecondFactor, type MfaMode } from "@/lib/auth/mfa";
 import { sanitizeRedirectPath } from "@/lib/auth/validation";
 import { getPublicSupabaseConfig } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
@@ -38,15 +38,14 @@ function isStaleSession(error: { code?: string; status?: number; name?: string }
  * État d'accès d'un compte connecté, vérifié par la base : « admin »
  * seulement après la double authentification (jeton aal2, migration
  * 20261020100000_security.sql). Sans cette migration, la fonction
- * admin_access_state n'existe pas : retour à l'ancien contrôle is_admin().
+ * admin_access_state n'existe pas : accès refusé, jamais de retour à un
+ * contrôle sans double authentification.
  */
 export async function resolveAccessState(supabase: ServerClient): Promise<"admin" | "none" | "expired" | { mfa: MfaMode }> {
   const { data, error } = await supabase.rpc("admin_access_state");
   if (isStaleSession(error)) return "expired";
   if (error?.code === "PGRST202") {
-    const { data: isAdmin, error: legacyError } = await supabase.rpc("is_admin");
-    if (legacyError) throw new Error(`Vérification des droits impossible: ${legacyError.message}`);
-    return isAdmin === true ? "admin" : "none";
+    throw new Error("Vérification des droits impossible: admin_access_state absente (migration 20261020100000_security.sql à appliquer)");
   }
   if (error) throw new Error(`Vérification des droits impossible: ${error.message}`);
   if (data === "admin") return "admin";
@@ -56,6 +55,23 @@ export async function resolveAccessState(supabase: ServerClient): Promise<"admin
   if (isStaleSession(factorsError)) return "expired";
   if (factorsError) throw new Error(`Double authentification indisponible: ${factorsError.message}`);
   return { mfa: factors.totp.length > 0 ? "verify" : "enroll" };
+}
+
+/**
+ * Changement de mot de passe : session vérifiée par Supabase Auth
+ * (getUser, facteurs à jour) et, dès qu'une application d'authentification
+ * est associée au compte, code saisi (jeton aal2 lu par getClaims). Supabase
+ * Auth refuse aussi le changement en aal1 (insufficient_aal) ; ce contrôle
+ * n'en dépend pas et demande le code avant d'afficher le formulaire.
+ */
+export async function passwordChangeAccess(supabase: ServerClient): Promise<"anonymous" | "mfa" | "allowed"> {
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
+  if (error || !user) return "anonymous";
+  const { data } = await supabase.auth.getClaims();
+  return needsSecondFactor(user.factors, data?.claims.aal) ? "mfa" : "allowed";
 }
 
 /**

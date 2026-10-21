@@ -1,6 +1,6 @@
 # Cahier des charges consolidé — Application web apiculteur
 
-Dernière mise à jour : 15 octobre 2026 (cases relues une à une contre le code, après les lots 0 à 10 et 13, la revue de sécurité et le logo). État de chaque lot : `ROADMAP.md` ; recette : `docs/etat-v1.md`.
+Dernière mise à jour : 21 octobre 2026 (cases relues une à une contre le code le 15 octobre, après les lots 0 à 10 et 13, la revue de sécurité et le logo ; audit de sécurité du 21 octobre). État de chaque lot : `ROADMAP.md` ; recette : `docs/etat-v1.md`.
 
 Ce document est **la liste de référence de tout ce qu’il y a à construire**. Il réunit trois sources :
 
@@ -72,10 +72,10 @@ Le plan d’attaque (lots, ordre, état de chaque lot) est dans `ROADMAP.md`, é
 
 | Domaine | État |
 | --- | --- |
-| Livré dans le code | Lots 0 à 10 et 13 : socle et sécurité, accès admin avec double authentification, catalogue géré par l’admin, panier, demande de commande, traitement des commandes (propositions, ventes manuelles), emails, demandes clients, avis, légal et fiches clients, livraison et distance, catalogue public avancé. Revue de sécurité du 15 octobre. Logo, icônes et manifest. |
+| Livré dans le code | Lots 0 à 10 et 13 : socle et sécurité, accès admin avec double authentification, catalogue géré par l’admin, panier, demande de commande, traitement des commandes (propositions, ventes manuelles), emails, demandes clients, avis, légal et fiches clients, livraison et distance, catalogue public avancé. Revue de sécurité du 15 octobre et audit du 21 octobre. Logo, icônes et manifest. |
 | Entamé | Lot 15 (`noindex` des pages privées, données structurées de la FAQ, manifest), lot 16 (tendances et dernières actions au tableau de bord), lot 18 (CI, tâche quotidienne). |
 | Pas commencé | Lots 11 (factures et devis), 12 (réservations et liste d’attente), 14 (contenus et paramètres modifiables), 17 (paiement en ligne). |
-| À valider en conditions réelles | Voir `docs/etat-v1.md` : fournisseur d’emails, informations légales, adresse de l’exploitation et tarifs, migration `20261021100000_order_terms.sql`, contenus réels. |
+| À valider en conditions réelles | Voir `docs/etat-v1.md` : fournisseur d’emails, informations légales, adresse de l’exploitation et tarifs, projet Supabase à réactiver puis migration `20261021100000_order_terms.sql` à confirmer, « Secure password change » à activer, contenus réels. |
 | Mode démo | Données de la maquette en développement sans Supabase ; seed aligné. |
 
 ---
@@ -404,10 +404,10 @@ Le plan d’attaque (lots, ordre, état de chaque lot) est dans `ROADMAP.md`, é
 - [x] Garde admin dans chaque page, action et lecture serveur (`requireAdmin`), pas seulement dans la mise en page `/admin`. (Kayart)
 - [x] Page de refus explicite pour un compte connecté non admin, avec l’identité et un bouton de déconnexion. (Kayart)
 - [x] Redirection après connexion limitée aux chemins internes. (Kayart)
-- [x] Mot de passe oublié et nouveau mot de passe (lien par email, route `/auth/confirm`). (Kayart, CDC 18)
+- [x] Mot de passe oublié et nouveau mot de passe (lien par email, route `/auth/confirm`). — avec une application d’authentification associée, code exigé avant le changement (page et action, en plus de Supabase Auth) ; session de plus de 24 h refusée (`secure_password_change`). (Kayart, CDC 18 ; audit du 21/10/2026)
 - [x] Limitation de débit : connexion (8 essais / 15 min par IP et email, 30 par IP), récupération (5 / heure). (Kayart)
 - [x] Script d’accès admin : vérification en lecture seule, création de compte, octroi et retrait des droits (`npm run admin`). — plus `mfa-reset` (téléphone perdu). (Kayart)
-- [x] Double authentification obligatoire pour les administrateurs (code à usage unique, TOTP) : configurée à la première connexion, demandée à chaque connexion ; exigée par la base (`is_admin()` demande une session aal2), pas seulement par l’application. (Revue de sécurité du 15/10/2026)
+- [x] Double authentification obligatoire pour les administrateurs (code à usage unique, TOTP) : configurée à la première connexion, demandée à chaque connexion ; exigée par la base (`is_admin()` demande une session aal2), pas seulement par l’application ; sans la fonction `admin_access_state`, accès refusé (plus de repli sur l’ancien contrôle). (Revue de sécurité du 15/10/2026, audit du 21/10/2026)
 - [x] Mots de passe : 12 caractères au moins, avec lettres et chiffres (application et Supabase Auth). (Revue de sécurité du 15/10/2026)
 - [ ] Plusieurs rôles admin (gérant, aide), en option. (CDC 22)
 - [ ] Compte client (CDC 18), selon décision : inscription, connexion, tableau de bord, historique, factures, suivi, avis. En V1, recommandation : pas de compte, liens sécurisés envoyés par email.
@@ -535,7 +535,7 @@ Le plan d’attaque (lots, ordre, état de chaque lot) est dans `ROADMAP.md`, é
 - [ ] Aucun token ni donnée client dans le HTML, les logs ou les rapports. (Kayart)
 - [ ] Journal d’audit (§17.12). *(partiel : table et écriture ; dernières actions au tableau de bord ; consultation complète au lot 16)* (CDC 22)
 - [ ] Sauvegardes, et restauration testée. (CDC 22, Kayart)
-- [ ] Audit régulier des dépendances (`npm audit`, épinglage des versions sensibles). *(partiel : versions épinglées ; 15/10/2026 : Next 16.4.1 et sharp 0.35.5 (avis GHSA-p3m5-59mp-jv5r et GHSA-2464-fhr4-w9xw), aucune vulnérabilité en production ; reste un avis sur `braces`, outil de lint seulement ; audit à refaire régulièrement)* (Kayart)
+- [ ] Audit régulier des dépendances (`npm audit`, épinglage des versions sensibles). *(partiel : versions épinglées ; 15/10/2026 : Next 16.4.1 et sharp 0.35.5 (avis GHSA-p3m5-59mp-jv5r et GHSA-2464-fhr4-w9xw), aucune vulnérabilité en production ; reste un avis sur `braces`, outil de lint seulement ; 21/10/2026 : `npm audit --omit=dev` dans la CI, Dependabot chaque semaine (versions publiées depuis 7 jours au moins), CodeQL ; premier passage sur GitHub à constater)* (Kayart)
 
 ---
 
@@ -569,10 +569,10 @@ Le plan d’attaque (lots, ordre, état de chaque lot) est dans `ROADMAP.md`, é
 
 - [x] Tests unitaires `node:test` (prix dégressifs, notes) ; lint ESLint ; vérification des types par le build.
 - [x] Scripts `typecheck` (avec `next typegen`) et `verify` (lint, tests, types, build). (Kayart)
-- [ ] Tests unitaires à ajouter : validation manuelle, zones de livraison, problèmes de panier, idempotence de commande, stock, factures (numérotation, éligibilité, PDF), avis par token, contrôle d’origine, limitation de débit, refus d’accès admin. *(partiel : 24 fichiers, 134 tests, dont raisons d’attention, zones et frais, avis par lien, origine, clé de limitation, double authentification ; idempotence et stock vérifiés par des contrôles SQL sur PGlite, hors de la suite ; restent les problèmes de panier et les factures)* (Kayart, CDC)
+- [ ] Tests unitaires à ajouter : validation manuelle, zones de livraison, problèmes de panier, idempotence de commande, stock, factures (numérotation, éligibilité, PDF), avis par token, contrôle d’origine, limitation de débit, refus d’accès admin. *(partiel : 24 fichiers, 135 tests, dont raisons d’attention, zones et frais, avis par lien, origine, clé de limitation, double authentification (dont le changement de mot de passe) ; idempotence et stock vérifiés par des contrôles SQL sur PGlite, hors de la suite ; restent les problèmes de panier et les factures)* (Kayart, CDC)
 - [ ] Recette HTTP sur un build de production isolé, avec données fictives et faux service d’authentification local. (Kayart)
 - [ ] Recette navigateur automatisée (Chrome headless) des parcours publics, panier, commande et admin, à plusieurs largeurs. (Kayart)
-- [ ] CI GitHub Actions à chaque push et pull request : installation, lint, tests, types, recette du build. *(partiel : lint, tests, types, build ; recette HTTP au lot 18)* (Kayart)
+- [ ] CI GitHub Actions à chaque push et pull request : installation, lint, tests, types, recette du build. *(partiel : lint, tests, types, build, audit des dépendances de production ; CodeQL à part ; recette HTTP au lot 18)* (Kayart)
 - [ ] Preuves de recette datées, stockées hors Git. (Kayart)
 
 ---

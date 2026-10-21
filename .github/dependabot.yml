@@ -1,0 +1,24 @@
+# Mises à jour proposées en pull request, vérifiées par la CI avant fusion.
+# cooldown : une version n'est proposée qu'après 7 jours de publication
+# (le temps qu'un paquet compromis soit repéré) ; les correctifs de sécurité
+# (alertes Dependabot) ne l'attendent pas.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    open-pull-requests-limit: 5
+    groups:
+      next:
+        patterns: ["next", "eslint-config-next", "@next/*"]
+      supabase:
+        patterns: ["@supabase/*"]
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    cooldown:
+      default-days: 7

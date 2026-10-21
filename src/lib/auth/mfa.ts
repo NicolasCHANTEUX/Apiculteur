@@ -16,6 +16,15 @@ export function mfaPath(mode: MfaMode, target: string): string {
   return `${page}?redirect=${encodeURIComponent(target)}`;
 }
 
+/**
+ * Code exigé avant une opération sensible (changement de mot de passe) :
+ * une application est associée au compte (facteur vérifié) mais la session
+ * a été ouverte sans code (jeton aal1, lien de réinitialisation compris).
+ */
+export function needsSecondFactor(factors: readonly { status: string }[] | undefined, aal: unknown): boolean {
+  return (factors ?? []).some((factor) => factor.status === "verified") && aal !== "aal2";
+}
+
 /** Secret affiché en groupes de 4 pour une saisie à la main dans l'application. */
 export function formatTotpSecret(secret: string): string {
   return secret.replace(/\s/g, "").replace(/(.{4})(?=.)/g, "$1 ");

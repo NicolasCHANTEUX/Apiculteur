@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { AuthCard } from "@/components/auth/auth-card";
 import { FormNotice, NewPasswordForm } from "@/components/auth/auth-forms";
+import { passwordChangeAccess } from "@/data/auth";
+import { mfaPath } from "@/lib/auth/mfa";
 import { getPublicSupabaseConfig } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
 
@@ -11,14 +14,13 @@ export const metadata: Metadata = {
 };
 
 export default async function NewPasswordPage() {
-  // La session provient du lien reçu par email (/auth/confirm).
+  // La session provient du lien reçu par email (/auth/confirm). Avec une
+  // application d'authentification associée, le code est demandé d'abord.
   let hasSession = false;
   if (getPublicSupabaseConfig()) {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    hasSession = Boolean(user);
+    const access = await passwordChangeAccess(await createClient());
+    if (access === "mfa") redirect(mfaPath("verify", "/nouveau-mot-de-passe"));
+    hasSession = access === "allowed";
   }
 
   return (

@@ -2,7 +2,7 @@
 
 Plan de réalisation de [CAHIER_DES_CHARGES.md](CAHIER_DES_CHARGES.md). Le cahier dit **quoi** construire ; ce plan dit **dans quel ordre**. Les numéros entre parenthèses (§) renvoient aux sections du cahier.
 
-Mis à jour le 15 octobre 2026.
+Mis à jour le 21 octobre 2026.
 
 ## Hypothèses provisoires
 
@@ -29,6 +29,14 @@ Les décisions du §26 ne sont pas encore prises. En attendant, on suit les hypo
 - Double authentification obligatoire pour l’admin, exigée par la base ; mots de passe de 12 caractères avec lettres et chiffres.
 - Adresse du site fixe en production ; IP du client lue sans faire confiance au client ; secret de limitation dérivé ; CSP à nonce ; envois limités à 16 Mo ; photos privées jamais en cache.
 
+## Audit de sécurité du 21 octobre 2026 · **fait dans le code** (réglages en ligne à faire, voir `docs/etat-v1.md`)
+
+- Plus de repli sur `is_admin()` quand `admin_access_state()` manque : l’administration reste fermée.
+- Changement de mot de passe : code de l’application d’authentification exigé dès qu’une application est associée (page et action), en plus du refus de Supabase Auth ; changement sécurisé (`secure_password_change`) activé.
+- CI : audit des dépendances de production, CodeQL, Dependabot.
+- À vérifier sur le vrai projet : réactiver Supabase (injoignable le 21 octobre), confirmer `20261021100000_order_terms.sql`, activer « Secure password change », mises à jour de sécurité Dependabot et protection de `main` sur GitHub.
+- À terme : route d’envoi dédiée aux photos, pour contrôler la taille avant tout traitement (les actions restent plafonnées à 16 Mo).
+
 ## Vue d’ensemble
 
 | Phase | Lots | But |
@@ -42,7 +50,7 @@ Les décisions du §26 ne sont pas encore prises. En attendant, on suit les hypo
 
 Règle de fin de lot : lint, types, tests et build réussis ; recette visuelle à 390 et 1 440 px ; `docs/etat-v1.md` mis à jour ; cases du cahier cochées.
 
-## Où on en est (15 octobre 2026)
+## Où on en est (21 octobre 2026)
 
 « Reste » liste les cases du cahier encore ouvertes pour le lot, hors recette réelle (voir `docs/etat-v1.md`).
 
@@ -66,7 +74,7 @@ Règle de fin de lot : lint, types, tests et build réussis ; recette visuelle �
 | 15 — Référencement et PWA | entamé | Interrupteur d’indexation, `robots.txt`, `sitemap.xml`, URL canonique, image de partage, données structurées des produits |
 | 16 — Statistiques et audit | entamé | Statistiques détaillées ; journal d’audit consultable, avec anciennes et nouvelles valeurs |
 | 17 — Paiement en ligne | à faire (selon §26-3) | Tout |
-| 18 — Recette et mise en production | entamé | Recette HTTP et navigateur automatisées ; environnements, sauvegardes, surveillance ; critères d’ouverture |
+| 18 — Recette et mise en production | entamé | Recette HTTP et navigateur automatisées ; environnements, sauvegardes, surveillance ; protection de la branche `main` ; critères d’ouverture |
 
 ---
 
@@ -205,7 +213,8 @@ Règle de fin de lot : lint, types, tests et build réussis ; recette visuelle �
 
 ### Lot 18 — Recette et mise en production · **entamé**
 
-- Déjà fait : CI GitHub Actions (lint, tests, types, build) ; tâche quotidienne protégée par un secret.
+- Déjà fait : CI GitHub Actions (lint, tests, types, build, audit des dépendances de production), CodeQL et Dependabot ; tâche quotidienne protégée par un secret.
+- Protection de la branche `main` (pull request et CI obligatoires avant fusion).
 - Recette HTTP et navigateur automatisées (§23).
 - Environnements, sauvegardes, tâches planifiées, surveillance (§24).
 - Critères d’ouverture commerciale (§24).
